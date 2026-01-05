@@ -24,12 +24,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+
+
 # Copy Python packages from builder
 COPY --from=builder /root/.local /root/.local
 
 # Set PATH
 ENV PATH=/root/.local/bin:$PATH
 ENV PYTHONUNBUFFERED=1
+
+# Install Playwright browser binaries and system deps (Chromium)
+RUN python -m playwright install-deps chromium && \
+    python -m playwright install chromium
 
 # Copy application code
 COPY . .
