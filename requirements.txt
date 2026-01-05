@@ -4,3 +4,4 @@ Flask-Login
 requests
 beautifulsoup4
 playwright
+gunicorn>=20.0.0
