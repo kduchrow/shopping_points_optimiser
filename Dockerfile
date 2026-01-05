@@ -33,8 +33,9 @@ ENV PYTHONUNBUFFERED=1
 # Copy application code
 COPY . .
 
-# Create directories for database and logs with full permissions
-RUN mkdir -p /app/instance /app/logs && chmod -R 777 /app/instance /app/logs
+# Copy and set permissions for entrypoint script
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 # Expose port
 EXPOSE 5000
@@ -43,5 +44,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:5000/health', timeout=5)" || exit 1
 
-# Run with gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--worker-class", "sync", "--timeout", "60", "app:app"]
+# Use entrypoint script
+ENTRYPOINT ["/docker-entrypoint.sh"]
