@@ -416,4 +416,33 @@ def register_admin(app):
         db.session.commit()
         return jsonify({'success': True})
 
+    @app.route('/admin/clear_shops', methods=['POST'])
+    @login_required
+    def admin_clear_shops():
+        if current_user.role != 'admin':
+            flash('Sie haben keine Berechtigung für diese Aktion.', 'error')
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        try:
+            # Count how many shops will be deleted
+            shop_count = Shop.query.count()
+            rate_count = ShopProgramRate.query.count()
+            
+            # Delete all shops
+            Shop.query.delete()
+            db.session.commit()
+            
+            flash(f'✅ {shop_count} Shops gelöscht. ({rate_count} Raten wurden archiviert)', 'success')
+            db.session.add(ScrapeLog(message=f'Admin cleared {shop_count} shops'))
+            db.session.commit()
+            
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({'success': True, 'deleted': shop_count})
+            return redirect('/admin')
+        except Exception as e:
+            flash(f'❌ Fehler beim Löschen: {str(e)}', 'error')
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({'error': str(e)}), 500
+            return redirect('/admin')
+
     return app

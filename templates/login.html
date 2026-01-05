@@ -2,6 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Shopping Points Optimiser</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -12,7 +13,7 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        padding: 20px;
+        padding: 15px;
       }
       .container { 
         max-width: 400px; 
@@ -36,13 +37,15 @@
         font-weight: 600;
         color: #333;
         margin-bottom: 8px;
+        font-size: 15px;
       }
       input { 
         width: 100%;
-        padding: 12px;
+        padding: 14px;
         border: 2px solid #ddd;
         border-radius: 6px;
-        font-size: 14px;
+        font-size: 16px;
+        font-family: inherit;
       }
       input:focus { 
         border-color: #667eea;
@@ -51,7 +54,7 @@
       }
       button {
         width: 100%;
-        padding: 12px;
+        padding: 16px;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border: none;
@@ -60,18 +63,28 @@
         font-weight: 600;
         cursor: pointer;
         margin-bottom: 15px;
+        transition: transform 0.2s, box-shadow 0.2s;
+        min-height: 48px;
       }
       button:hover {
         transform: translateY(-2px);
         box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
       }
+      button:active {
+        transform: translateY(0);
+      }
       .links {
         text-align: center;
+      }
+      .links p {
+        margin-bottom: 12px;
+        font-size: 14px;
       }
       .links a {
         color: #667eea;
         text-decoration: none;
         font-weight: 600;
+        padding: 4px 8px;
       }
       .links a:hover {
         text-decoration: underline;
@@ -80,9 +93,10 @@
         margin-bottom: 20px;
       }
       .alert {
-        padding: 12px;
+        padding: 14px;
         border-radius: 6px;
         margin-bottom: 10px;
+        font-size: 14px;
       }
       .alert-success {
         background-color: #d4edda;
@@ -93,6 +107,52 @@
         background-color: #f8d7da;
         color: #721c24;
         border: 1px solid #f5c6cb;
+      }
+      
+      /* Tablet landscape and smaller desktops */
+      @media (max-width: 1024px) {
+        .container { max-width: 90%; padding: 35px; }
+      }
+      
+      /* Tablets and large phones landscape */
+      @media (max-width: 768px) {
+        .container { padding: 30px; border-radius: 8px; }
+        h1 { font-size: 24px; margin-bottom: 25px; }
+        body { padding: 10px; }
+        input { font-size: 16px; padding: 16px; }
+        button { font-size: 16px; padding: 16px; }
+        label { font-size: 15px; }
+      }
+      
+      /* Mobile phones portrait */
+      @media (max-width: 480px) {
+        body { padding: 8px; }
+        .container { padding: 20px; }
+        h1 { font-size: 22px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 18px; }
+        input { 
+          font-size: 16px; 
+          padding: 14px;
+          border-radius: 5px;
+        }
+        button { 
+          font-size: 16px; 
+          padding: 15px;
+          border-radius: 5px;
+        }
+        label { font-size: 14px; margin-bottom: 6px; }
+        .links { margin-top: 5px; }
+        .links p { margin-bottom: 10px; font-size: 13px; }
+        .alert { padding: 12px; font-size: 13px; }
+      }
+      
+      /* Small mobile phones */
+      @media (max-width: 360px) {
+        .container { padding: 16px; }
+        h1 { font-size: 20px; margin-bottom: 18px; }
+        input { padding: 12px; }
+        button { padding: 14px; }
+        label { font-size: 13px; }
       }
     </style>
   </head>
@@ -113,12 +173,12 @@
       <form method="post">
         <div class="form-group">
           <label for="username">Benutzername:</label>
-          <input type="text" id="username" name="username" required>
+          <input type="text" id="username" name="username" required autocomplete="username">
         </div>
         
         <div class="form-group">
           <label for="password">Passwort:</label>
-          <input type="password" id="password" name="password" required>
+          <input type="password" id="password" name="password" required autocomplete="current-password">
         </div>
         
         <button type="submit">Anmelden</button>

@@ -33,16 +33,14 @@ class BaseScraper(ABC):
             source_id=data.get('source_id')
         )
         
-        # For backward compatibility, update legacy Shop table
-        shop = Shop.query.filter_by(name=data['name']).first()
+        # For backward compatibility, get or create legacy Shop table entry
+        # Only create if it doesn't already exist for this ShopMain
+        shop = Shop.query.filter_by(shop_main_id=shop_main.id).first()
         if not shop:
+            # Only create a new legacy Shop entry if one doesn't exist for this ShopMain
             shop = Shop(name=data['name'], shop_main_id=shop_main.id)
             db.session.add(shop)
             db.session.commit()
-        else:
-            if not shop.shop_main_id:
-                shop.shop_main_id = shop_main.id
-                db.session.commit()
 
         now = utcnow()
         

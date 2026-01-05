@@ -360,6 +360,35 @@ function initAdminPage() {
   wireShopSearch();
 }
 
+function clearAllShops() {
+  if (!confirm('⚠️ Sicher? Dies löscht ALLE Shops aus der Datenbank!\n\nDiese Aktion kann nicht rückgängig gemacht werden.')) {
+    return;
+  }
+  
+  if (!confirm('Wirklich? Alle Shops werden gelöscht.')) {
+    return;
+  }
+
+  fetch('/admin/clear_shops', {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+    }
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.success) {
+        alert(`✅ ${data.deleted} Shops gelöscht!`);
+        location.reload();
+      } else {
+        alert('❌ Fehler: ' + (data.error || 'Unbekannter Fehler'));
+      }
+    })
+    .catch((err) => {
+      alert('❌ Fehler beim Löschen: ' + err);
+    });
+}
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initAdminPage);
 } else {
