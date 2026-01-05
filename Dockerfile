@@ -33,8 +33,8 @@ ENV PYTHONUNBUFFERED=1
 # Copy application code
 COPY . .
 
-# Create instance directory for database
-RUN mkdir -p /app/instance && chmod 755 /app/instance
+# Create directories for database and logs with full permissions
+RUN mkdir -p /app/instance /app/logs && chmod -R 777 /app/instance /app/logs
 
 # Expose port
 EXPOSE 5000

@@ -72,6 +72,10 @@ Speichern: `CTRL+X` → `Y` → `ENTER`
 # SSH Terminal:
 cd /mnt/user/appdata/shopping-points-optimiser
 
+# WICHTIG: Erstelle Verzeichnisse für Volumes
+mkdir -p instance logs
+chmod -R 777 instance logs
+
 # Image bauen (dauert 2-5 Minuten beim ersten Mal)
 docker build -t shopping-points-optimiser:latest .
 
@@ -430,24 +434,35 @@ docker rm shopping-points-optimiser
 mv /mnt/user/appdata/shopping-points-optimiser/instance/shopping_points.db \
    /mnt/user/appdata/shopping-points-optimiser/instance/shopping_points.db.old
 
-# Container neu starten (erstellt frische DB)
+# Container neu starten (erstellt frische DB automatisch)
 docker run -d \
   --name shopping-points-optimiser \
   --restart unless-stopped \
   -p 5000:5000 \
-  --network shopping-network \
   -v /mnt/user/appdata/shopping-points-optimiser/instance:/app/instance \
   -v /mnt/user/appdata/shopping-points-optimiser/logs:/app/logs \
   --env-file .env \
   shopping-points-optimiser:latest
+```
 
-# Init Script ausführen
-docker exec shopping-points-optimiser python -c "
-from app import app, db
-with app.app_context():
-    db.create_all()
-    print('✅ DB neuinitialisiert!')
-"
+### "unable to open database file" Fehler
+```bash
+# Problem 1: Falsche Datei existiert (shopping.db statt shopping_points.db)
+cd /mnt/user/appdata/shopping-points-optimiser/instance
+ls -la
+# Falls shopping.db (ohne _points) existiert:
+rm -f shopping.db
+
+# Problem 2: Verzeichnis-Permissions
+cd /mnt/user/appdata/shopping-points-optimiser
+chmod -R 777 instance logs
+
+# Container neu starten
+docker restart shopping-points-optimiser
+
+# Logs prüfen
+docker logs shopping-points-optimiser --tail 50
+# Sollte zeigen: "✅ Database tables initialized"
 ```
 
 ### "ModuleNotFoundError" oder ImportError
