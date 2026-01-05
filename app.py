@@ -9,16 +9,76 @@ import bonus_programs.shoop as sh
 import shops.example_shop as exs
 import scrapers.example_scraper as exs_scraper
 import scrapers.payback_scraper_js as pb_scraper
+import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shopping.db'
+
+# Configuration from environment variables
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///instance/shopping_points.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config['DEBUG'] = os.environ.get('DEBUG', 'False').lower() == 'true'
+
 db.init_app(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+# Initialize database tables on startup (safe for multiple workers)
+def init_db():
+    """Initialize database tables if they don't exist"""
+    with app.app_context():
+        try:
+            # Create tables if they don't exist (SQLAlchemy handles this safely)
+            db.create_all()
+            app.logger.info("Database tables initialized")
+            
+            # Check if we have any bonus programs (indicator of first run)
+            if BonusProgram.query.count() == 0:
+                # Fresh database - register initial data
+                try:
+                    import bonus_programs.miles_and_more as mam
+                    import bonus_programs.payback as pb
+                    import bonus_programs.shoop as sh
+                    import shops.example_shop as exs
+                    mam.register()
+                    pb.register()
+                    sh.register()
+                    exs.register()
+                    app.logger.info("✅ Initial bonus programs seeded successfully")
+                except Exception as e:
+                    app.logger.warning(f"Could not seed initial data: {e}")
+            
+            # Create admin user if it doesn't exist
+            admin_password = os.environ.get('ADMIN_PASSWORD')
+            if admin_password:
+                try:
+                    admin = User.query.filter_by(username='admin').first()
+                    if not admin:
+                        admin = User(
+                            username='admin',
+                            email='admin@localhost',
+                            role='admin'  # lowercase!
+                        )
+                        admin.set_password(admin_password)
+                        db.session.add(admin)
+                        db.session.commit()
+                        app.logger.info("✅ Admin user created successfully (username: admin)")
+                    else:
+                        app.logger.info("Admin user already exists")
+                except Exception as e:
+                    # Might fail if another worker already created it
+                    db.session.rollback()
+                    app.logger.debug(f"Admin user creation skipped: {e}")
+            else:
+                app.logger.warning("ADMIN_PASSWORD not set in environment - skipping admin user creation")
+                
+        except Exception as e:
+            app.logger.error(f"Error during database initialization: {e}")
+
+# Initialize on import
+init_db()
 
 
 @login_manager.user_loader
