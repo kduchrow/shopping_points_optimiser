@@ -199,6 +199,14 @@
               <input type="radio" id="type-coupon" name="proposal_type" value="coupon_add" onchange="updateForm()">
               <label for="type-coupon">🎉 Sonderaktion/Coupon hinzufügen</label>
             </div>
+            <div class="type-option">
+              <input type="radio" id="type-metadata" name="proposal_type" value="metadata_edit" onchange="updateForm()">
+              <label for="type-metadata">✏️ Shop-Metadaten ändern (Name/Logo/Website)</label>
+            </div>
+            <div class="type-option">
+              <input type="radio" id="type-merge" name="proposal_type" value="merge_request" onchange="updateForm()">
+              <label for="type-merge">🔀 Shops zusammenführen</label>
+            </div>
           </div>
         </div>
         
@@ -328,6 +336,64 @@
             <input type="date" id="coupon-valid-to" name="coupon_valid_to">
           </div>
         </div>
+
+        <!-- Metadata Edit Fields -->
+        <div id="metadata-edit-fields" class="conditional-fields">
+          <h3 style="margin-bottom: 15px; color: #333;">Shop-Metadaten</h3>
+
+          <div class="form-group">
+            <label for="metadata-shop">Shop auswählen:</label>
+            <select id="metadata-shop" name="metadata_shop_id">
+              <option value="">-- Shop auswählen --</option>
+              {% for shop in shops %}
+                <option value="{{ shop.id }}">{{ shop.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="metadata-name">Neuer Name (optional):</label>
+            <input type="text" id="metadata-name" name="metadata_name" placeholder="z.B. richtiger Markenname">
+          </div>
+
+          <div class="form-group">
+            <label for="metadata-website">Website (optional):</label>
+            <input type="url" id="metadata-website" name="metadata_website" placeholder="https://...">
+          </div>
+
+          <div class="form-group">
+            <label for="metadata-logo">Logo-URL (optional):</label>
+            <input type="url" id="metadata-logo" name="metadata_logo" placeholder="https://.../logo.png">
+          </div>
+        </div>
+
+        <!-- Merge Request Fields -->
+        <div id="merge-request-fields" class="conditional-fields">
+          <h3 style="margin-bottom: 15px; color: #333;">Shops zusammenführen</h3>
+          <div class="info-box" style="margin-bottom: 10px;">
+            Wähle zwei Shops, die eigentlich zusammengehören. Beide müssen bereits mit einem Hauptshop verknüpft sein.
+          </div>
+
+          <div class="form-group">
+            <label for="merge-source">Shop A (behalten):</label>
+            <select id="merge-source" name="merge_source_shop_id">
+              <option value="">-- Shop A auswählen --</option>
+              {% for shop in shops %}
+                <option value="{{ shop.id }}">{{ shop.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="merge-target">Shop B (zusammenführen):</label>
+            <select id="merge-target" name="merge_target_shop_id">
+              <option value="">-- Shop B auswählen --</option>
+              {% for shop in shops %}
+                <option value="{{ shop.id }}">{{ shop.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
         
         <!-- Common Fields -->
         <div class="form-group">
@@ -352,6 +418,8 @@
         document.getElementById('shop-add-fields').classList.remove('active');
         document.getElementById('program-add-fields').classList.remove('active');
         document.getElementById('coupon-add-fields').classList.remove('active');
+        document.getElementById('metadata-edit-fields').classList.remove('active');
+        document.getElementById('merge-request-fields').classList.remove('active');
         
         if (type === 'rate_change') {
           document.getElementById('rate-change-fields').classList.add('active');
@@ -361,6 +429,10 @@
           document.getElementById('program-add-fields').classList.add('active');
         } else if (type === 'coupon_add') {
           document.getElementById('coupon-add-fields').classList.add('active');
+        } else if (type === 'metadata_edit') {
+          document.getElementById('metadata-edit-fields').classList.add('active');
+        } else if (type === 'merge_request') {
+          document.getElementById('merge-request-fields').classList.add('active');
         }
       }
     </script>

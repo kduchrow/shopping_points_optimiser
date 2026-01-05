@@ -16,4 +16,5 @@ ls -la /app/logs
 touch /app/instance/test.txt && rm /app/instance/test.txt && echo "✅ /app/instance is writable" || echo "❌ /app/instance is NOT writable"
 
 echo "🚀 Starting gunicorn..."
-exec gunicorn --bind 0.0.0.0:5000 --workers 4 --worker-class sync --timeout 60 app:app
+# Use a single worker to avoid concurrent DB init races during startup.
+exec gunicorn --bind 0.0.0.0:5000 --workers 1 --worker-class sync --timeout 60 app:app

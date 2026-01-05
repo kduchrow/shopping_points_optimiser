@@ -7,7 +7,6 @@ from .base import BaseScraper
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from shop_dedup import get_or_create_shop_main
 
 
 class PaybackScraperJS(BaseScraper):
@@ -112,7 +111,7 @@ class PaybackScraperJS(BaseScraper):
                                         print(f"  Button {i} is visible, using it")
                                         more_btn = btn
                                         break
-                                except:
+                                except Exception:
                                     pass
                             if more_btn:
                                 break
@@ -247,3 +246,18 @@ class PaybackScraperJS(BaseScraper):
             traceback.print_exc()
 
         return results, debug
+
+    def fetch_partners(self):
+        """Compatibility wrapper matching the async job interface."""
+        partners, debug = self.fetch()
+        # Keep latest debug snapshot for optional inspection by callers
+        self.last_debug = debug
+        return partners
+
+    def register_partners(self, partners):
+        """Register scraped partners into the database via BaseScraper helper."""
+        added = 0
+        for partner in partners:
+            self.register_to_db({'name': partner['name'], 'rates': [partner['rate']]})
+            added += 1
+        return added

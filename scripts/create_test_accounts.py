@@ -2,7 +2,8 @@
 Test-Accounts erstellen für Shopping Points Optimiser
 """
 from app import app
-from models import db, User
+from spo.extensions import db
+from spo.models import User
 
 def create_test_accounts():
     with app.app_context():

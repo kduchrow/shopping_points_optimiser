@@ -1,0 +1,75 @@
+body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
+.header { background-color: #007bff; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { margin: 0; font-size: 24px; }
+.notification-badge { background-color: #f44336; color: white; border-radius: 12px; padding: 2px 8px; font-size: 12px; margin-left: 10px; }
+.container { max-width: 1400px; margin: 20px auto; }
+
+/* Tab Navigation */
+.tabs { background-color: white; border-radius: 8px 8px 0 0; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.tab-nav { display: flex; background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; }
+.tab-button { flex: 1; padding: 15px 20px; background-color: transparent; border: none; cursor: pointer; font-size: 14px; font-weight: 500; color: #495057; transition: all 0.3s; }
+.tab-button:hover { background-color: #e9ecef; }
+.tab-button.active { background-color: white; color: #007bff; border-bottom: 3px solid #007bff; margin-bottom: -2px; }
+.tab-content { display: none; padding: 20px; background-color: white; border-radius: 0 0 8px 8px; }
+.tab-content.active { display: block; }
+
+/* Cards */
+.card { background-color: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.card-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+
+/* Buttons */
+.btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; margin-right: 10px; transition: all 0.3s; }
+.btn-primary { background-color: #007bff; color: white; }
+.btn-primary:hover { background-color: #0056b3; }
+.btn-success { background-color: #28a745; color: white; }
+.btn-success:hover { background-color: #218838; }
+.btn-danger { background-color: #dc3545; color: white; }
+.btn-danger:hover { background-color: #c82333; }
+.btn-warning { background-color: #ffc107; color: #333; }
+.btn-warning:hover { background-color: #e0a800; }
+
+/* Notifications */
+.notification-list { list-style: none; padding: 0; margin: 0; }
+.notification-item { padding: 15px; border-bottom: 1px solid #dee2e6; cursor: pointer; transition: background-color 0.3s; }
+.notification-item:hover { background-color: #f8f9fa; }
+.notification-item.unread { background-color: #e7f3ff; font-weight: bold; }
+.notification-title { font-size: 14px; font-weight: bold; color: #333; margin-bottom: 5px; }
+.notification-message { font-size: 13px; color: #666; }
+.notification-time { font-size: 11px; color: #999; margin-top: 5px; }
+
+/* Shop Merge Proposals */
+.proposal-item { padding: 15px; border: 1px solid #dee2e6; border-radius: 5px; margin-bottom: 15px; }
+.proposal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.proposal-shops { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+.shop-badge { background-color: #e9ecef; padding: 8px 12px; border-radius: 5px; font-size: 13px; }
+.merge-arrow { color: #007bff; font-size: 20px; }
+
+/* Rate Review */
+.rate-item { padding: 15px; border: 1px solid #dee2e6; border-radius: 5px; margin-bottom: 15px; }
+.rate-header { display: flex; justify-content: space-between; align-items: center; }
+.rate-info { flex: 1; }
+.rate-actions { display: flex; gap: 10px; }
+.comment-box { margin-top: 15px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; }
+.comment-input { width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; margin-bottom: 10px; resize: vertical; }
+
+/* Job Progress */
+.job-progress { background-color: #e8f5e9; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #4caf50; display: none; }
+.job-progress.active { display: block; }
+.progress-bar { width: 100%; height: 25px; background-color: #ddd; border-radius: 4px; overflow: hidden; margin: 10px 0; }
+.progress-fill { height: 100%; background-color: #4caf50; width: 0%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; }
+.job-messages { background-color: #f5f5f5; padding: 10px; border-radius: 4px; max-height: 200px; overflow-y: auto; font-size: 13px; font-family: monospace; }
+.job-status { display: inline-block; padding: 4px 8px; border-radius: 3px; font-size: 12px; font-weight: bold; }
+.job-status.running { background-color: #ffc107; color: #333; }
+.job-status.completed { background-color: #4caf50; color: white; }
+.job-status.failed { background-color: #f44336; color: white; }
+.job-status.queued { background-color: #2196f3; color: white; }
+
+/* Empty State */
+.empty-state { text-align: center; padding: 40px; color: #999; }
+.empty-state-icon { font-size: 48px; margin-bottom: 10px; }
+
+/* Badge */
+.badge { display: inline-block; padding: 4px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; }
+.badge-pending { background-color: #ffc107; color: #333; }
+.badge-approved { background-color: #28a745; color: white; }
+.badge-rejected { background-color: #dc3545; color: white; }

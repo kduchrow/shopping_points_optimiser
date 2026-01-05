@@ -12,9 +12,9 @@ import time
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app import app, db
-from models import BonusProgram, Shop, ShopProgramRate, Proposal, User
-from shop_dedup import get_or_create_shop_main
+from spo.extensions import db
+from spo.models import BonusProgram, Shop, ShopProgramRate, Proposal, User
+from spo.services.dedup import get_or_create_shop_main
 
 
 class MilesAndMoreScraper:
@@ -310,20 +310,18 @@ class MilesAndMoreScraper:
 
 
 def run_scraper():
-    """Run the Miles & More scraper"""
-    with app.app_context():
-        scraper = MilesAndMoreScraper()
-        added, updated, errors = scraper.scrape()
-        
-        return {
-            'added': added,
-            'updated': updated,
-            'errors': errors
-        }
+    """Run the Miles & More scraper within an active app context."""
+    scraper = MilesAndMoreScraper()
+    added, updated, errors = scraper.scrape()
+
+    return {
+        'added': added,
+        'updated': updated,
+        'errors': errors
+    }
 
 
 if __name__ == '__main__':
-    with app.app_context():
-        scraper = MilesAndMoreScraper()
-        result = scraper.scrape()
-        print(f"\nResult: {result}")
+    scraper = MilesAndMoreScraper()
+    result = scraper.scrape()
+    print(f"\nResult: {result}")

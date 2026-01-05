@@ -59,7 +59,7 @@ else:
 
 # Verifiziere, dass der Admin-User existiert
 from app import app as _app_verify  # noqa: E402
-from models import User  # noqa: E402
+from spo.models import User  # noqa: E402
 _app_verify.app_context().push()
 admin_user = User.query.filter_by(username='admin').first()
 if not admin_user:
@@ -71,7 +71,7 @@ else:
 # Step 3: Erstelle Test-Einträge und Coupons
 print("\n[3/5] Erstelle Test-Daten...")
 from app import app, db  # noqa: E402
-from models import Coupon, Shop, BonusProgram, ShopProgramRate  # noqa: E402
+from spo.models import Coupon, Shop, BonusProgram, ShopProgramRate  # noqa: E402
 
 app.app_context().push()
 

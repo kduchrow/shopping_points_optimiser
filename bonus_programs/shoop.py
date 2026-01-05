@@ -1,8 +1,3 @@
-from models import db, BonusProgram
+"""Legacy shim: register Shoop via spo.services.bonus_programs."""
 
-def register():
-    prog = BonusProgram.query.filter_by(name='Shoop').first()
-    if not prog:
-        prog = BonusProgram(name='Shoop', point_value_eur=0.008)  # 1 point = €0.008
-        db.session.add(prog)
-        db.session.commit()
+from spo.services.bonus_programs import ensure_program as register

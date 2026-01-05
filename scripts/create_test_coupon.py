@@ -1,5 +1,6 @@
-from app import app, db
-from models import Coupon, Shop, BonusProgram
+from app import app
+from spo.extensions import db
+from spo.models import Coupon, Shop, BonusProgram
 from datetime import datetime, timedelta
 
 app.app_context().push()

@@ -166,8 +166,8 @@
             
             <div class="proposal-content">
               {% if item.proposal.proposal_type == 'rate_change' %}
-                <p><strong>Shop:</strong> {{ item.proposal.shop_id }}</p>
-                <p><strong>Programm:</strong> {{ item.proposal.program_id }}</p>
+                <p><strong>Shop:</strong> {{ item.shop.name if item.shop else item.proposal.shop_id }}</p>
+                <p><strong>Programm:</strong> {{ item.program.name if item.program else item.proposal.program_id }}</p>
                 <p><strong>Neue Points/EUR:</strong> {{ item.proposal.proposed_points_per_eur }}</p>
                 <p><strong>Neuer Cashback %:</strong> {{ item.proposal.proposed_cashback_pct }}</p>
               {% elif item.proposal.proposal_type == 'shop_add' %}
@@ -184,10 +184,14 @@
                   {% endif %}
                 </p>
                 <p><strong>Beschreibung:</strong> {{ item.proposal.proposed_coupon_description }}</p>
-                {% if item.proposal.shop_id %}
+                {% if item.shop %}
+                  <p><strong>Shop:</strong> {{ item.shop.name }}</p>
+                {% elif item.proposal.shop_id %}
                   <p><strong>Shop:</strong> {{ item.proposal.shop_id }}</p>
                 {% endif %}
-                {% if item.proposal.program_id %}
+                {% if item.program %}
+                  <p><strong>Programm:</strong> {{ item.program.name }}</p>
+                {% elif item.proposal.program_id %}
                   <p><strong>Programm:</strong> {{ item.proposal.program_id }}</p>
                 {% endif %}
                 <p><strong>Kombinierbar:</strong>
@@ -258,6 +262,74 @@
       {% else %}
         <div class="empty-state">
           <p>📭 Keine ausstehenden Beiträge vorhanden.</p>
+        </div>
+      {% endif %}
+
+      <h2 style="margin-top: 30px; margin-bottom: 12px;">✏️ Metadaten-Vorschläge</h2>
+      {% if metadata_data %}
+        {% for item in metadata_data %}
+          <div class="proposal-card">
+            <div class="proposal-header">
+              <span class="proposal-type">METADATA_EDIT</span>
+              <div class="proposal-meta">
+                Von: {{ item.submitter.username if item.submitter else 'Unbekannt' }} |
+                {{ item.proposal.created_at.strftime('%d.%m.%Y %H:%M') }}
+              </div>
+            </div>
+
+            <div class="proposal-content">
+              <p><strong>Shop:</strong> {{ item.main.canonical_name if item.main else item.proposal.shop_main_id }}</p>
+              {% if item.proposal.proposed_name %}
+                <p><strong>Neuer Name:</strong> {{ item.proposal.proposed_name }}</p>
+              {% endif %}
+              {% if item.proposal.proposed_website %}
+                <p><strong>Website:</strong> {{ item.proposal.proposed_website }}</p>
+              {% endif %}
+              {% if item.proposal.proposed_logo_url %}
+                <p><strong>Logo:</strong> {{ item.proposal.proposed_logo_url }}</p>
+              {% endif %}
+              {% if item.proposal.reason %}
+                <div class="proposal-reason">
+                  <strong>Begründung:</strong> {{ item.proposal.reason }}
+                </div>
+              {% endif %}
+              <p style="margin-top: 10px;"><strong>Status:</strong> {{ item.proposal.status }}</p>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <p>📭 Keine Metadaten-Vorschläge vorhanden.</p>
+        </div>
+      {% endif %}
+
+      <h2 style="margin-top: 30px; margin-bottom: 12px;">🔀 Merge-Vorschläge</h2>
+      {% if merge_data %}
+        {% for item in merge_data %}
+          <div class="proposal-card">
+            <div class="proposal-header">
+              <span class="proposal-type">MERGE_REQUEST</span>
+              <div class="proposal-meta">
+                Von: {{ item.submitter.username if item.submitter else 'Unbekannt' }} |
+                {{ item.proposal.created_at.strftime('%d.%m.%Y %H:%M') }}
+              </div>
+            </div>
+
+            <div class="proposal-content">
+              <p><strong>Shop A:</strong> {{ item.variant_a.source_name if item.variant_a else 'Unbekannt' }}</p>
+              <p><strong>Shop B:</strong> {{ item.variant_b.source_name if item.variant_b else 'Unbekannt' }}</p>
+              {% if item.proposal.reason %}
+                <div class="proposal-reason">
+                  <strong>Begründung:</strong> {{ item.proposal.reason }}
+                </div>
+              {% endif %}
+              <p style="margin-top: 10px;"><strong>Status:</strong> {{ item.proposal.status }}</p>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <p>📭 Keine Merge-Vorschläge vorhanden.</p>
         </div>
       {% endif %}
     </div>

@@ -1,4 +1,5 @@
-from models import db, BonusProgram
+from spo.extensions import db
+from spo.models import BonusProgram
 
 
 def get_or_create_program(name: str, point_value_eur: float = 0.0) -> BonusProgram:

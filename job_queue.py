@@ -75,6 +75,11 @@ class JobQueue:
         self.lock = threading.Lock()
         self.worker_thread = None
         self.running = False
+        self.app = None
+
+    def set_app(self, app):
+        """Attach a Flask app so jobs can run with application context."""
+        self.app = app
     
     def start(self):
         """Start the job queue worker"""
@@ -115,16 +120,19 @@ class JobQueue:
             job.status = JobStatus.RUNNING
             job.started_at = datetime.utcnow()
             job.add_message(f"Job started: {job.func.__name__}")
-            
-            # Execute the function with progress callback
-            result = job.func(job, *job.args, **job.kwargs)
-            
+
+            # Ensure Flask application context for job execution
+            if self.app is not None:
+                with self.app.app_context():
+                    result = job.func(job, *job.args, **job.kwargs)
+            else:
+                result = job.func(job, *job.args, **job.kwargs)
+
             job.result = result
             job.status = JobStatus.COMPLETED
             job.completed_at = datetime.utcnow()
             job.progress = job.total_steps
             job.add_message("Job completed successfully")
-        
         except Exception as e:
             job.error = str(e)
             job.status = JobStatus.FAILED

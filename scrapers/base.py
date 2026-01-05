@@ -1,13 +1,14 @@
 from abc import ABC, abstractmethod
-from datetime import datetime
 import sys
 import os
-from models import db, Shop, ShopProgramRate
-from bonus_programs.registry import get_or_create_program
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from shop_dedup import get_or_create_shop_main
+
+from spo.extensions import db
+from spo.models import Shop, ShopProgramRate, utcnow
+from spo.services.bonus_programs import ensure_program
+from spo.services.dedup import get_or_create_shop_main
 
 
 class BaseScraper(ABC):
@@ -43,10 +44,10 @@ class BaseScraper(ABC):
                 shop.shop_main_id = shop_main.id
                 db.session.commit()
 
-        now = datetime.utcnow()
+        now = utcnow()
         
         for r in data.get('rates', []):
-            prog = get_or_create_program(r['program'], point_value_eur=r.get('point_value_eur', 0.0))
+            prog = ensure_program(r['program'], point_value_eur=r.get('point_value_eur', 0.0))
             
             # Get currently active rate (no valid_to set)
             existing = ShopProgramRate.query.filter_by(
