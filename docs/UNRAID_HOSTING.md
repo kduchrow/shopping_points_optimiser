@@ -212,30 +212,17 @@ Value: production
 
 **Container sollte jetzt "Started" Status haben!**
 
----
+**Das war's! 🎉** 
 
-### Schritt 9: Datenbank initialisieren
+Die App initialisiert automatisch beim ersten Start:
+- ✅ Datenbank-Tabellen werden erstellt
+- ✅ Bonus-Programme werden registriert (Miles & More, Payback, Shoop)
+- ✅ Admin-Account wird angelegt (mit ADMIN_PASSWORD aus .env)
 
+Prüfe die Logs um zu sehen dass alles geklappt hat:
 ```bash
-# Zurück zum SSH Terminal:
-docker exec shopping-points-optimiser python -c "
-from app import app, db
-with app.app_context():
-    db.create_all()
-    print('✅ Datenbank erstellt!')
-"
-
-# Admin-Account erstellen
-docker exec -it shopping-points-optimiser python -c "
-from app import app, db
-from models import User
-with app.app_context():
-    admin = User(username='admin', email='admin@localhost', role='Admin')
-    admin.set_password('your-secure-password')
-    db.session.add(admin)
-    db.session.commit()
-    print('✅ Admin-Account erstellt! Username: admin')
-"
+docker logs shopping-points-optimiser --tail 50
+# Sollte zeigen: "✅ Admin user created successfully"
 ```
 
 ---
@@ -249,7 +236,7 @@ http://unraid-server-ip:5000/admin
 
 **Login:**
 - Username: `admin`
-- Password: Das Passwort das du im Python-Script gesetzt hast
+- Password: Das Passwort aus deiner .env Datei (ADMIN_PASSWORD)
 
 🎉 **Fertig! Dein Shopping Points Optimiser läuft jetzt auf UNRAID!**
 
@@ -306,9 +293,12 @@ docker logs -f shopping-points-optimiser
 ```bash
 cd /mnt/user/appdata/shopping-points-optimiser
 
-# Container stoppen
+# Container stoppen und entfernen
 docker stop shopping-points-optimiser
 docker rm shopping-points-optimiser
+
+# WICHTIG: Altes Image entfernen, damit das neue verwendet wird!
+docker rmi shopping-points-optimiser:latest
 
 # Neueste Version holen
 git pull origin main
@@ -316,12 +306,24 @@ git pull origin main
 # Image neu bauen
 docker build -t shopping-points-optimiser:latest .
 
-# Container neu starten
+# Prüfen dass neues Image gebaut wurde
+docker images | grep shopping-points-optimiser
+# Image ID sollte neu sein!
+```
+
+**Dann in UNRAID WebGUI:**
+1. Gehe zum Docker Tab
+2. Finde deinen Container "shopping-points-optimiser"
+3. Click auf das Container Icon → **Edit**
+4. Click einfach auf **Apply** (ohne etwas zu ändern)
+5. UNRAID startet den Container neu mit dem neuesten Image
+
+**Alternative via SSH:**
+```bash
 docker run -d \
   --name shopping-points-optimiser \
   --restart unless-stopped \
   -p 5000:5000 \
-  --network shopping-network \
   -v /mnt/user/appdata/shopping-points-optimiser/instance:/app/instance \
   -v /mnt/user/appdata/shopping-points-optimiser/logs:/app/logs \
   --env-file .env \
@@ -339,23 +341,32 @@ echo "✅ Backup erstellt!"
 
 ### Container neu starten
 ```bash
-# Soft restart (Container neu starten)
+# Soft restart (nur Container neu starten, gleiches Image)
 docker restart shopping-points-optimiser
 
-# Hard restart (Container neu bauen)
+# Hard restart (mit neu gebautem Image)
 docker stop shopping-points-optimiser
 docker rm shopping-points-optimiser
+
+# Altes Image entfernen (wichtig!)
+docker rmi shopping-points-optimiser:latest
+
+# Image neu bauen
 docker build -t shopping-points-optimiser:latest .
+
+# In UNRAID WebGUI: Docker Tab → Edit Container → Apply
+# Oder via SSH:
 docker run -d \
   --name shopping-points-optimiser \
   --restart unless-stopped \
   -p 5000:5000 \
-  --network shopping-network \
   -v /mnt/user/appdata/shopping-points-optimiser/instance:/app/instance \
   -v /mnt/user/appdata/shopping-points-optimiser/logs:/app/logs \
   --env-file .env \
   shopping-points-optimiser:latest
 ```
+
+**💡 Tipp:** UNRAID WebGUI erkennt automatisch neue Images wenn du "Edit" → "Apply" drückst!
 
 ---
 
@@ -657,18 +668,16 @@ docker run -d \
 cd /mnt/user/appdata/shopping-points-optimiser
 docker stop shopping-points-optimiser
 docker rm shopping-points-optimiser
+
+# Altes Image entfernen (wichtig für neue Builds!)
+docker rmi shopping-points-optimiser:latest
+
 git pull origin main
 docker build --no-cache -t shopping-points-optimiser:latest .
-docker run -d \
-  --name shopping-points-optimiser \
-  --restart unless-stopped \
-  -p 5000:5000 \
-  --network shopping-network \
-  -v /mnt/user/appdata/shopping-points-optimiser/instance:/app/instance \
-  -v /mnt/user/appdata/shopping-points-optimiser/logs:/app/logs \
-  --env-file .env \
-  shopping-points-optimiser:latest
+
+# Dann in UNRAID WebGUI: Docker Tab → Edit Container → Apply
 ```
+Das stellt sicher, dass das neu gebaute Image verwendet wird!
 
 ---
 
@@ -678,9 +687,11 @@ docker run -d \
 - [ ] ADMIN_PASSWORD stark (12+ Zeichen, Großbuchstaben, Zahlen, Sonderzeichen)
 - [ ] DEBUG=False in .env
 - [ ] .env ist NICHT in Git / im .gitignore
-- [ ] Database erstellt (automatisch beim ersten Start)
-- [ ] Admin-Account erstellt und getestet (siehe Schritt 4)
+- [ ] Docker Image gebaut
+- [ ] Container gestartet (automatische DB-Initialisierung läuft beim Start)
+- [ ] Logs geprüft: `docker logs shopping-points-optimiser`
 - [ ] Admin-Panel öffnet auf http://unraid-ip:5000/admin
+- [ ] Login mit admin / ADMIN_PASSWORD funktioniert
 - [ ] Backups konfiguriert
 - [ ] Port 5000 im Firewall freigegeben (falls nötig)
 - [ ] Auto-restart aktiviert (UNRAID WebGUI)

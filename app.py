@@ -28,16 +28,27 @@ login_manager.login_view = 'login'
 # Initialize database tables on startup (safe for multiple workers)
 def init_db():
     """Initialize database tables if they don't exist"""
-    with app.app_context():
-        try:
-            # Create tables if they don't exist (SQLAlchemy handles this safely)
-            db.create_all()
-            app.logger.info("Database tables initialized")
+    try:
+        with app.app_context():
+            # Create tables if they don't exist
+            # Note: db.create_all() with SQLite can have race conditions with multiple workers
+            # We catch the exception if tables already exist
+            try:
+                db.create_all()
+                print("✅ Database tables initialized")
+            except Exception as e:
+                # Tables might already exist from another worker - this is OK
+                if "already exists" in str(e):
+                    print("ℹ️  Database tables already exist")
+                else:
+                    raise
             
             # Check if we have any bonus programs (indicator of first run)
-            if BonusProgram.query.count() == 0:
-                # Fresh database - register initial data
-                try:
+            try:
+                bonus_count = BonusProgram.query.count()
+                if bonus_count == 0:
+                    # Fresh database - register initial data
+                    print("📦 Seeding initial bonus programs...")
                     import bonus_programs.miles_and_more as mam
                     import bonus_programs.payback as pb
                     import bonus_programs.shoop as sh
@@ -46,9 +57,11 @@ def init_db():
                     pb.register()
                     sh.register()
                     exs.register()
-                    app.logger.info("✅ Initial bonus programs seeded successfully")
-                except Exception as e:
-                    app.logger.warning(f"Could not seed initial data: {e}")
+                    print("✅ Initial bonus programs seeded successfully")
+                else:
+                    print(f"ℹ️  Database already has {bonus_count} bonus programs")
+            except Exception as e:
+                print(f"⚠️  Could not seed initial data: {e}")
             
             # Create admin user if it doesn't exist
             admin_password = os.environ.get('ADMIN_PASSWORD')
@@ -56,6 +69,7 @@ def init_db():
                 try:
                     admin = User.query.filter_by(username='admin').first()
                     if not admin:
+                        print("👤 Creating admin user...")
                         admin = User(
                             username='admin',
                             email='admin@localhost',
@@ -64,18 +78,27 @@ def init_db():
                         admin.set_password(admin_password)
                         db.session.add(admin)
                         db.session.commit()
-                        app.logger.info("✅ Admin user created successfully (username: admin)")
+                        print("✅ Admin user created successfully (username: admin)")
                     else:
-                        app.logger.info("Admin user already exists")
+                        print("ℹ️  Admin user already exists")
                 except Exception as e:
                     # Might fail if another worker already created it
                     db.session.rollback()
-                    app.logger.debug(f"Admin user creation skipped: {e}")
+                    if "UNIQUE constraint failed" in str(e):
+                        print("ℹ️  Admin user already created by another worker")
+                    else:
+                        print(f"⚠️  Admin user creation skipped: {e}")
             else:
-                app.logger.warning("ADMIN_PASSWORD not set in environment - skipping admin user creation")
-                
-        except Exception as e:
-            app.logger.error(f"Error during database initialization: {e}")
+                print("⚠️  ADMIN_PASSWORD not set in environment - skipping admin user creation")
+    except Exception as e:
+        # Only fail critically if it's not a "table exists" error
+        if "already exists" not in str(e):
+            print(f"❌ CRITICAL: Database initialization failed: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
+        else:
+            print("ℹ️  Database initialization handled by another worker")
 
 # Initialize on import
 init_db()
