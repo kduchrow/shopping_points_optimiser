@@ -14,10 +14,15 @@ import os
 app = Flask(__name__)
 
 # Configuration from environment variables
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///instance/shopping_points.db')
+# Ensure absolute path for DATABASE_URL
+default_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'shopping_points.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', f'sqlite:///{default_db_path}')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['DEBUG'] = os.environ.get('DEBUG', 'False').lower() == 'true'
+
+# Debug: Print database path
+print(f"📂 Database URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
 
 db.init_app(app)
 
