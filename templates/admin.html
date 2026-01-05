@@ -308,23 +308,39 @@
       // Scraper forms
       document.getElementById('miles-and-more-form').addEventListener('submit', function(e) {
         e.preventDefault();
-        fetch('/admin/run_miles_and_more', { method: 'POST' })
+        fetch('/admin/run_miles_and_more', { 
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json'
+          }
+        })
           .then(r => r.json())
           .then(data => {
             if (data.job_id) {
               startJobMonitoring(data.job_id);
             }
+          })
+          .catch(err => {
+            alert('Error starting Miles & More scraper: ' + err);
           });
       });
       
       document.getElementById('payback-form').addEventListener('submit', function(e) {
         e.preventDefault();
-        fetch('/admin/run_payback', { method: 'POST' })
+        fetch('/admin/run_payback', { 
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json'
+          }
+        })
           .then(r => r.json())
           .then(data => {
             if (data.job_id) {
               startJobMonitoring(data.job_id);
             }
+          })
+          .catch(err => {
+            alert('Error starting Payback scraper: ' + err);
           });
       });
       

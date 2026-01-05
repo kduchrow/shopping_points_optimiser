@@ -464,8 +464,8 @@ def admin():
         flash('Sie haben keine Berechtigung für diese Seite.', 'error')
         return redirect(url_for('index'))
     
-    # Use new admin UI
-    return render_template('admin_v2.html')
+    # Use admin UI
+    return render_template('admin.html')
 
 
 @app.route('/admin/add_program', methods=['POST'])
