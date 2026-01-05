@@ -1,0 +1,579 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Ergebnisse - Shopping Points Optimiser</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+      .container { 
+        max-width: 700px; 
+        margin: 0 auto;
+        background-color: white; 
+        padding: 40px; 
+        border-radius: 12px; 
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      }
+      h1 { 
+        color: #333; 
+        text-align: center;
+        margin-bottom: 10px;
+        font-size: 28px;
+      }
+      .shop-info {
+        background-color: #f0f7ff;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+        margin-bottom: 20px;
+      }
+      .shop-info p {
+        margin: 8px 0;
+        color: #333;
+      }
+      .shop-info strong { color: #667eea; }
+      
+      h2 {
+        color: #333;
+        margin-top: 20px;
+        margin-bottom: 15px;
+        font-size: 20px;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 10px;
+      }
+      
+      .results-list {
+        list-style: none;
+        margin-bottom: 20px;
+      }
+      .results-list li {
+        background-color: #f9f9f9;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        border-left: 4px solid #28a745;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: transform 0.2s;
+      }
+      .results-list li:hover {
+        transform: translateX(5px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      .results-list li:nth-child(1) {
+        border-left-color: #ffd700;
+        background-color: #fffef0;
+      }
+      .results-list li:nth-child(2) {
+        border-left-color: #c0c0c0;
+      }
+      .results-list li:nth-child(3) {
+        border-left-color: #cd7f32;
+      }
+      
+      .program-name {
+        font-weight: 600;
+        color: #333;
+      }
+      .program-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: #667eea;
+      }
+      .program-details {
+        font-size: 13px;
+        color: #666;
+        margin-top: 5px;
+      }
+      
+      .info-box {
+        background-color: #e7f3ff;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #0066cc;
+        margin-bottom: 20px;
+        line-height: 1.6;
+        color: #333;
+      }
+      
+      .nav {
+        text-align: center;
+        margin-top: 30px;
+      }
+      .nav a {
+        display: inline-block;
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      .nav a:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+      }
+      
+      .sort-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        justify-content: center;
+      }
+      
+      .sort-btn {
+        padding: 10px 20px;
+        border: 2px solid #667eea;
+        background-color: white;
+        color: #667eea;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+      }
+      
+      .sort-btn.active {
+        background-color: #667eea;
+        color: white;
+      }
+      
+      .sort-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+      }
+      
+      .coupon-info {
+        background-color: #fff3cd;
+        padding: 10px;
+        border-radius: 5px;
+        margin-top: 8px;
+        font-size: 13px;
+        border-left: 3px solid #ffcc00;
+      }
+      .coupon-value {
+        color: #28a745;
+        font-weight: 700;
+        font-size: 16px;
+      }
+      .warning-box {
+        background-color: #fff3cd;
+        border-left: 4px solid #ff9800;
+        padding: 12px;
+        margin: 15px 0;
+        border-radius: 6px;
+      }
+      .warning-box strong {
+        color: #ff6600;
+      }
+      
+      .coupons-section {
+        background-color: #f0f8ff;
+        padding: 15px;
+        border-radius: 8px;
+        border: 2px solid #667eea;
+        margin: 15px 0;
+      }
+      
+      .coupons-section h3 {
+        color: #667eea;
+        margin-bottom: 10px;
+        font-size: 16px;
+      }
+      
+      .coupons-list {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding: 10px 0;
+        scroll-behavior: smooth;
+      }
+      
+      .coupons-list::-webkit-scrollbar {
+        height: 6px;
+      }
+      
+      .coupons-list::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+      }
+      
+      .coupons-list::-webkit-scrollbar-thumb {
+        background: #667eea;
+        border-radius: 3px;
+      }
+      
+      .coupon-card {
+        flex-shrink: 0;
+        width: 280px;
+        background-color: white;
+        border: 2px solid #ffc107;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      
+      .coupon-card h4 {
+        color: #333;
+        margin: 0 0 5px 0;
+        font-size: 14px;
+        font-weight: bold;
+      }
+      
+      .coupon-type {
+        display: inline-block;
+        background-color: #ffc107;
+        color: #333;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+        margin-bottom: 8px;
+      }
+      
+      .coupon-value {
+        font-size: 20px;
+        color: #28a745;
+        font-weight: bold;
+        margin: 5px 0;
+      }
+      
+      .coupon-shop {
+        font-size: 12px;
+        color: #666;
+        margin-top: 8px;
+        border-top: 1px solid #eee;
+        padding-top: 8px;
+      }
+      
+      .coupon-shop strong {
+        color: #667eea;
+      }
+      
+      .coupon-program {
+        font-size: 11px;
+        color: #999;
+        margin-top: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>📊 Ergebnisse</h1>
+      
+      <div class="shop-info">
+        <p>🏪 <strong>Shop:</strong> {{ shop.name }}</p>
+        {% if mode == 'shopping' %}
+          <p>💵 <strong>Einkaufsbetrag:</strong> €{{ amount }}</p>
+        {% elif mode == 'voucher' %}
+          <p>🎁 <strong>Gewünschter Gutschein:</strong> €{{ voucher }}</p>
+        {% endif %}
+      </div>
+
+      {% if mode == 'shopping' %}
+        {% if has_coupons %}
+          <div class="coupons-section">
+            <h3>🎉 Verfügbare Sonderaktionen für diesen Shop</h3>
+            <div class="coupons-list">
+              {% for coupon in active_coupons %}
+                <div class="coupon-card">
+                  <h4>{{ coupon.name }}</h4>
+                  <div class="coupon-type">
+                    {% if coupon.coupon_type == 'multiplier' %}
+                      🔢 {{ coupon.value }}x Multiplikator
+                    {% else %}
+                      💰 {{ coupon.value }}% Rabatt
+                    {% endif %}
+                  </div>
+                  <div class="coupon-value">
+                    {% if coupon.coupon_type == 'multiplier' %}
+                      ×{{ coupon.value }}
+                    {% else %}
+                      -{{ coupon.value }}%
+                    {% endif %}
+                  </div>
+                  <p style="font-size: 12px; color: #666; margin: 8px 0;">{{ coupon.description }}</p>
+                  <div class="coupon-shop">
+                    <strong>📍 {{ coupon.shop.name }}</strong>
+                  </div>
+                  {% if coupon.program %}
+                    <div class="coupon-program">
+                      Programm: {{ coupon.program.name }}
+                    </div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+            {% if active_coupons|length > 3 %}
+              <p style="font-size: 12px; color: #999; margin-top: 8px; text-align: center;">
+                ← Scroll für mehr Coupons →
+              </p>
+            {% endif %}
+          </div>
+          
+          <div class="warning-box">
+            <strong>⚠️ Hinweis:</strong> Für diesen Shop sind Sonderaktionen verfügbar. Die Berechnungen berücksichtigen diese automatisch.
+          </div>
+          
+          <div class="sort-buttons">
+            <button class="sort-btn active" onclick="sortResults('base')">📊 Nach Basiswert</button>
+            <button class="sort-btn" onclick="sortResults('coupon')">🎉 Mit Sonderaktionen</button>
+          </div>
+        {% endif %}
+        
+        <h2>🏆 Beste Programme (geschätzter Gegenwert in €)</h2>
+        <ul class="results-list" id="results-list">
+          {% for r in results %}
+            <li data-base-value="{{ r.euros }}" data-coupon-value="{% if r.coupon_info %}{{ r.coupon_info.euros }}{% else %}{{ r.euros }}{% endif %}">
+              <div style="flex: 1;">
+                <div class="program-name">{{ r.program }}</div>
+                <div class="program-details">Basiswert: {{ r.points }} Punkte → €{{ r.euros }}</div>
+                
+                {% if r.coupon_info %}
+                  <div class="coupon-info">
+                    <strong>🎉 Mit Sonderaktion:</strong> 
+                    <span class="coupon-value">€{{ r.coupon_info.euros }}</span> 
+                    ({{ r.coupon_info.points }} Punkte)
+                    {% if r.coupon_info.multipliers %}
+                      <br>{{ r.coupon_info.multipliers|join(', ') }}
+                    {% endif %}
+                    {% if r.coupon_info.discounts %}
+                      <br>{{ r.coupon_info.discounts|join(', ') }}
+                    {% endif %}
+                    {% if r.coupon_info.unknown_combinability %}
+                      <br><em style="color: #ff6600;">⚠ Kombinierbarkeit unbekannt - Beide Werte angezeigt</em>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="program-value" id="value-{{ r.program|replace(' ', '-') }}">
+                €{{ r.euros }}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% elif mode == 'voucher' %}
+        <h2>🎯 Benötigter Umsatz nach Programm</h2>
+        <ul class="results-list">
+          {% for r in results %}
+            <li>
+              <div>
+                <div class="program-name">{{ r.program }}</div>
+                <div class="program-details">{{ r.req_points }} Punkte benötigt</div>
+              </div>
+              <div class="program-value">€{{ r.spend }}</div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% elif mode == 'contract' %}
+        <h2>✍️ Vertragsabschluss Bonuspunkte</h2>
+        <div class="info-box">
+          Bei Abschluss eines Vertrages mit <strong>{{ shop.name }}</strong> erhältst du folgende Bonuspunkte pro Programm:
+        </div>
+        <ul class="results-list">
+          {% for r in results %}
+            <li>
+              <div class="program-name">{{ r.program }}</div>
+            </li>
+          {% endfor %}
+        </ul>
+        <div class="info-box" style="margin-top: 20px;">
+          ℹ️ Die genauen Werte und Vergütungen findest du in der <a href="/admin" style="color: #0066cc; text-decoration: underline;"><strong>Admin-Seite</strong></a> unter "Shops & Raten".
+        </div>
+      {% endif %}
+
+      <div class="nav">
+        <a href="/">← Zurück zur Startseite</a>
+      </div>
+    </div>
+    
+    <script>
+      function sortResults(sortBy) {
+        const resultsList = document.getElementById('results-list');
+        const items = Array.from(resultsList.querySelectorAll('li'));
+        
+        // Update button states
+        document.querySelectorAll('.sort-btn').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+        
+        // Sort items
+        items.sort((a, b) => {
+          let valueA, valueB;
+          if (sortBy === 'base') {
+            valueA = parseFloat(a.dataset.baseValue);
+            valueB = parseFloat(b.dataset.baseValue);
+          } else {
+            valueA = parseFloat(a.dataset.couponValue);
+            valueB = parseFloat(b.dataset.couponValue);
+          }
+          return valueB - valueA; // Descending order
+        });
+        
+        // Clear and re-add sorted items
+        resultsList.innerHTML = '';
+        items.forEach(item => {
+          resultsList.appendChild(item);
+        });
+      }
+
+      // Modal functionality for scraper proposals
+      function openProposalModal(proposalId, shopName, reason, sourceUrl) {
+        const modal = document.getElementById('proposalModal');
+        document.getElementById('modalShopName').textContent = shopName;
+        document.getElementById('modalReason').textContent = reason;
+        if (sourceUrl) {
+          document.getElementById('modalSourceLink').href = sourceUrl;
+          document.getElementById('modalSourceLink').style.display = 'inline';
+        } else {
+          document.getElementById('modalSourceLink').style.display = 'none';
+        }
+        document.getElementById('reviewBtn').onclick = () => {
+          window.location.href = `/review-scraper-proposal/${proposalId}`;
+        };
+        modal.style.display = 'block';
+      }
+
+      function closeProposalModal() {
+        document.getElementById('proposalModal').style.display = 'none';
+      }
+
+      window.onclick = (event) => {
+        const modal = document.getElementById('proposalModal');
+        if (event.target === modal) {
+          modal.style.display = 'none';
+        }
+      }
+    </script>
+
+    <!-- Modal for scraper proposals -->
+    <div id="proposalModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeProposalModal()">&times;</span>
+        <h2>🤖 Scraper-Vorschlag</h2>
+        <p>Für den Shop <strong id="modalShopName"></strong> wurde automatisch ein Vorschlag erstellt:</p>
+        <p id="modalReason"></p>
+        <p>
+          <a id="modalSourceLink" href="#" target="_blank">📄 Quelle anzeigen</a>
+        </p>
+        <div class="modal-buttons">
+          <button id="reviewBtn" class="modal-btn primary">✏️ Vorschlag reviewen</button>
+          <button onclick="closeProposalModal()" class="modal-btn secondary">✕ Schließen</button>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6);
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      .modal-content {
+        background-color: white;
+        margin: 10% auto;
+        padding: 30px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+        animation: slideIn 0.3s ease;
+      }
+
+      @keyframes slideIn {
+        from { transform: translateY(-50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+
+      .modal-content h2 {
+        color: #667eea;
+        margin-bottom: 15px;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 10px;
+      }
+
+      .modal-content p {
+        color: #333;
+        margin-bottom: 12px;
+        line-height: 1.6;
+      }
+
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        line-height: 1;
+      }
+
+      .close:hover {
+        color: #667eea;
+      }
+
+      .modal-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .modal-btn {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+      }
+
+      .modal-btn.primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .modal-btn.primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      }
+
+      .modal-btn.secondary {
+        background-color: #f0f0f0;
+        color: #333;
+      }
+
+      .modal-btn.secondary:hover {
+        background-color: #e0e0e0;
+      }
+
+      #modalSourceLink {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: bold;
+      }
+
+      #modalSourceLink:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </body>
+</html>

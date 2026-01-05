@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  shopping-points:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shopping-points-optimiser
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=sqlite:////app/instance/shopping_points.db
+      - DEBUG=False
+    volumes:
+      # Persistent database storage
+      - shopping-db:/app/instance
+      # Optional: persistent logs
+      - shopping-logs:/app/logs
+    networks:
+      - shopping-network
+    # Für UNRAID: AppData Mount (optional, für zusätzliche Daten)
+    # - /mnt/user/appdata/shopping-points:/app/appdata
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  shopping-db:
+    driver: local
+  shopping-logs:
+    driver: local
+
+networks:
+  shopping-network:
+    driver: bridge

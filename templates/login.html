@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Login - Shopping Points Optimiser</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+      .container { 
+        max-width: 400px; 
+        width: 100%;
+        background-color: white; 
+        padding: 40px; 
+        border-radius: 12px; 
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      }
+      h1 { 
+        color: #333; 
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 28px;
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      label { 
+        display: block;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+      }
+      input { 
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+      input:focus { 
+        border-color: #667eea;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+      button {
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-bottom: 15px;
+      }
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+      }
+      .links {
+        text-align: center;
+      }
+      .links a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .links a:hover {
+        text-decoration: underline;
+      }
+      .flash-messages {
+        margin-bottom: 20px;
+      }
+      .alert {
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+      }
+      .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .alert-error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔐 Login</h1>
+      
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-messages">
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      
+      <form method="post">
+        <div class="form-group">
+          <label for="username">Benutzername:</label>
+          <input type="text" id="username" name="username" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Passwort:</label>
+          <input type="password" id="password" name="password" required>
+        </div>
+        
+        <button type="submit">Anmelden</button>
+      </form>
+      
+      <div class="links">
+        <p>Noch kein Konto? <a href="/register">Hier registrieren</a></p>
+        <p><a href="/">← Zurück zur Startseite</a></p>
+      </div>
+    </div>
+  </body>
+</html>

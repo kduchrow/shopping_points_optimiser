@@ -1,0 +1,265 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Beiträge - Shopping Points Optimiser</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        background-color: #f5f5f5;
+        padding: 20px;
+      }
+      .container { 
+        max-width: 1000px; 
+        margin: 0 auto;
+        background-color: white; 
+        padding: 30px; 
+        border-radius: 12px; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      h1 { 
+        color: #333; 
+        margin-bottom: 20px;
+      }
+      .nav { 
+        margin-bottom: 20px;
+      }
+      .nav a {
+        padding: 8px 16px;
+        background-color: #666;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 13px;
+        margin-right: 10px;
+      }
+      .nav a:hover { background-color: #444; }
+      
+      .proposal-card {
+        background-color: #f9f9f9;
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+        margin-bottom: 15px;
+      }
+      
+      .proposal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+      
+      .proposal-type {
+        display: inline-block;
+        padding: 4px 10px;
+        background-color: #e7f3ff;
+        color: #0066cc;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      
+      .proposal-meta {
+        font-size: 13px;
+        color: #666;
+      }
+      
+      .proposal-content {
+        margin-bottom: 15px;
+      }
+      
+      .proposal-reason {
+        background-color: #fff;
+        padding: 12px;
+        border-radius: 6px;
+        margin-top: 10px;
+        font-size: 14px;
+        color: #333;
+      }
+      
+      .vote-section {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #ddd;
+      }
+      
+      .vote-count {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: 600;
+      }
+      
+      .upvotes { color: #28a745; }
+      .downvotes { color: #dc3545; }
+      
+      .vote-buttons button {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+        margin-right: 5px;
+      }
+      
+      .btn-upvote {
+        background-color: #28a745;
+        color: white;
+      }
+      
+      .btn-downvote {
+        background-color: #dc3545;
+        color: white;
+      }
+      
+      .btn-upvote:hover { background-color: #218838; }
+      .btn-downvote:hover { background-color: #c82333; }
+      
+      .btn-upvote.active { background-color: #155724; }
+      .btn-downvote.active { background-color: #721c24; }
+      
+      .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+      }
+      
+      .contributor-notice {
+        background-color: #fff3cd;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        border-left: 4px solid #ffc107;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="nav">
+        <a href="/">← Zurück zur Startseite</a>
+        <a href="/profile">👤 Profil</a>
+        <a href="/proposals/new" style="background-color: #28a745;">➕ Neuer Beitrag</a>
+      </div>
+      
+      <h1>📝 Community-Beiträge</h1>
+      
+      {% if current_user.role not in ['contributor', 'admin'] %}
+        <div class="contributor-notice">
+          ⚠️ Sie können aktuell nur ansehen. Um abzustimmen, werden Sie <a href="/profile">Contributor</a>.
+        </div>
+      {% endif %}
+      
+      {% if proposals_data %}
+        {% for item in proposals_data %}
+          <div class="proposal-card">
+            <div class="proposal-header">
+              <span class="proposal-type">{{ item.proposal.proposal_type.upper() }}</span>
+              <div class="proposal-meta">
+                Von: {{ item.submitter.username }} | 
+                {{ item.proposal.created_at.strftime('%d.%m.%Y %H:%M') }}
+              </div>
+            </div>
+            
+            <div class="proposal-content">
+              {% if item.proposal.proposal_type == 'rate_change' %}
+                <p><strong>Shop:</strong> {{ item.proposal.shop_id }}</p>
+                <p><strong>Programm:</strong> {{ item.proposal.program_id }}</p>
+                <p><strong>Neue Points/EUR:</strong> {{ item.proposal.proposed_points_per_eur }}</p>
+                <p><strong>Neuer Cashback %:</strong> {{ item.proposal.proposed_cashback_pct }}</p>
+              {% elif item.proposal.proposal_type == 'shop_add' %}
+                <p><strong>Neuer Shop:</strong> {{ item.proposal.proposed_name }}</p>
+              {% elif item.proposal.proposal_type == 'program_add' %}
+                <p><strong>Neues Programm:</strong> {{ item.proposal.proposed_name }}</p>
+                <p><strong>Punktwert (EUR):</strong> {{ item.proposal.proposed_point_value_eur }}</p>
+              {% elif item.proposal.proposal_type == 'coupon_add' %}
+                <p><strong>Art der Aktion:</strong> 
+                  {% if item.proposal.proposed_coupon_type == 'multiplier' %}
+                    🔢 Multiplikator {{ item.proposal.proposed_coupon_value }}x
+                  {% else %}
+                    💰 Rabatt {{ item.proposal.proposed_coupon_value }}%
+                  {% endif %}
+                </p>
+                <p><strong>Beschreibung:</strong> {{ item.proposal.proposed_coupon_description }}</p>
+                {% if item.proposal.shop_id %}
+                  <p><strong>Shop:</strong> {{ item.proposal.shop_id }}</p>
+                {% endif %}
+                {% if item.proposal.program_id %}
+                  <p><strong>Programm:</strong> {{ item.proposal.program_id }}</p>
+                {% endif %}
+                <p><strong>Kombinierbar:</strong>
+                  {% if item.proposal.proposed_coupon_combinable is true %}
+                    ✓ Ja
+                  {% elif item.proposal.proposed_coupon_combinable is false %}
+                    ✗ Nein
+                  {% else %}
+                    ❓ Unbekannt
+                  {% endif %}
+                </p>
+                {% if item.proposal.proposed_coupon_valid_to %}
+                  <p><strong>Gültig bis:</strong> {{ item.proposal.proposed_coupon_valid_to.strftime('%d.%m.%Y') }}</p>
+                {% endif %}
+              {% endif %}
+              
+              {% if item.proposal.reason %}
+                <div class="proposal-reason">
+                  <strong>Begründung:</strong> {{ item.proposal.reason }}
+                </div>
+              {% endif %}
+              
+              {% if item.proposal.source_url %}
+                <p style="margin-top: 10px;"><strong>Quelle:</strong> <a href="{{ item.proposal.source_url }}" target="_blank">{{ item.proposal.source_url }}</a></p>
+              {% endif %}
+            </div>
+            
+            <div class="vote-section">
+              <div class="vote-count upvotes">
+                ▲ {{ item.upvotes }}
+              </div>
+              <div class="vote-count downvotes">
+                ▼ {{ item.downvotes }}
+              </div>
+              
+              {% if item.proposal.status == 'pending' %}
+                {% if current_user.role in ['contributor', 'admin'] %}
+                  <div class="vote-buttons">
+                    <form method="post" action="/vote/{{ item.proposal.id }}" style="display: inline;">
+                      <input type="hidden" name="vote" value="1">
+                      <button type="submit" class="btn-upvote {% if item.user_vote == 1 %}active{% endif %}">
+                        {% if current_user.role == 'admin' %}👍 Admin+3{% else %}👍 Upvote{% endif %}
+                      </button>
+                    </form>
+                    <form method="post" action="/vote/{{ item.proposal.id }}" style="display: inline;">
+                      <input type="hidden" name="vote" value="-1">
+                      <button type="submit" class="btn-downvote {% if item.user_vote == -1 %}active{% endif %}">
+                        👎 Downvote
+                      </button>
+                    </form>
+                    {% if current_user.role == 'admin' %}
+                      <form method="post" action="/approve/{{ item.proposal.id }}" style="display: inline; margin-left: 10px;">
+                        <button type="submit" class="btn-upvote" style="background-color: #ffc107; color: #333; font-weight: bold;">
+                          ✓ Direkt genehmigen
+                        </button>
+                      </form>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              {% else %}
+                <div style="padding: 10px; background-color: #d4edda; border-radius: 6px; margin-left: 10px; color: #155724; font-weight: bold;">
+                  ✓ {{ item.proposal.status|upper }}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <p>📭 Keine ausstehenden Beiträge vorhanden.</p>
+        </div>
+      {% endif %}
+    </div>
+  </body>
+</html>

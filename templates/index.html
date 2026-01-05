@@ -1,0 +1,307 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Shopping Points Optimiser</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+      .container { 
+        max-width: 600px; 
+        width: 100%;
+        background-color: white; 
+        padding: 40px; 
+        border-radius: 12px; 
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      }
+      h1 { 
+        color: #333; 
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 32px;
+      }
+      .nav { 
+        text-align: right;
+        margin-bottom: 20px;
+      }
+      .nav a { 
+        padding: 8px 16px; 
+        background-color: #666; 
+        color: white; 
+        text-decoration: none; 
+        border-radius: 5px;
+        font-size: 13px;
+      }
+      .nav a:hover { background-color: #444; }
+      
+      .form-group {
+        margin-bottom: 20px;
+      }
+      label { 
+        display: block;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+      }
+      select { 
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        background-color: white;
+        cursor: pointer;
+      }
+      select:focus { 
+        border-color: #667eea;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+      
+      select:disabled {
+        background-color: #f0f0f0;
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+      
+      .radio-group {
+        background-color: #f9f9f9;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      .radio-option {
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
+        cursor: pointer;
+      }
+      .radio-option:last-child { margin-bottom: 0; }
+      .radio-option input[type="radio"] { 
+        margin-right: 10px;
+        cursor: pointer;
+        width: 18px;
+        height: 18px;
+      }
+      .radio-option label {
+        margin: 0;
+        font-weight: normal;
+        cursor: pointer;
+        flex: 1;
+        display: flex;
+        align-items: center;
+      }
+      
+      .radio-option.disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      
+      .radio-option.disabled input[type="radio"] {
+        cursor: not-allowed;
+      }
+      
+      .input-fields {
+        background-color: #f0f7ff;
+        padding: 16px;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+        margin-bottom: 20px;
+      }
+      .input-fields input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+      .input-fields input:focus {
+        border-color: #667eea;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+      
+      .contract-info {
+        background-color: #e7f3ff;
+        padding: 12px;
+        border-radius: 6px;
+        border-left: 4px solid #0066cc;
+        font-size: 14px;
+        color: #333;
+      }
+      
+      button {
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+      }
+      button:active {
+        transform: translateY(0);
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+      
+      .warning {
+        background-color: #fff3cd;
+        border: 1px solid #ffc107;
+        color: #856404;
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="nav">
+        {% if current_user.is_authenticated %}
+          <a href="/profile">👤 {{ current_user.username }}</a>
+          {% if current_user.role == 'admin' %}
+            <a href="/admin">⚙️ Admin</a>
+          {% endif %}
+          {% if current_user.role in ['user', 'contributor', 'admin'] %}
+            <a href="/proposals">📝 Beiträge</a>
+          {% endif %}
+          <a href="/logout">🚪 Logout</a>
+        {% else %}
+          <a href="/login">🔐 Login</a>
+          <a href="/register">📝 Registrieren</a>
+        {% endif %}
+      </div>
+      
+      <h1>💰 Shopping Points Optimiser</h1>
+      
+      <form method="post" action="/evaluate">
+        <div class="form-group">
+          <label>📊 Modus wählen:</label>
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" id="mode-shopping" name="mode" value="shopping" checked onchange="updateUI()"> 
+              <label for="mode-shopping">💳 Einkaufs-Szenario (nach Betrag)</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" id="mode-voucher" name="mode" value="voucher" onchange="updateUI()"> 
+              <label for="mode-voucher">🎁 Gutschein erzeugen (benötigter Umsatz)</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" id="mode-contract" name="mode" value="contract" onchange="updateUI()"> 
+              <label for="mode-contract">✍️ Vertragsabschluss (einmalige Punkte)</label>
+            </div>
+          </div>
+        </div>
+
+        <div id="shop-warning" class="warning" style="display: none;">
+          ⚠️ Dieser Shop unterstützt diesen Modus nicht. Bitte wählen Sie einen anderen Modus oder Shop.
+        </div>
+
+        <div class="form-group">
+          <label>🏪 Shop wählen:</label>
+          <select name="shop" id="shop-select" required onchange="updateUI()">
+            <option value="">-- Shop auswählen --</option>
+            {% for shop in shops_data %}
+              <option value="{{ shop.id }}" 
+                      data-supports-shopping="{{ shop.supports_shopping|lower }}"
+                      data-supports-voucher="{{ shop.supports_voucher|lower }}"
+                      data-supports-contract="{{ shop.supports_contract|lower }}">
+                {{ shop.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div id="shopping-fields" class="input-fields" style="display: block;">
+          <label>💵 Betrag (EUR):</label>
+          <input type="number" step="0.01" name="amount" id="amount" placeholder="z.B. 100.00" min="0">
+        </div>
+
+        <div id="voucher-fields" class="input-fields" style="display: none;">
+          <label>🎫 Gutschein-Betrag (EUR):</label>
+          <input type="number" step="0.01" name="voucher" id="voucher" placeholder="z.B. 50.00" min="0">
+        </div>
+
+        <div id="contract-fields" class="input-fields" style="display: none;">
+          <div class="contract-info">
+            ℹ️ Bei Abschluss eines Vertrages mit diesem Shop erhältst du einmalige Bonuspunkte pro Programm. Klicke "Berechnen" um die Gegenwerte zu sehen.
+          </div>
+        </div>
+
+        <button type="submit" id="submit-btn">🔍 Berechnen</button>
+      </form>
+    </div>
+
+    <script>
+      function updateUI() {
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const shopSelect = document.getElementById('shop-select');
+        const selectedShopId = shopSelect.value;
+        
+        // Update input fields visibility
+        document.getElementById('shopping-fields').style.display = mode === 'shopping' ? 'block' : 'none';
+        document.getElementById('voucher-fields').style.display = mode === 'voucher' ? 'block' : 'none';
+        document.getElementById('contract-fields').style.display = mode === 'contract' ? 'block' : 'none';
+        
+        // Update required fields based on mode
+        if (mode === 'shopping') {
+          document.getElementById('amount').required = true;
+          document.getElementById('voucher').required = false;
+        } else if (mode === 'voucher') {
+          document.getElementById('amount').required = false;
+          document.getElementById('voucher').required = true;
+        } else {
+          document.getElementById('amount').required = false;
+          document.getElementById('voucher').required = false;
+        }
+        
+        // Filter shops based on current mode
+        const options = shopSelect.querySelectorAll('option:not([value=""])');
+        let hasCompatibleShop = false;
+        
+        options.forEach(option => {
+          const supportsMode = option.getAttribute(`data-supports-${mode}`) === 'true';
+          option.style.display = supportsMode ? 'block' : 'none';
+          if (supportsMode) hasCompatibleShop = true;
+        });
+        
+        // Wenn aktuell ausgewählter Shop nicht kompatibel ist, zurücksetzen
+        if (selectedShopId) {
+          const selectedOption = shopSelect.querySelector(`option[value="${selectedShopId}"]`);
+          if (selectedOption && selectedOption.style.display === 'none') {
+            shopSelect.value = '';
+            document.getElementById('shop-warning').style.display = 'block';
+          } else {
+            document.getElementById('shop-warning').style.display = 'none';
+          }
+        }
+        
+        // Button state
+        document.getElementById('submit-btn').disabled = !selectedShopId || !hasCompatibleShop;
+      }
+      
+      // Initiale UI-Aktualisierung
+      updateUI();
+    </script>
+  </body>
+</html>
