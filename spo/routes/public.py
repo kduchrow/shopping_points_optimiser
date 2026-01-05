@@ -1,10 +1,8 @@
-from datetime import datetime
-
 from flask import flash, jsonify, redirect, render_template, request, url_for
 from flask_login import login_required, current_user
 
 from spo.extensions import db
-from spo.models import BonusProgram, Coupon, Shop, ShopMain, ShopMetadataProposal, ShopProgramRate
+from spo.models import BonusProgram, Coupon, Shop, ShopMain, ShopMetadataProposal, ShopProgramRate, utcnow
 from spo.utils import ensure_variant_for_shop
 
 
@@ -39,7 +37,7 @@ def register_public(app):
             siblings = Shop.query.filter_by(shop_main_id=shop.shop_main_id).all()
             shop_ids = [s.id for s in siblings]
 
-        now = datetime.utcnow()
+        now = utcnow()
         shop_coupons = Coupon.query.filter(
             db.or_(Coupon.shop_id.in_(shop_ids), Coupon.shop_id.is_(None)),
             Coupon.status == 'active',

@@ -14,6 +14,7 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - DATABASE_URL=sqlite:////app/instance/shopping_points.db
       - DEBUG=False
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     volumes:
       # Persistent database storage
       - shopping-db:/app/instance

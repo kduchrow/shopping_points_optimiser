@@ -1,22 +1,19 @@
 import pytest
-from flask import Flask
 
+from spo import create_app
 from spo.extensions import db
 
 
 @pytest.fixture(scope="function")
 def app():
-    app = Flask(__name__)
+    app = create_app()
     app.config.update(
         TESTING=True,
         SQLALCHEMY_DATABASE_URI="sqlite:///:memory:",
-        SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        SECRET_KEY="test-secret",
     )
-    db.init_app(app)
 
     with app.app_context():
-        from spo import models  # noqa: F401  Ensure models are registered
+        db.drop_all()
         db.create_all()
         yield app
         db.session.remove()
@@ -27,3 +24,8 @@ def app():
 def session(app):
     with app.app_context():
         yield db.session
+
+
+@pytest.fixture(scope="function")
+def client(app):
+    return app.test_client()

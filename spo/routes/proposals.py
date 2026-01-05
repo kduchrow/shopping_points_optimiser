@@ -107,11 +107,77 @@ def register_proposals(app):
         all_votes = ProposalVote.query.filter_by(proposal_id=proposal_id).all()
         upvote_weight = sum(v.vote_weight for v in all_votes if v.vote == 1)
         if upvote_weight >= 3 and proposal.status == 'pending':
+            # Apply proposal changes to database (same logic as approve_proposal)
+            if proposal.proposal_type == 'coupon_add':
+                from spo.models import Coupon, utcnow
+                from datetime import timedelta
+                
+                now = utcnow()
+                valid_to = proposal.proposed_coupon_valid_to or (now + timedelta(days=30))
+                
+                coupon = Coupon(
+                    name=f"{proposal.proposed_coupon_value}{'x' if proposal.proposed_coupon_type == 'multiplier' else '%'} Coupon",
+                    description=proposal.proposed_coupon_description,
+                    coupon_type=proposal.proposed_coupon_type,
+                    value=proposal.proposed_coupon_value,
+                    shop_id=proposal.shop_id,
+                    program_id=proposal.program_id,
+                    valid_from=now,
+                    valid_to=valid_to,
+                    status='active',
+                    combinable=proposal.proposed_coupon_combinable if proposal.proposed_coupon_combinable is not None else False,
+                )
+                db.session.add(coupon)
+            
+            elif proposal.proposal_type == 'rate_change':
+                from spo.models import ShopProgramRate, utcnow
+                
+                # Archive old rate
+                old_rate = ShopProgramRate.query.filter_by(
+                    shop_id=proposal.shop_id,
+                    program_id=proposal.program_id,
+                    valid_to=None
+                ).first()
+                if old_rate:
+                    old_rate.valid_to = utcnow()
+                
+                # Create new rate
+                new_rate = ShopProgramRate(
+                    shop_id=proposal.shop_id,
+                    program_id=proposal.program_id,
+                    points_per_eur=proposal.proposed_points_per_eur,
+                    cashback_pct=proposal.proposed_cashback_pct,
+                    valid_from=utcnow(),
+                    valid_to=None,
+                )
+                db.session.add(new_rate)
+            
+            elif proposal.proposal_type == 'shop_add':
+                from spo.models import Shop
+                from spo.services.dedup import get_or_create_shop_main
+                
+                shop_main, _, _ = get_or_create_shop_main(
+                    shop_name=proposal.proposed_name,
+                    source='user_proposal',
+                    source_id=str(proposal.id)
+                )
+                shop = Shop(name=proposal.proposed_name, shop_main_id=shop_main.id)
+                db.session.add(shop)
+            
+            elif proposal.proposal_type == 'program_add':
+                from spo.models import BonusProgram
+                
+                program = BonusProgram(
+                    name=proposal.proposed_name,
+                    point_value_eur=proposal.proposed_point_value_eur
+                )
+                db.session.add(program)
+            
             proposal.status = 'approved'
             proposal.approved_at = datetime.now(UTC)
             proposal.approved_by_system = True
             db.session.commit()
-            flash('✓ Proposal wurde mit 3+ gewichteten Upvotes automatisch genehmigt!', 'success')
+            flash('✓ Proposal wurde mit 3+ gewichteten Upvotes automatisch genehmigt und angewendet!', 'success')
 
         return redirect(url_for('proposals'))
 
@@ -127,12 +193,78 @@ def register_proposals(app):
             flash('Dieser Proposal ist nicht mehr ausstehend.', 'error')
             return redirect(url_for('proposals'))
 
+        # Apply proposal changes to database
+        if proposal.proposal_type == 'coupon_add':
+            from spo.models import Coupon, utcnow
+            from datetime import timedelta
+            
+            now = utcnow()
+            valid_to = proposal.proposed_coupon_valid_to or (now + timedelta(days=30))
+            
+            coupon = Coupon(
+                name=f"{proposal.proposed_coupon_value}{'x' if proposal.proposed_coupon_type == 'multiplier' else '%'} Coupon",
+                description=proposal.proposed_coupon_description,
+                coupon_type=proposal.proposed_coupon_type,
+                value=proposal.proposed_coupon_value,
+                shop_id=proposal.shop_id,
+                program_id=proposal.program_id,
+                valid_from=now,
+                valid_to=valid_to,
+                status='active',
+                combinable=proposal.proposed_coupon_combinable if proposal.proposed_coupon_combinable is not None else False,
+            )
+            db.session.add(coupon)
+        
+        elif proposal.proposal_type == 'rate_change':
+            from spo.models import ShopProgramRate, utcnow
+            
+            # Archive old rate
+            old_rate = ShopProgramRate.query.filter_by(
+                shop_id=proposal.shop_id,
+                program_id=proposal.program_id,
+                valid_to=None
+            ).first()
+            if old_rate:
+                old_rate.valid_to = utcnow()
+            
+            # Create new rate
+            new_rate = ShopProgramRate(
+                shop_id=proposal.shop_id,
+                program_id=proposal.program_id,
+                points_per_eur=proposal.proposed_points_per_eur,
+                cashback_pct=proposal.proposed_cashback_pct,
+                valid_from=utcnow(),
+                valid_to=None,
+            )
+            db.session.add(new_rate)
+        
+        elif proposal.proposal_type == 'shop_add':
+            from spo.models import Shop
+            from spo.services.dedup import get_or_create_shop_main
+            
+            shop_main, _, _ = get_or_create_shop_main(
+                shop_name=proposal.proposed_name,
+                source='user_proposal',
+                source_id=str(proposal.id)
+            )
+            shop = Shop(name=proposal.proposed_name, shop_main_id=shop_main.id)
+            db.session.add(shop)
+        
+        elif proposal.proposal_type == 'program_add':
+            from spo.models import BonusProgram
+            
+            program = BonusProgram(
+                name=proposal.proposed_name,
+                point_value_eur=proposal.proposed_point_value_eur
+            )
+            db.session.add(program)
+
         proposal.status = 'approved'
         proposal.approved_at = datetime.now(UTC)
         proposal.approved_by_system = False
         db.session.commit()
 
-        flash(f'✓ Proposal {proposal_id} wurde genehmigt!', 'success')
+        flash(f'✓ Proposal {proposal_id} wurde genehmigt und angewendet!', 'success')
         return redirect(url_for('proposals'))
 
     @app.route('/proposals/new', methods=['GET', 'POST'])

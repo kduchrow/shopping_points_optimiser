@@ -2,6 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shopping Points Optimiser</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -21,6 +22,42 @@
         padding: 40px; 
         border-radius: 12px; 
         box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      }
+      /* Tablet landscape and smaller desktops */
+      @media (max-width: 1024px) {
+        .container { max-width: 90%; padding: 30px; }
+      }
+      
+      /* Tablets and large phones landscape */
+      @media (max-width: 768px) {
+        .container { padding: 20px; border-radius: 8px; }
+        h1 { font-size: 24px; margin-bottom: 20px; }
+        body { padding: 10px; }
+        .nav { margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+        .nav a { padding: 8px 14px; font-size: 13px; }
+        button { padding: 14px; font-size: 16px; }
+        .input-fields input { font-size: 16px; padding: 14px; }
+        .radio-option label { font-size: 14px; }
+      }
+      
+      /* Mobile phones portrait */
+      @media (max-width: 480px) {
+        body { padding: 5px; }
+        .container { padding: 15px; }
+        h1 { font-size: 20px; margin-bottom: 15px; }
+        .nav a { padding: 6px 10px; font-size: 12px; }
+        label { font-size: 14px; }
+        select, .input-fields input { font-size: 16px; padding: 12px; }
+        button { padding: 14px; font-size: 16px; }
+        .radio-option { flex-direction: column; align-items: flex-start; }
+        .radio-option input[type="radio"] { margin-bottom: 5px; }
+      }
+      
+      /* Small mobile phones */
+      @media (max-width: 360px) {
+        .container { padding: 12px; }
+        h1 { font-size: 18px; }
+        .nav a { padding: 5px 8px; font-size: 11px; }
       }
       h1 { 
         color: #333; 
@@ -116,12 +153,23 @@
         border-left: 4px solid #667eea;
         margin-bottom: 20px;
       }
+      .input-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .input-group .currency-symbol {
+        font-weight: 600;
+        color: #667eea;
+        font-size: 16px;
+        min-width: 20px;
+      }
       .input-fields input {
         width: 100%;
-        padding: 10px;
+        padding: 12px;
         border: 1px solid #ddd;
         border-radius: 6px;
-        font-size: 14px;
+        font-size: 16px;
       }
       .input-fields input:focus {
         border-color: #667eea;
@@ -233,13 +281,19 @@
         </div>
 
         <div id="shopping-fields" class="input-fields" style="display: block;">
-          <label>💵 Betrag (EUR):</label>
-          <input type="number" step="0.01" name="amount" id="amount" placeholder="z.B. 100.00" min="0">
+          <label>💵 Betrag:</label>
+          <div class="input-group">
+            <input type="number" step="0.01" name="amount" id="amount" placeholder="100.00" min="0" inputmode="decimal">
+            <span class="currency-symbol">€</span>
+          </div>
         </div>
 
         <div id="voucher-fields" class="input-fields" style="display: none;">
-          <label>🎫 Gutschein-Betrag (EUR):</label>
-          <input type="number" step="0.01" name="voucher" id="voucher" placeholder="z.B. 50.00" min="0">
+          <label>🎫 Gutschein-Betrag:</label>
+          <div class="input-group">
+            <input type="number" step="0.01" name="voucher" id="voucher" placeholder="50.00" min="0" inputmode="decimal">
+            <span class="currency-symbol">€</span>
+          </div>
         </div>
 
         <div id="contract-fields" class="input-fields" style="display: none;">
