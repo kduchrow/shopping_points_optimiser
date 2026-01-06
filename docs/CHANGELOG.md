@@ -4,6 +4,47 @@ All notable changes to Shopping Points Optimiser will be documented in this file
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.2.0] - 2026-01-06
+
+### 🔄 Major Update: SQLAlchemy 2.0 Migration
+
+#### Changed
+
+**Core Infrastructure**
+- ⬆️ Migrated all models to SQLAlchemy 2.0 syntax
+  - Replaced `db.Column()` with `mapped_column()`
+  - Added `Mapped[T]` type hints for all columns
+  - Modern union types: `X | None` instead of `Optional[X]`
+  - Full type safety with Pyright (354 errors → 0)
+- 📦 Centralized version management
+  - Single source of truth: `spo/version.py`
+  - Automatic version sync in `setup.py` and templates
+  - Version consistency check script added
+- 🗄️ Migration naming aligned with app version (v0_2_0)
+- 🐳 Docker image metadata with OCI labels
+  - Version, build date, and git commit in image labels
+  - Automatic tagging with semantic version
+  - Build scripts for PowerShell and Bash
+
+**Developer Experience**
+- ✅ Enhanced IDE autocomplete and refactoring support
+- ✅ Better type checking and error detection
+- ✅ Pre-commit hooks passing (15/15)
+- ✅ All tests passing (43/43)
+
+#### Added
+- 📝 Version bump checklist in development workflow
+- 🔍 `scripts/check_version.py` for version consistency validation
+- 📚 Documentation updates for version management
+
+#### Technical Details
+- No database schema changes (backward compatible)
+- No breaking API changes
+- All existing functionality preserved
+- PostgreSQL 16 support confirmed
+
+---
+
 ## [1.0.0] - 2026-01-05
 
 ### 🎉 Initial Release
