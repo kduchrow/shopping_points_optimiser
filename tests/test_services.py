@@ -118,7 +118,7 @@ def test_find_duplicate_shops(app, session):
         db.session.commit()
 
         duplicates = find_duplicate_shops(threshold=98.0)
-        
+
         assert len(duplicates) == 1
         assert duplicates[0][2] >= 98.0  # similarity score
         # Check that the duplicate pair contains Amazon shops
@@ -130,7 +130,7 @@ def test_run_deduplication(app, session):
     """Test automatic deduplication of shops."""
     with app.app_context():
         user = _create_user(session, "admin_user")
-        
+
         # Create duplicate shops manually
         shop1 = ShopMain(
             id="shop-1",
@@ -175,10 +175,10 @@ def test_run_deduplication(app, session):
         # Verify one shop is now merged
         active_shops = ShopMain.query.filter_by(status="active").all()
         merged_shops = ShopMain.query.filter_by(status="merged").all()
-        
+
         assert len(active_shops) == 1
         assert len(merged_shops) == 1
-        
+
         # Verify all variants point to the active shop
         all_variants = ShopVariant.query.all()
         assert len(all_variants) == 2

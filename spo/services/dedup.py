@@ -121,45 +121,45 @@ def merge_shops(main_from_id: str, main_to_id: str, user_id: int):
 
 def find_duplicate_shops(threshold: float = 98.0) -> list[tuple]:
     """Find duplicate shops based on similarity score.
-    
+
     Returns a list of tuples (shop1, shop2, similarity_score) where shops are duplicates.
     """
     active_shops = ShopMain.query.filter_by(status="active").all()
     duplicates = []
-    
+
     for i, shop1 in enumerate(active_shops):
-        for shop2 in active_shops[i + 1:]:
+        for shop2 in active_shops[i + 1 :]:
             score = fuzzy_match_score(shop1.canonical_name, shop2.canonical_name)
             if score >= threshold:
                 duplicates.append((shop1, shop2, score))
-    
+
     return duplicates
 
 
 def run_deduplication(job=None, auto_merge_threshold: float = 98.0, system_user_id: int = None):
     """Find and merge duplicate shops automatically.
-    
+
     Args:
         job: Optional Job object to report progress
         auto_merge_threshold: Similarity threshold for automatic merging (default 98.0)
         system_user_id: User ID to attribute merges to (default None for system)
-    
+
     Returns:
         dict with summary of merges performed
     """
     if job:
         job.add_message("Starting deduplication scan...")
         job.set_progress(0, 100)
-    
+
     duplicates = find_duplicate_shops(threshold=auto_merge_threshold)
-    
+
     if job:
         job.add_message(f"Found {len(duplicates)} duplicate pairs to merge")
         job.set_progress(20, 100)
-    
+
     merged_count = 0
     errors = []
-    
+
     for idx, (shop1, shop2, score) in enumerate(duplicates):
         try:
             # Merge into the shop that was created first (older shop)
@@ -169,36 +169,30 @@ def run_deduplication(job=None, auto_merge_threshold: float = 98.0, system_user_
             else:
                 target_shop = shop2
                 source_shop = shop1
-            
+
             # Skip if already merged
             if source_shop.status != "active":
                 continue
-            
+
             merge_shops(
-                main_from_id=source_shop.id,
-                main_to_id=target_shop.id,
-                user_id=system_user_id
+                main_from_id=source_shop.id, main_to_id=target_shop.id, user_id=system_user_id
             )
-            
+
             merged_count += 1
             if job:
                 msg = f"Merged '{source_shop.canonical_name}' into '{target_shop.canonical_name}' (score: {score})"
                 job.add_message(msg)
                 progress = 20 + int((idx + 1) / len(duplicates) * 70)
                 job.set_progress(progress, 100)
-        
+
         except Exception as e:
             error_msg = f"Error merging {shop1.canonical_name} and {shop2.canonical_name}: {str(e)}"
             errors.append(error_msg)
             if job:
                 job.add_message(f"ERROR: {error_msg}")
-    
+
     if job:
         job.add_message(f"Deduplication complete. Merged {merged_count} duplicate shops.")
         job.set_progress(100, 100)
-    
-    return {
-        "merged_count": merged_count,
-        "duplicates_found": len(duplicates),
-        "errors": errors
-    }
+
+    return {"merged_count": merged_count, "duplicates_found": len(duplicates), "errors": errors}

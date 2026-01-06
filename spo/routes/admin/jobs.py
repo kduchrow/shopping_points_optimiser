@@ -55,16 +55,13 @@ def register_admin_jobs(app):
         if current_user.role != "admin":
             flash("Sie haben keine Berechtigung für diese Aktion.", "error")
             return jsonify({"error": "Unauthorized"}), 403
-        
+
         # Get system user ID for attribution (use current admin user)
-        job_id = job_queue.enqueue(
-            run_deduplication,
-            kwargs={"system_user_id": current_user.id}
-        )
-        
+        job_id = job_queue.enqueue(run_deduplication, kwargs={"system_user_id": current_user.id})
+
         if request.headers.get("Accept") == "application/json":
             return jsonify({"job_id": job_id, "status": "queued"})
-        
+
         flash(f"Shop-Deduplizierung gestartet. Job ID: {job_id[:8]}...", "success")
         shops = Shop.query.all()
         programs = BonusProgram.query.all()
