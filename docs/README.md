@@ -9,9 +9,16 @@ Welcome to the complete documentation for Shopping Points Optimiser!
 
 ## 🔧 Setup & Configuration
 
+- **[QUICKSTART.md](QUICKSTART.md)** - Quick start guide for new users
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Production deployment guide
 - **[MIGRATION_SQLITE_TO_POSTGRES.md](MIGRATION_SQLITE_TO_POSTGRES.md)** - Migrate from SQLite to PostgreSQL
 - **[PRE_COMMIT_SETUP.md](PRE_COMMIT_SETUP.md)** - Set up code quality automation
 - **[GITHUB_SETUP.md](GITHUB_SETUP.md)** - GitHub repository configuration
+
+## 👨‍💻 Development Workflow
+
+- **[FEATURE_DEVELOPMENT_WORKFLOW.md](FEATURE_DEVELOPMENT_WORKFLOW.md)** - ⭐ Mandatory workflow for implementing new features
+- **[IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md)** - Feature implementation status
 
 ## 👨‍💼 Administration
 
