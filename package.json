@@ -1,0 +1,13 @@
+{
+  "name": "shopping-points-optimiser",
+  "version": "1.0.0",
+  "description": "Shopping Points Optimiser - Frontend Dependencies",
+  "private": true,
+  "dependencies": {
+    "choices.js": "^10.2.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "postinstall": "echo 'Frontend dependencies installed'"
+  }
+}
