@@ -7,8 +7,19 @@ This document outlines how to migrate your Shopping Points Optimiser deployment 
 - Docker and Docker Compose installed and running
 - Existing SQLite database at `instance/shopping_points.db`
 - PostgreSQL image (postgres:16-alpine) available
+- **IMPORTANT:** Ensure `psycopg2-binary` is in `requirements.txt` (already included in the project)
 
 ## Migration Steps
+
+### 0. Rebuild Docker Image (REQUIRED)
+
+**⚠️ CRITICAL:** You must rebuild the Docker image to install the PostgreSQL driver (`psycopg2-binary`):
+
+```bash
+docker-compose build shopping-points
+```
+
+This ensures `psycopg2-binary` from `requirements.txt` is installed in the container. **Skipping this step will cause a `ModuleNotFoundError: No module named 'psycopg2'` error.**
 
 ### 1. Update Environment Configuration
 
@@ -53,6 +64,8 @@ INFO  [alembic.runtime.migration] Running upgrade  -> 20240106_0001, Initial sch
 
 ### 4. Migrate Data from SQLite to PostgreSQL
 
+**⚠️ IMPORTANT:** This step will fail if you already have data in PostgreSQL. If re-running, see [Troubleshooting: duplicate key error](#duplicate-key-value-violates-unique-constraint-users_pkey-error) below.
+
 Run the migration script inside the app container:
 
 ```bash
@@ -75,10 +88,12 @@ Expected output shows tables being copied:
 
 ### 5. Restart the Application
 
-Rebuild and restart the app container with the updated database URL:
+**⚠️ If you skipped Step 0, the app will crash with `ModuleNotFoundError: No module named 'psycopg2'`.**
+
+Rebuild (if not done in Step 0) and restart the app container with the updated database URL:
 
 ```bash
-docker-compose build --no-cache shopping-points
+docker-compose build shopping-points
 docker-compose up -d --force-recreate shopping-points
 ```
 
@@ -123,6 +138,24 @@ Open your browser and navigate to `http://localhost:5000` (or your configured UR
 
 ## Troubleshooting
 
+### "ModuleNotFoundError: No module named 'psycopg2'" Error
+
+**Cause:** The Docker image was not rebuilt after adding `psycopg2-binary` to `requirements.txt`, or the requirements weren't installed.
+
+**Fix:**
+```bash
+# Rebuild the Docker image to install psycopg2-binary
+docker-compose build shopping-points
+
+# Restart the container
+docker-compose up -d --force-recreate shopping-points
+```
+
+Verify the module is installed:
+```bash
+docker-compose exec shopping-points python -c "import psycopg2; print(psycopg2.__version__)"
+```
+
 ### "No tables found on target" Error
 
 **Cause:** Alembic migrations haven't been applied to the PostgreSQL database.
@@ -139,6 +172,43 @@ Then retry the migration script.
 **Cause:** The alembic_version table already has an entry.
 
 **Fix:** This is handled automatically by the migration script (it skips `alembic_version`). If you encounter this error, ensure you're using the latest version of `scripts/migrate_sqlite_to_postgres.py`.
+
+### "duplicate key value violates unique constraint 'users_pkey'" Error
+
+**Cause:** You're trying to migrate data into a PostgreSQL database that already contains data. This happens when re-running the migration script.
+
+**Fix Option 1 - Clear PostgreSQL tables (DESTRUCTIVE):**
+```bash
+# First, get list of all tables
+docker-compose exec db psql -U spo -d spo -c "\dt"
+
+# Truncate only existing tables (adjust list based on your schema)
+docker-compose exec db psql -U spo -d spo -c "
+TRUNCATE TABLE users, bonus_programs, shops, shop_program_rates CASCADE;
+"
+```
+
+If you have additional tables (coupons, proposals, etc.), add them to the TRUNCATE command.
+
+Then retry the migration script from Step 4.
+
+**Fix Option 2 - Drop and recreate the database (DESTRUCTIVE, RECOMMENDED):**
+```bash
+# Stop the app
+docker-compose stop shopping-points
+
+# Drop and recreate the database
+docker-compose exec db psql -U spo -d postgres -c "DROP DATABASE IF EXISTS spo;"
+docker-compose exec db psql -U spo -d postgres -c "CREATE DATABASE spo;"
+
+# Start the app (or just start it to run migrations)
+docker-compose start shopping-points
+
+# Re-run migrations
+docker-compose exec shopping-points python -m alembic upgrade head
+
+# Retry the migration from Step 4
+```
 
 ### Connection Refused / Cannot Connect to Database
 
