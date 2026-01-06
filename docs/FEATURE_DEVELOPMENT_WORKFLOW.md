@@ -187,9 +187,22 @@ python -m alembic upgrade head
 
 **Execute tests to verify implementation:**
 
+**Important: For local development, ensure `.env` has `FLASK_ENV=development`**
+This automatically installs dev dependencies (pytest, coverage, etc.) in the Docker container.
+
 ```bash
+# Set development mode in .env
+FLASK_ENV=development
+
+# Rebuild container to install dev dependencies
+docker-compose build shopping-points
+docker-compose up -d
+
 # Run all tests
 pytest
+
+# In Docker container
+docker-compose exec shopping-points python -m pytest
 
 # Run with coverage
 pytest --cov=spo --cov-report=html
@@ -567,7 +580,120 @@ Closes #[issue number]
 
 ---
 
-## 🚫 What NOT to Do
+## � Version Bump Checklist
+
+When releasing a new version, update these files **in this order**:
+
+### 1. Update Version Number
+
+**Single Source of Truth:**
+- `spo/version.py` - Update `__version__` variable
+
+**Automatically Synced (read from version.py):**
+- `setup.py` - Reads from version.py
+- `spo/__init__.py` - Imports from version.py
+- Web UI footer - Uses Flask config `APP_VERSION`
+
+**Manually Update:**
+- `package.json` - Update `"version"` field
+- `migrations/versions/vX_Y_Z_*.py` - Migration filename and revision ID
+  - Filename: `vX_Y_Z_description.py`
+  - Revision ID: `vX_Y_Z`
+  - Add `App Version: X.Y.Z` in docstring
+- `.env` / `docker-compose.yml` - Set `APP_VERSION=X.Y.Z` for Docker builds
+
+### 2. Update Documentation
+
+- `docs/CHANGELOG.md` - Add new version entry with changes
+- `README.md` - Update version badges if present
+- `docs/GITHUB_SETUP.md` - Update release examples if needed
+
+### 3. Versioning Strategy
+
+Follow [Semantic Versioning](https://semver.org/):
+
+- **MAJOR (X.0.0)**: Breaking changes, incompatible API changes
+- **MINOR (0.X.0)**: New features, backward-compatible
+- **PATCH (0.0.X)**: Bug fixes, backward-compatible
+
+**Examples:**
+- SQLAlchemy 1.x → 2.0 migration: `0.1.0` → `0.2.0` (MINOR)
+- Bug fix in scraper: `0.2.0` → `0.2.1` (PATCH)
+- Complete API rewrite: `0.9.0` → `1.0.0` (MAJOR)
+
+**Docker Image Tagging:**
+Images are automatically tagged with:
+- `shopping-points-optimiser:X.Y.Z` (specific version)
+- `shopping-points-optimiser:latest` (latest build)
+
+Labels include version, build date, and git commit SHA.
+
+### 4. Build Docker Image (Optional)
+
+Use the build scripts for version-tagged images:
+
+**PowerShell (Windows):**
+```powershell
+.\scripts\docker-build.ps1
+```
+
+**Bash (Linux/Mac):**
+```bash
+./scripts/docker-build.sh
+```
+
+These scripts automatically:
+- Extract version from `spo/version.py`
+- Tag image with version number
+- Add OCI-compliant metadata labels
+- Show image metadata
+
+Or use docker-compose with version:
+```bash
+# Set version in .env
+echo "APP_VERSION=0.2.0" >> .env
+
+# Build with version
+docker-compose build
+```
+
+Inspect image metadata:
+```bash
+docker inspect shopping-points-optimiser:0.2.0 --format='{{json .Config.Labels}}'
+```
+
+### 5. Verification
+
+Run the version consistency check:
+
+```bash
+# Check version consistency across all files
+python scripts/check_version.py
+```
+
+Expected output:
+```
+✅ App Version (spo/version.py): 0.2.0
+✅ package.json version: 0.2.0 (matches)
+✅ Latest migration revision: v0_2_0 (matches)
+
+🎉 All version checks passed! App is at version 0.2.0
+```
+
+Manual checks:
+```bash
+# Check version in Python
+python -c "from spo.version import __version__; print(__version__)"
+
+# Check version in container
+docker-compose exec shopping-points python -c "from spo.version import __version__; print(__version__)"
+
+# Verify Web UI displays correct version in footer
+```
+
+---
+
+## �🚫 What NOT to Do
 
 - ❌ Skip writing tests
 - ❌ Commit without running pre-commit

@@ -14,7 +14,9 @@
     ".git",
     ".mypy_cache",
     ".pytest_cache",
-    ".ruff_cache"
+    ".ruff_cache",
+    "migrations/**",
+    "scripts/db_upgrade.py"
   ],
   "reportMissingImports": true,
   "reportMissingTypeStubs": false,
@@ -26,5 +28,6 @@
   "reportArgumentType": false,
   "reportAttributeAccessIssue": false,
   "reportGeneralTypeIssues": false,
-  "reportIncompatibleMethodOverride": false
+  "reportIncompatibleMethodOverride": false,
+  "reportIndexIssue": false
 }

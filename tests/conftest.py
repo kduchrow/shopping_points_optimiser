@@ -3,7 +3,7 @@ import os
 import pytest
 
 from spo import create_app
-from spo.extensions import db
+from spo.extensions import db as _db
 
 
 @pytest.fixture(scope="function")
@@ -19,11 +19,11 @@ def app():
         )
 
         with app.app_context():
-            db.drop_all()
-            db.create_all()
+            _db.drop_all()
+            _db.create_all()
             yield app
-            db.session.remove()
-            db.drop_all()
+            _db.session.remove()
+            _db.drop_all()
     finally:
         # Restore original DATABASE_URL
         if original_db_url is not None:
@@ -35,9 +35,16 @@ def app():
 @pytest.fixture(scope="function")
 def session(app):
     with app.app_context():
-        yield db.session
+        yield _db.session
 
 
 @pytest.fixture(scope="function")
 def client(app):
     return app.test_client()
+
+
+@pytest.fixture(scope="function")
+def db(app):
+    """Provide the database instance for tests."""
+    with app.app_context():
+        yield _db
