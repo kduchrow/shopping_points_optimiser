@@ -1,4 +1,5 @@
 """Setup configuration for Shopping Points Optimiser."""
+
 from setuptools import find_packages, setup
 
 setup(
