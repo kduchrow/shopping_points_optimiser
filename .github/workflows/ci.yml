@@ -228,3 +228,52 @@ jobs:
 
       - name: Dependency check with safety
         run: safety check --json || true
+
+  smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start services with docker-compose
+        run: |
+          docker-compose up -d
+          echo "Waiting for services to be healthy..."
+          sleep 20
+
+      - name: Check container health
+        run: |
+          docker-compose ps
+          docker-compose logs shopping-points --tail=50
+
+      - name: Verify database tables exist
+        run: |
+          docker-compose exec -T db psql -U spo -d spo -c "
+          SELECT tablename FROM pg_tables
+          WHERE schemaname = 'public'
+          ORDER BY tablename;
+          "
+
+      - name: Test HTTP endpoint
+        run: |
+          echo "Testing app accessibility..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/)
+          echo "HTTP Response Code: $response"
+          if [ "$response" != "200" ]; then
+            echo "ERROR: App returned status $response instead of 200"
+            docker-compose logs shopping-points --tail=100
+            exit 1
+          fi
+          echo "SUCCESS: App is responding correctly"
+
+      - name: Run smoke tests in container
+        run: |
+          docker-compose exec -T shopping-points python -m pytest tests/test_smoke.py -v
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose down -v
