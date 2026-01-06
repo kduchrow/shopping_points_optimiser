@@ -1,10 +1,19 @@
 """Setup configuration for Shopping Points Optimiser."""
 
+from pathlib import Path
+
 from setuptools import find_packages, setup
+
+# Read version from spo/version.py
+version_file = Path(__file__).parent / "spo" / "version.py"
+version_dict = {}
+with open(version_file) as f:
+    exec(f.read(), version_dict)
+__version__ = version_dict["__version__"]
 
 setup(
     name="shopping-points-optimiser",
-    version="1.0.0",
+    version=__version__,
     description="Shopping Points Optimizer - maximize cashback and bonus points",
     packages=find_packages(),
     include_package_data=True,

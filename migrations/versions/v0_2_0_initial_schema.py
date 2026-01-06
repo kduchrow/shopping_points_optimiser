@@ -1,14 +1,15 @@
-"""Initial schema
+"""Initial schema with SQLAlchemy 2.0 support
 
-Revision ID: 20240106_0001
+Revision ID: v0_2_0
 Revises:
 Create Date: 2026-01-06
+App Version: 0.2.0
 """
 
 import sqlalchemy as sa
 from alembic import op
 
-revision = "20240106_0001"
+revision = "v0_2_0"
 down_revision = None
 branch_labels = None
 depends_on = None
