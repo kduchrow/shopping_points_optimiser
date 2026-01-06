@@ -1,0 +1,30 @@
+{
+  "include": [
+    "spo",
+    "tests",
+    "scripts",
+    "scrapers",
+    "bonus_programs",
+    "migrations"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "**/.venv",
+    "**/node_modules",
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache"
+  ],
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+  "pythonVersion": "3.11",
+  "pythonPlatform": "Linux",
+  "typeCheckingMode": "basic",
+  "reportCallIssue": false,
+  "reportOptionalMemberAccess": false,
+  "reportArgumentType": false,
+  "reportAttributeAccessIssue": false,
+  "reportGeneralTypeIssues": false,
+  "reportIncompatibleMethodOverride": false
+}

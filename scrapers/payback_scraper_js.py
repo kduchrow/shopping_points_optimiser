@@ -1,4 +1,5 @@
 """Payback scraper using Playwright to handle JavaScript-rendered content."""
+
 import os
 import re
 import sys

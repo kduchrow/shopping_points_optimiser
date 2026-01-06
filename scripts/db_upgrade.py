@@ -2,6 +2,7 @@
 Usage: python scripts/db_upgrade.py
 Respects DATABASE_URL env var.
 """
+
 from pathlib import Path
 
 from alembic import command

@@ -148,9 +148,11 @@ def register_proposals(app):
                     valid_from=now,
                     valid_to=valid_to,
                     status="active",
-                    combinable=proposal.proposed_coupon_combinable
-                    if proposal.proposed_coupon_combinable is not None
-                    else False,
+                    combinable=(
+                        proposal.proposed_coupon_combinable
+                        if proposal.proposed_coupon_combinable is not None
+                        else False
+                    ),
                 )
                 db.session.add(coupon)
 
@@ -237,9 +239,11 @@ def register_proposals(app):
                 valid_from=now,
                 valid_to=valid_to,
                 status="active",
-                combinable=proposal.proposed_coupon_combinable
-                if proposal.proposed_coupon_combinable is not None
-                else False,
+                combinable=(
+                    proposal.proposed_coupon_combinable
+                    if proposal.proposed_coupon_combinable is not None
+                    else False
+                ),
             )
             db.session.add(coupon)
 
