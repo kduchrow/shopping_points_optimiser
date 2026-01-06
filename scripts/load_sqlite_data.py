@@ -130,12 +130,12 @@ def load_sqlite_to_postgres(sqlite_path, pg_connection_string):
     print("Verification:")
     print("=" * 80)
 
-    total_rows = 0
+    total_rows: int = 0
     with pg_engine.begin() as conn:
         for table in sorted(tables):
             try:
                 result = conn.execute(text(f"SELECT COUNT(*) FROM {table}"))
-                count = result.scalar()
+                count = result.scalar() or 0
                 total_rows += count
                 status = "✓" if count > 0 else "⊘"
                 print(f"  {status} {table}: {count} rows")
