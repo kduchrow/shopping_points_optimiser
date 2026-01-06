@@ -1,6 +1,7 @@
 """
 Background job queue for async scraper execution
 """
+
 import threading
 import uuid
 from collections.abc import Callable

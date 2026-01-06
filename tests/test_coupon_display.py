@@ -1,4 +1,5 @@
 """Test coupon display functionality on web interface"""
+
 import uuid
 from datetime import timedelta
 

@@ -2,6 +2,7 @@
 Miles & More Scraper
 Scrapes partner shops and their point rates from miles-and-more.com
 """
+
 # noqa: E402
 import os
 import re
@@ -134,9 +135,11 @@ class MilesAndMoreScraper:
                                 partner_urls.append(
                                     {
                                         "name": shop_name,
-                                        "url": href
-                                        if href.startswith("http")
-                                        else f"https://www.miles-and-more.com{href}",
+                                        "url": (
+                                            href
+                                            if href.startswith("http")
+                                            else f"https://www.miles-and-more.com{href}"
+                                        ),
                                     }
                                 )
                     except Exception:
