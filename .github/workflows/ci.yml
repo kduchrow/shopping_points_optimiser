@@ -232,6 +232,11 @@ jobs:
   smoke-test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      FLASK_ENV: development
+      SECRET_KEY: test-secret-key-for-ci
+      ADMIN_PASSWORD: test-admin-password
+      DATABASE_URL: postgresql+psycopg2://spo:spo@db:5432/spo
 
     steps:
       - uses: actions/checkout@v4
@@ -241,7 +246,7 @@ jobs:
 
       - name: Start services with docker compose
         run: |
-          docker compose up -d
+          docker compose up -d --build
           echo "Waiting for services to be healthy..."
           sleep 20
 
