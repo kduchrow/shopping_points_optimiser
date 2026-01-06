@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from spo import create_app
@@ -6,10 +8,10 @@ from spo.extensions import db
 
 @pytest.fixture(scope="function")
 def app():
-    app = create_app()
+    app = create_app(start_jobs=False, run_seed=False)
     app.config.update(
         TESTING=True,
-        SQLALCHEMY_DATABASE_URI="sqlite:///:memory:",
+        SQLALCHEMY_DATABASE_URI=os.environ.get("TEST_DATABASE_URL", "sqlite:///:memory:"),
     )
 
     with app.app_context():

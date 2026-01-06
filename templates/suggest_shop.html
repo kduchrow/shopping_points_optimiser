@@ -1,75 +1,99 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>Shop Vorschlag</title>
-    <style>
-      body { font-family: Arial, sans-serif; background: #f7f9fc; padding: 20px; }
-      .container { max-width: 700px; margin: 0 auto; background: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-      h1 { margin-bottom: 10px; }
-      .section { margin-top: 20px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; }
-      label { display: block; font-weight: 600; margin: 8px 0 4px; }
-      input, textarea, select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; }
-      textarea { resize: vertical; min-height: 80px; }
-      button { margin-top: 10px; padding: 12px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
-      .btn-primary { background: #2563eb; color: white; }
-      .btn-secondary { background: #6b7280; color: white; }
-      .flex { display: flex; gap: 12px; flex-wrap: wrap; }
-      .muted { color: #6b7280; font-size: 13px; }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1>Vorschläge für {{ shop.name }}</h1>
-      {% if main %}
-        <div class="muted">Canonical: {{ main.canonical_name }} ({{ main.status }})</div>
-      {% endif %}
-      <a href="/" class="muted">← Zurück</a>
+{% extends "base.html" %} {% block title %}Shop Vorschlag - Shopping Points
+Optimiser{% endblock %} {% block nav %}
+<nav class="top-nav">
+  <a class="nav-link" href="/">🏠 Startseite</a>
+</nav>
+{% endblock %} {% block content %}
+<div class="card medium">
+  <h1>Vorschläge für {{ shop.name }}</h1>
 
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <ul>
-          {% for category, message in messages %}
-            <li><strong>{{ category }}:</strong> {{ message }}</li>
-          {% endfor %}
-          </ul>
-        {% endif %}
-      {% endwith %}
+  {% if main %}
+  <p class="text-muted text-xs mb-15">
+    Canonical: <strong>{{ main.canonical_name }}</strong> ({{ main.status }})
+  </p>
+  {% endif %} {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-messages">
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %} {% endwith %}
 
-      <div class="section">
-        <h3>Metadaten bearbeiten</h3>
-        <form method="post">
-          <input type="hidden" name="action" value="metadata">
-          <label>Neuer Name (optional)</label>
-          <input name="proposed_name" placeholder="z.B. Amazon" value="{{ main.canonical_name if main else shop.name }}">
-          <label>Website (optional)</label>
-          <input name="proposed_website" placeholder="https://www.example.com" value="{{ main.website if main else '' }}">
-          <label>Logo URL (optional)</label>
-          <input name="proposed_logo" placeholder="https://.../logo.png" value="{{ main.logo_url if main else '' }}">
-          <label>Begründung</label>
-          <textarea name="reason" placeholder="Warum sollte das geändert werden?"></textarea>
-          <button class="btn-primary" type="submit">Vorschlag einreichen</button>
-        </form>
+  <div class="card">
+    <h2>Metadaten bearbeiten</h2>
+    <form method="post">
+      <input type="hidden" name="action" value="metadata" />
+
+      <div class="form-group">
+        <label>Neuer Name (optional)</label>
+        <input
+          type="text"
+          name="proposed_name"
+          placeholder="z.B. Amazon"
+          value="{{ main.canonical_name if main else shop.name }}"
+        />
       </div>
 
-      <div class="section">
-        <h3>Merge anfragen</h3>
-        <form method="post">
-          <input type="hidden" name="action" value="merge">
-          <label>Mit welchem Shop zusammenführen?</label>
-          <select name="merge_shop_id">
-            <option value="">-- Shop wählen --</option>
-            {% for s in shops %}
-              {% if s.id != shop.id %}
-                <option value="{{ s.id }}">{{ s.name }}</option>
-              {% endif %}
-            {% endfor %}
-          </select>
-          <label>Begründung</label>
-          <textarea name="merge_reason" placeholder="Warum sollten diese Shops zusammengehören?"></textarea>
-          <button class="btn-secondary" type="submit">Merge-Vorschlag einreichen</button>
-        </form>
+      <div class="form-group">
+        <label>Website (optional)</label>
+        <input
+          type="url"
+          name="proposed_website"
+          placeholder="https://www.example.com"
+          value="{{ main.website if main else '' }}"
+        />
       </div>
-    </div>
-  </body>
-</html>
+
+      <div class="form-group">
+        <label>Logo URL (optional)</label>
+        <input
+          type="url"
+          name="proposed_logo"
+          placeholder="https://.../logo.png"
+          value="{{ main.logo_url if main else '' }}"
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Begründung</label>
+        <textarea
+          name="reason"
+          placeholder="Warum sollte das geändert werden?"
+        ></textarea>
+      </div>
+
+      <button class="btn" type="submit">Vorschlag einreichen</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Merge anfragen</h2>
+    <form method="post">
+      <input type="hidden" name="action" value="merge" />
+
+      <div class="form-group">
+        <label>Mit welchem Shop zusammenführen?</label>
+        <select name="merge_shop_id">
+          <option value="">-- Shop wählen --</option>
+          {% for s in shops %} {% if s.id != shop.id %}
+          <option value="{{ s.id }}">{{ s.name }}</option>
+          {% endif %} {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Begründung</label>
+        <textarea
+          name="merge_reason"
+          placeholder="Warum sollten diese Shops zusammengehören?"
+        ></textarea>
+      </div>
+
+      <button class="btn btn-warning" type="submit">
+        Merge-Vorschlag einreichen
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

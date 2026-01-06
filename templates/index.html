@@ -1,500 +1,253 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shopping Points Optimiser</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 20px;
-      }
+{% extends "base.html" %} {% block title %}Shopping Points Optimiser{% endblock
+%} {% block content %}
+<div class="card medium">
+  <h1>💰 Shopping Points Optimiser</h1>
 
-      .container {
-        max-width: 640px;
-        width: 100%;
-        background-color: #fff;
-        border-radius: 14px;
-        padding: 40px;
-        box-shadow: 0 16px 45px rgba(0, 0, 0, 0.18);
-      }
-
-      .nav {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 22px;
-        flex-wrap: wrap;
-      }
-
-      .nav a {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 10px 14px;
-        background: #f1f3f9;
-        color: #111;
-        text-decoration: none;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 13px;
-        border: 1px solid #e5e7eb;
-        transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-      }
-
-      .nav a:hover {
-        background: #e5e7eb;
-        transform: translateY(-1px);
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-      }
-
-      h1 {
-        color: #111;
-        text-align: center;
-        margin-bottom: 26px;
-        font-size: 32px;
-        font-weight: 800;
-      }
-
-      .form-group { margin-bottom: 22px; }
-
-      label {
-        display: block;
-        font-weight: 700;
-        color: #1f2937;
-        margin-bottom: 10px;
-      }
-
-      select {
-        width: 100%;
-        padding: 12px;
-        border: 2px solid #ddd;
-        border-radius: 8px;
-        font-size: 14px;
-        background-color: white;
-        cursor: pointer;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      }
-
-      select:focus {
-        border-color: #667eea;
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.18);
-      }
-
-      select:disabled {
-        background-color: #f0f0f0;
-        cursor: not-allowed;
-        opacity: 0.6;
-      }
-
-      .mode-toggle {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 12px;
-        margin-top: 8px;
-      }
-
-      .mode-btn {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 14px;
-        border: 2px solid #e5e7eb;
-        border-radius: 12px;
-        background: #fafafa;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-align: left;
-        font-weight: 700;
-        color: #111;
-      }
-
-      .mode-btn.active {
-        border-color: #667eea;
-        background: #eef1ff;
-        box-shadow: 0 6px 18px rgba(102, 126, 234, 0.18);
-      }
-
-      .mode-btn span { color: #374151; font-weight: 600; }
-      .mode-btn .icon { font-size: 18px; }
-
-      .input-fields {
-        background-color: #f0f7ff;
-        padding: 16px;
-        border-radius: 10px;
-        border-left: 4px solid #667eea;
-        margin-bottom: 20px;
-      }
-
-      .input-group {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .input-group .currency-symbol {
-        font-weight: 700;
-        color: #667eea;
-        font-size: 16px;
-        min-width: 20px;
-      }
-
-      .input-fields input {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        font-size: 16px;
-      }
-
-      .input-fields input:focus {
-        border-color: #667eea;
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.18);
-      }
-
-      .contract-info {
-        background-color: #e7f3ff;
-        padding: 12px;
-        border-radius: 8px;
-        border-left: 4px solid #0066cc;
-        font-size: 14px;
-        color: #333;
-      }
-
-      button {
-        width: 100%;
-        padding: 14px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        border-radius: 10px;
-        font-size: 16px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: transform 0.2s, box-shadow 0.2s;
-      }
-
-      button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
-      }
-
-      button:active { transform: translateY(0); }
-
-      button:disabled {
-        opacity: 0.55;
-        cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
-      }
-
-      .warning {
-        background-color: #fff3cd;
-        border: 1px solid #ffc107;
-        color: #856404;
-        padding: 12px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        font-size: 14px;
-      }
-
-      .shop-picker { display: flex; flex-direction: column; gap: 10px; }
-
-      .shop-search { display: flex; gap: 8px; align-items: center; }
-
-      .shop-search input[type="search"] {
-        flex: 1;
-        padding: 12px;
-        border: 2px solid #ddd;
-        border-radius: 8px;
-        font-size: 15px;
-      }
-
-      .shop-search input[type="search"]:focus {
-        border-color: #667eea;
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.18);
-      }
-
-      .shop-search button {
-        width: auto;
-        padding: 12px 14px;
-        background: #f3f4f6;
-        color: #333;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        font-size: 14px;
-        cursor: pointer;
-        transition: background 0.2s ease, transform 0.2s ease;
-      }
-
-      .shop-search button:hover { background: #e5e7eb; transform: translateY(-1px); }
-
-      .shop-meta { font-size: 13px; color: #666; }
-
-      /* Tablet landscape and smaller desktops */
-      @media (max-width: 1024px) {
-        .container { padding: 32px; }
-      }
-
-      /* Tablets and large phones landscape */
-      @media (max-width: 768px) {
-        body { padding: 12px; }
-        .container { padding: 24px; border-radius: 12px; }
-        h1 { font-size: 26px; margin-bottom: 22px; }
-        .nav { justify-content: center; margin-bottom: 18px; }
-        .nav a { padding: 8px 12px; font-size: 12px; }
-        .mode-toggle { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
-        button { padding: 14px; font-size: 16px; }
-        .input-fields input { font-size: 16px; padding: 12px; }
-      }
-
-      /* Mobile phones portrait */
-      @media (max-width: 480px) {
-        body { padding: 8px; }
-        .container { padding: 16px; border-radius: 10px; }
-        h1 { font-size: 22px; margin-bottom: 16px; }
-        .nav { gap: 8px; }
-        .nav a { padding: 7px 10px; font-size: 11px; }
-        label { font-size: 14px; }
-        select, .input-fields input { font-size: 16px; padding: 12px; }
-        button { padding: 14px; font-size: 16px; }
-        .mode-toggle { grid-template-columns: 1fr; }
-        .mode-btn { padding: 12px; }
-        .mode-btn span { font-size: 14px; }
-      }
-
-      /* Small mobile phones */
-      @media (max-width: 360px) {
-        .container { padding: 12px; }
-        h1 { font-size: 20px; }
-        .mode-toggle { grid-template-columns: 1fr; }
-        .mode-btn { padding: 12px; }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="nav">
-        {% if current_user.is_authenticated %}
-          <a href="/profile">👤 {{ current_user.username }}</a>
-          {% if current_user.role == 'admin' %}
-            <a href="/admin">⚙️ Admin</a>
-          {% endif %}
-          {% if current_user.role in ['user', 'contributor', 'admin'] %}
-            <a href="/proposals">📝 Beiträge</a>
-          {% endif %}
-          <a href="/logout">🚪 Logout</a>
-        {% else %}
-          <a href="/login">🔐 Login</a>
-          <a href="/register">📝 Registrieren</a>
-        {% endif %}
+  <form method="post" action="/evaluate">
+    <div class="form-group">
+      <label>📊 Modus wählen:</label>
+      <div class="mode-toggle">
+        <button
+          type="button"
+          class="mode-btn active"
+          data-mode="shopping"
+          onclick="selectMode('shopping')"
+        >
+          <span class="icon">💳</span>
+          <span>Einkaufs-Szenario (nach Betrag)</span>
+        </button>
+        <button
+          type="button"
+          class="mode-btn"
+          data-mode="voucher"
+          onclick="selectMode('voucher')"
+        >
+          <span class="icon">🎁</span>
+          <span>Gutschein erzeugen (benötigter Umsatz)</span>
+        </button>
+        <button
+          type="button"
+          class="mode-btn"
+          data-mode="contract"
+          onclick="selectMode('contract')"
+        >
+          <span class="icon">✍️</span>
+          <span>Vertragsabschluss (einmalige Punkte)</span>
+        </button>
       </div>
-      
-      <h1>💰 Shopping Points Optimiser</h1>
-      
-      <form method="post" action="/evaluate">
-        <div class="form-group">
-          <label>📊 Modus wählen:</label>
-          <div class="mode-toggle">
-            <button type="button" class="mode-btn active" data-mode="shopping" onclick="selectMode('shopping')">
-              <span class="icon">💳</span>
-              <span>Einkaufs-Szenario (nach Betrag)</span>
-            </button>
-            <button type="button" class="mode-btn" data-mode="voucher" onclick="selectMode('voucher')">
-              <span class="icon">🎁</span>
-              <span>Gutschein erzeugen (benötigter Umsatz)</span>
-            </button>
-            <button type="button" class="mode-btn" data-mode="contract" onclick="selectMode('contract')">
-              <span class="icon">✍️</span>
-              <span>Vertragsabschluss (einmalige Punkte)</span>
-            </button>
-          </div>
-          <!-- Hidden native radios to keep form semantics/accessibility -->
-          <div style="display: none;">
-            <input type="radio" id="mode-shopping" name="mode" value="shopping" checked>
-            <input type="radio" id="mode-voucher" name="mode" value="voucher">
-            <input type="radio" id="mode-contract" name="mode" value="contract">
-          </div>
-        </div>
-
-        <div id="shop-warning" class="warning" style="display: none;">
-          ⚠️ Dieser Shop unterstützt diesen Modus nicht. Bitte wählen Sie einen anderen Modus oder Shop.
-        </div>
-
-        <div class="form-group">
-          <label>🏪 Shop wählen:</label>
-          <div class="shop-picker">
-            <div class="shop-search">
-              <input type="search" id="shop-search-input" placeholder="Shop suchen oder tippen..." oninput="filterShopOptions()">
-              <button type="button" aria-label="Suche zurücksetzen" onclick="resetShopSearch()">✖</button>
-            </div>
-            <div class="shop-meta" id="shop-meta">Alle Shops</div>
-            <select name="shop" id="shop-select" required onchange="updateUI()">
-              <option value="">-- Shop auswählen --</option>
-              {% for shop in shops_data %}
-                <option value="{{ shop.id }}" 
-                        data-supports-shopping="{{ shop.supports_shopping|lower }}"
-                        data-supports-voucher="{{ shop.supports_voucher|lower }}"
-                        data-supports-contract="{{ shop.supports_contract|lower }}">
-                  {{ shop.name }}
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-        </div>
-
-        <div id="shopping-fields" class="input-fields" style="display: block;">
-          <label>💵 Betrag:</label>
-          <div class="input-group">
-            <input type="number" step="0.01" name="amount" id="amount" placeholder="100.00" min="0" inputmode="decimal">
-            <span class="currency-symbol">€</span>
-          </div>
-        </div>
-
-        <div id="voucher-fields" class="input-fields" style="display: none;">
-          <label>🎫 Gutschein-Betrag:</label>
-          <div class="input-group">
-            <input type="number" step="0.01" name="voucher" id="voucher" placeholder="50.00" min="0" inputmode="decimal">
-            <span class="currency-symbol">€</span>
-          </div>
-        </div>
-
-        <div id="contract-fields" class="input-fields" style="display: none;">
-          <div class="contract-info">
-            ℹ️ Bei Abschluss eines Vertrages mit diesem Shop erhältst du einmalige Bonuspunkte pro Programm. Klicke "Berechnen" um die Gegenwerte zu sehen.
-          </div>
-        </div>
-
-        <button type="submit" id="submit-btn">🔍 Berechnen</button>
-      </form>
+      <div style="display: none">
+        <input
+          type="radio"
+          id="mode-shopping"
+          name="mode"
+          value="shopping"
+          checked
+        />
+        <input type="radio" id="mode-voucher" name="mode" value="voucher" />
+        <input type="radio" id="mode-contract" name="mode" value="contract" />
+      </div>
     </div>
 
-    <script>
-      function selectMode(mode) {
-        // update hidden radios
-        const radio = document.getElementById(`mode-${mode}`);
-        if (radio) {
-          radio.checked = true;
-        }
-        // toggle active button styles
-        document.querySelectorAll('.mode-btn').forEach((btn) => {
-          btn.classList.toggle('active', btn.dataset.mode === mode);
-        });
+    <div id="shop-warning" class="warning" style="display: none">
+      ⚠️ Dieser Shop unterstützt diesen Modus nicht. Bitte wählen Sie einen
+      anderen Modus oder Shop.
+    </div>
+
+    <div class="form-group">
+      <label>🏪 Shop wählen:</label>
+      <div class="shop-picker">
+        <div class="shop-search">
+          <input
+            type="search"
+            id="shop-search-input"
+            placeholder="Shop suchen oder tippen..."
+            oninput="filterShopOptions()"
+          />
+          <button
+            type="button"
+            aria-label="Suche zurücksetzen"
+            onclick="resetShopSearch()"
+          >
+            ✖
+          </button>
+        </div>
+        <div class="shop-meta" id="shop-meta">Alle Shops</div>
+        <select name="shop" id="shop-select" required onchange="updateUI()">
+          <option value="">-- Shop auswählen --</option>
+          {% for shop in shops_data %}
+          <option
+            value="{{ shop.id }}"
+            data-supports-shopping="{{ shop.supports_shopping|lower }}"
+            data-supports-voucher="{{ shop.supports_voucher|lower }}"
+            data-supports-contract="{{ shop.supports_contract|lower }}"
+          >
+            {{ shop.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div id="shopping-fields" class="input-fields" style="display: block">
+      <label>💵 Betrag:</label>
+      <div class="input-group">
+        <input
+          type="number"
+          step="0.01"
+          name="amount"
+          id="amount"
+          placeholder="100.00"
+          min="0"
+          inputmode="decimal"
+        />
+        <span class="currency-symbol">€</span>
+      </div>
+    </div>
+
+    <div id="voucher-fields" class="input-fields" style="display: none">
+      <label>🎫 Gutschein-Betrag:</label>
+      <div class="input-group">
+        <input
+          type="number"
+          step="0.01"
+          name="voucher"
+          id="voucher"
+          placeholder="50.00"
+          min="0"
+          inputmode="decimal"
+        />
+        <span class="currency-symbol">€</span>
+      </div>
+    </div>
+
+    <div id="contract-fields" class="input-fields" style="display: none">
+      <div class="contract-info">
+        ℹ️ Bei Abschluss eines Vertrages mit diesem Shop erhältst du einmalige
+        Bonuspunkte pro Programm. Klicke "Berechnen" um die Gegenwerte zu sehen.
+      </div>
+    </div>
+
+    <button type="submit" id="submit-btn">🔍 Berechnen</button>
+  </form>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  function selectMode(mode) {
+    const radio = document.getElementById(`mode-${mode}`);
+    if (radio) {
+      radio.checked = true;
+    }
+    document.querySelectorAll(".mode-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.mode === mode);
+    });
+    updateUI();
+  }
+
+  function updateUI() {
+    const checked = document.querySelector('input[name="mode"]:checked');
+    const mode = checked ? checked.value : "shopping";
+    const shopSelect = document.getElementById("shop-select");
+    const selectedShopId = shopSelect.value;
+
+    document.getElementById("shopping-fields").style.display =
+      mode === "shopping" ? "block" : "none";
+    document.getElementById("voucher-fields").style.display =
+      mode === "voucher" ? "block" : "none";
+    document.getElementById("contract-fields").style.display =
+      mode === "contract" ? "block" : "none";
+
+    if (mode === "shopping") {
+      document.getElementById("amount").required = true;
+      document.getElementById("voucher").required = false;
+    } else if (mode === "voucher") {
+      document.getElementById("amount").required = false;
+      document.getElementById("voucher").required = true;
+    } else {
+      document.getElementById("amount").required = false;
+      document.getElementById("voucher").required = false;
+    }
+
+    const options = shopSelect.querySelectorAll('option:not([value=""])');
+    let hasCompatibleShop = false;
+
+    options.forEach((option) => {
+      const supportsMode =
+        option.getAttribute(`data-supports-${mode}`) === "true";
+      option.style.display = supportsMode ? "block" : "none";
+      if (supportsMode) hasCompatibleShop = true;
+    });
+
+    if (selectedShopId) {
+      const selectedOption = shopSelect.querySelector(
+        `option[value="${selectedShopId}"]`,
+      );
+      if (selectedOption && selectedOption.style.display === "none") {
+        shopSelect.value = "";
+        document.getElementById("shop-warning").style.display = "block";
+      } else {
+        document.getElementById("shop-warning").style.display = "none";
+      }
+    }
+
+    document.getElementById("submit-btn").disabled =
+      !selectedShopId || !hasCompatibleShop;
+  }
+
+  function filterShopOptions() {
+    const input = document.getElementById("shop-search-input");
+    const select = document.getElementById("shop-select");
+    const meta = document.getElementById("shop-meta");
+    if (!input || !select) return;
+
+    const query = input.value.trim().toLowerCase();
+    let visible = 0;
+
+    Array.from(select.options).forEach((opt, idx) => {
+      if (idx === 0) {
+        opt.hidden = false;
+        return;
+      }
+      const text = (opt.textContent || "").toLowerCase();
+      const match = !query || text.includes(query);
+      opt.hidden = !match;
+      if (match) visible += 1;
+    });
+
+    if (select.value) {
+      const selected = select.selectedOptions[0];
+      if (selected && selected.hidden) {
+        select.value = "";
         updateUI();
       }
+    }
 
-      function updateUI() {
-        const checked = document.querySelector('input[name="mode"]:checked');
-        const mode = checked ? checked.value : 'shopping';
-        const shopSelect = document.getElementById('shop-select');
-        const selectedShopId = shopSelect.value;
-        
-        // Update input fields visibility
-        document.getElementById('shopping-fields').style.display = mode === 'shopping' ? 'block' : 'none';
-        document.getElementById('voucher-fields').style.display = mode === 'voucher' ? 'block' : 'none';
-        document.getElementById('contract-fields').style.display = mode === 'contract' ? 'block' : 'none';
-        
-        // Update required fields based on mode
-        if (mode === 'shopping') {
-          document.getElementById('amount').required = true;
-          document.getElementById('voucher').required = false;
-        } else if (mode === 'voucher') {
-          document.getElementById('amount').required = false;
-          document.getElementById('voucher').required = true;
-        } else {
-          document.getElementById('amount').required = false;
-          document.getElementById('voucher').required = false;
-        }
-        
-        // Filter shops based on current mode
-        const options = shopSelect.querySelectorAll('option:not([value=""])');
-        let hasCompatibleShop = false;
-        
-        options.forEach(option => {
-          const supportsMode = option.getAttribute(`data-supports-${mode}`) === 'true';
-          option.style.display = supportsMode ? 'block' : 'none';
-          if (supportsMode) hasCompatibleShop = true;
-        });
-        
-        // Wenn aktuell ausgewählter Shop nicht kompatibel ist, zurücksetzen
-        if (selectedShopId) {
-          const selectedOption = shopSelect.querySelector(`option[value="${selectedShopId}"]`);
-          if (selectedOption && selectedOption.style.display === 'none') {
-            shopSelect.value = '';
-            document.getElementById('shop-warning').style.display = 'block';
-          } else {
-            document.getElementById('shop-warning').style.display = 'none';
-          }
-        }
-        
-        // Button state
-        document.getElementById('submit-btn').disabled = !selectedShopId || !hasCompatibleShop;
+    if (meta) {
+      if (query && visible === 0) {
+        meta.textContent = "Keine Shops gefunden";
+      } else if (query) {
+        meta.textContent = `${visible} Treffer`;
+      } else {
+        meta.textContent = `Alle Shops (${Math.max(
+          select.options.length - 1,
+          0,
+        )})`;
       }
+    }
+  }
 
-        function filterShopOptions() {
-          const input = document.getElementById('shop-search-input');
-          const select = document.getElementById('shop-select');
-          const meta = document.getElementById('shop-meta');
-          if (!input || !select) return;
+  function resetShopSearch() {
+    const input = document.getElementById("shop-search-input");
+    if (input) {
+      input.value = "";
+    }
+    filterShopOptions();
+  }
 
-          const query = input.value.trim().toLowerCase();
-          let visible = 0;
+  document.addEventListener("DOMContentLoaded", () => {
+    selectMode("shopping");
+    filterShopOptions();
+  });
 
-          Array.from(select.options).forEach((opt, idx) => {
-            if (idx === 0) {
-              opt.hidden = false;
-              return;
-            }
-            const text = (opt.textContent || '').toLowerCase();
-            const match = !query || text.includes(query);
-            opt.hidden = !match;
-            if (match) visible += 1;
-          });
-
-          if (select.value) {
-            const selected = select.selectedOptions[0];
-            if (selected && selected.hidden) {
-              select.value = '';
-              updateUI();
-            }
-          }
-
-          if (meta) {
-            if (query && visible === 0) {
-              meta.textContent = 'Keine Shops gefunden';
-            } else if (query) {
-              meta.textContent = `${visible} Treffer`;
-            } else {
-              meta.textContent = `Alle Shops (${Math.max(select.options.length - 1, 0)})`;
-            }
-          }
-        }
-
-        function resetShopSearch() {
-          const input = document.getElementById('shop-search-input');
-          if (input) {
-            input.value = '';
-          }
-          filterShopOptions();
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-          selectMode('shopping');
-          filterShopOptions();
-        });
-      
-      // Initiale UI-Aktualisierung
-      updateUI();
-    </script>
-  </body>
-</html>
+  updateUI();
+</script>
+{% endblock %}

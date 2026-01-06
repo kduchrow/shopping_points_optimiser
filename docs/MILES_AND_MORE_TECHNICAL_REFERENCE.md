@@ -125,11 +125,11 @@ from scrapers.miles_and_more_scraper import MilesAndMoreScraper
 with app.app_context():
     scraper = MilesAndMoreScraper()
     added, updated, errors = scraper.scrape()
-    
+
     print(f"Added: {added}")
     print(f"Updated: {updated}")
     print(f"Errors: {len(errors)}")
-    
+
     for error in errors:
         print(f"  - {error}")
 ```
@@ -140,10 +140,10 @@ with app.app_context():
 @login_required
 def admin_run_miles_and_more():
     from scrapers.miles_and_more_scraper import MilesAndMoreScraper
-    
+
     scraper = MilesAndMoreScraper()
     added, updated, errors = scraper.scrape()
-    
+
     # Log results
     db.session.add(ScrapeLog(
         message=f'M&M: +{added}, updated {updated}, {len(errors)} errors'
@@ -351,23 +351,23 @@ ScrapeLog(
 
 ### Check Logs
 ```
-SELECT * FROM scrape_log 
-WHERE message LIKE 'Miles & More%' 
+SELECT * FROM scrape_log
+WHERE message LIKE 'Miles & More%'
 ORDER BY timestamp DESC LIMIT 50;
 ```
 
 ### Check Proposals
 ```
-SELECT * FROM proposals 
-WHERE source = 'scraper' 
+SELECT * FROM proposals
+WHERE source = 'scraper'
 ORDER BY created_at DESC;
 ```
 
 ### Check Uncertain Proposals
 ```
-SELECT * FROM proposals 
-WHERE source = 'scraper' 
-  AND status = 'pending' 
+SELECT * FROM proposals
+WHERE source = 'scraper'
+  AND status = 'pending'
   AND proposed_points_per_eur IS NULL
 ORDER BY created_at DESC;
 ```

@@ -1,8 +1,8 @@
 """Shop deduplication and similarity scoring utilities."""
 
 import uuid
-from difflib import SequenceMatcher
 from datetime import UTC, datetime
+from difflib import SequenceMatcher
 
 from spo.extensions import db
 from spo.models import ShopMain, ShopVariant
@@ -13,9 +13,9 @@ def fuzzy_match_score(str1: str, str2: str) -> float:
     s1 = str1.lower().strip()
     s2 = str2.lower().strip()
 
-    for char in ['-', '_', '.', ',', '&', '!', '?', "'", '"']:
-        s1 = s1.replace(char, '')
-        s2 = s2.replace(char, '')
+    for char in ["-", "_", ".", ",", "&", "!", "?", "'", '"']:
+        s1 = s1.replace(char, "")
+        s2 = s2.replace(char, "")
 
     ratio = SequenceMatcher(None, s1, s2).ratio()
     return round(ratio * 100, 1)
@@ -61,7 +61,7 @@ def get_or_create_shop_main(shop_name: str, source: str, source_id: str = None) 
             id=str(uuid.uuid4()),
             canonical_name=shop_name,
             canonical_name_lower=shop_name.lower(),
-            status='active',
+            status="active",
         )
         db.session.add(new_main_shop)
         db.session.flush()
@@ -82,7 +82,7 @@ def get_or_create_shop_main(shop_name: str, source: str, source_id: str = None) 
         id=str(uuid.uuid4()),
         canonical_name=shop_name,
         canonical_name_lower=shop_name.lower(),
-        status='active',
+        status="active",
     )
     db.session.add(new_main_shop)
     db.session.flush()
@@ -111,7 +111,7 @@ def merge_shops(main_from_id: str, main_to_id: str, user_id: int):
     for variant in from_shop.variants:
         variant.shop_main_id = to_shop.id
 
-    from_shop.status = 'merged'
+    from_shop.status = "merged"
     from_shop.merged_into_id = main_to_id
     from_shop.updated_at = datetime.now(UTC)
     from_shop.updated_by_user_id = user_id

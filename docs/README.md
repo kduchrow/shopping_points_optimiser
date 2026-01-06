@@ -1,194 +1,186 @@
-# Shopping Points Optimiser
+# 📚 Shopping Points Optimiser - Documentation
 
-Community-getriebenes Flask-Projekt zum Vergleich verschiedener Bonusprogramme und Shops.
+Welcome to the complete documentation for Shopping Points Optimiser!
 
-## Features
+## 🚀 Getting Started
 
-- 💳 **Einkaufs-Szenario**: Vergleich von Points/Cashback bei Einkäufen
-- 🎁 **Gutschein-Optimierung**: Berechnung benötigter Umsätze für Gutscheine
-- ✍️ **Vertragsabschlüsse**: Einmalige Bonuspunkte bei Vertragsabschluss
-- 👥 **Community-System**: Rollenbasiertes User-Management mit Proposals & Voting
-- 🤖 **Scraper**: Automatisches Laden von Bonus-Raten (z.B. Payback)
+- **[QUICKSTART.md](QUICKSTART.md)** - Quick start guide for new users
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Production deployment guide
 
-## Setup (Windows)
+## 🔧 Setup & Configuration
 
-```powershell
+- **[MIGRATION_SQLITE_TO_POSTGRES.md](MIGRATION_SQLITE_TO_POSTGRES.md)** - Migrate from SQLite to PostgreSQL
+- **[PRE_COMMIT_SETUP.md](PRE_COMMIT_SETUP.md)** - Set up code quality automation
+- **[GITHUB_SETUP.md](GITHUB_SETUP.md)** - GitHub repository configuration
+
+## 👨‍💼 Administration
+
+- **[ADMIN_SYSTEM.md](ADMIN_SYSTEM.md)** - Admin panel features and workflows
+- **[JOB_QUEUE_README.md](JOB_QUEUE_README.md)** - Background job system
+
+## 🤖 Scraper Documentation
+
+- **[MILES_AND_MORE_USER_GUIDE.md](MILES_AND_MORE_USER_GUIDE.md)** - User guide for Miles & More scraper
+- **[MILES_AND_MORE_SCRAPER_IMPLEMENTATION.md](MILES_AND_MORE_SCRAPER_IMPLEMENTATION.md)** - Implementation details
+- **[MILES_AND_MORE_TECHNICAL_REFERENCE.md](MILES_AND_MORE_TECHNICAL_REFERENCE.md)** - Technical reference
+- **[README_MILES_AND_MORE_INDEX.md](README_MILES_AND_MORE_INDEX.md)** - Miles & More documentation index
+
+## 📋 Release Management
+
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and release notes
+- **[IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md)** - Feature implementation status
+- **[WORKFLOW_DIAGRAM.md](WORKFLOW_DIAGRAM.md)** - System workflow diagrams
+
+## ✅ Checklists
+
+- **[PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md)** - Pre-production deployment checklist
+- **[FINAL_VERIFICATION_CHECKLIST.md](FINAL_VERIFICATION_CHECKLIST.md)** - Final verification steps
+
+## 🏗️ Architecture & Development
+
+### Technology Stack
+
+- **Backend**: Flask 3.0, SQLAlchemy, Alembic
+- **Database**: PostgreSQL 16-Alpine (production), SQLite (legacy)
+- **Frontend**: Jinja2 templates, vanilla JavaScript, CSS3
+- **Automation**: Playwright for web scraping
+- **DevOps**: Docker, Docker Compose, GitHub Actions CI/CD
+- **Code Quality**: ruff, black, isort, pyright, pre-commit
+
+### Key Features
+
+#### Smart Shop Deduplication
+- **≥98% similarity** → Automatic merge
+- **70-98% similarity** → Community review required
+- **<70% similarity** → Separate shops
+- UUID-based canonical shop identification
+- Source tracking (Miles & More, Payback, Manual)
+
+#### Community System
+- Role-based access control (Admin, Contributor, User, Viewer)
+- Proposal workflow with voting
+- Real-time notifications
+- Comment system for rate reviews
+
+#### Database Migrations
+- Alembic for schema versioning
+- Automatic migrations on container startup
+- Migration scripts for SQLite → PostgreSQL
+
+#### CI/CD Pipeline
+- **Lint & Format**: ruff, black, isort
+- **Type Check**: pyright
+- **Tests**: pytest with PostgreSQL service
+- **Alembic Check**: migration validation
+- **Security**: bandit, safety, detect-secrets
+
+## 📝 Quick Reference
+
+### Environment Setup
+
+```bash
+# Clone repository
+git clone https://github.com/kduchrow/shopping_points_optimiser.git
+cd shopping_points_optimiser
+
+# Set up environment
 python -m venv .venv
-.\.venv\Scripts\activate
+.venv\Scripts\activate  # Windows
+source .venv/bin/activate  # Linux/Mac
+
+# Install dependencies
 pip install -r requirements.txt
-playwright install chromium
-python app.py
+pip install -r requirements-dev.txt
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your settings
+
+# Start database
+docker-compose up -d db
+
+# Run migrations
+python -m alembic upgrade head
 ```
 
-Öffne dann http://127.0.0.1:5000
+### Docker Commands
 
-Die Datenbank `shopping.db` wird beim ersten Start angelegt und mit Beispiel-Daten gefüllt.
+```bash
+# Start all services
+docker-compose up
 
-## Test-Accounts
+# Start in background
+docker-compose up -d
 
-Für Entwicklung und Testing stehen folgende Accounts zur Verfügung:
+# View logs
+docker-compose logs -f
 
-| Rolle        | Benutzername  | Passwort     | Berechtigungen                                    |
-|--------------|---------------|--------------|---------------------------------------------------|
-| Admin        | `admin`       | `admin123`   | Voller Zugriff, Admin-Seite, User-Management     |
-| Contributor  | `contributor` | `contrib123` | Proposals erstellen & abstimmen                   |
-| User         | `testuser`    | `user123`    | Proposals erstellen, nur ansehen (kein Voting)    |
-| Viewer       | `viewer`      | `viewer123`  | Tool nutzen ohne Registrierung                    |
+# Stop services
+docker-compose down
 
-**Hinweis:** Diese Accounts werden automatisch beim ersten Start erstellt. In Produktion sollten sichere Passwörter verwendet werden.
-
-Test-Accounts manuell erstellen:
-```powershell
-python create_test_accounts.py
+# Rebuild containers
+docker-compose up --build
 ```
 
-## Struktur
+### Database Commands
 
-```
-shopping_points_optimiser/
-├── bonus_programs/     # Plugins für Bonusprogramme (MilesAndMore, Payback, Shoop)
-├── shops/              # Plugins für Shops und deren Raten
-├── scrapers/           # Web-Scraper für automatisches Daten-Laden
-│   ├── base.py         # BaseScraper-Klasse
-│   └── payback_scraper_js.py  # Payback-Scraper mit Playwright
-├── templates/          # HTML-Templates (Jinja2)
-│   ├── index.html      # Startseite mit Berechnungsformular
-│   ├── result.html     # Ergebnisseite
-│   ├── admin.html      # Admin-Dashboard
-│   ├── login.html      # Login-Seite
-│   ├── register.html   # Registrierungs-Seite
-│   ├── profile.html    # User-Profil
-│   └── proposals.html  # Community-Proposals
-├── models.py           # SQLAlchemy-Modelle (User, Shop, Proposal, etc.)
-├── app.py              # Flask-App mit allen Routes
-└── requirements.txt    # Python-Dependencies
+```bash
+# Create new migration
+python -m alembic revision --autogenerate -m "Description"
+
+# Apply migrations
+python -m alembic upgrade head
+
+# Rollback one migration
+python -m alembic downgrade -1
+
+# View migration history
+python -m alembic history
+
+# Migrate from SQLite
+python scripts/migrate_sqlite_to_postgres.py
 ```
 
-## User-Rollen
+### Development Commands
 
-### Viewer (Standard bei Registrierung)
-- Kann Tool nutzen (Berechnungen)
-- Kann keine Proposals erstellen oder abstimmen
+```bash
+# Install pre-commit hooks
+pre-commit install
 
-### User
-- Kann Proposals erstellen
-- Kann Proposals ansehen
-- Kann **nicht** abstimmen
+# Run pre-commit on all files
+pre-commit run --all-files
 
-### Contributor
-- Kann Proposals erstellen
-- Kann über Proposals abstimmen (Upvote/Downvote)
-- **3+ Upvotes** = automatische Approval
-- Muss von Admin promoted werden
+# Run tests with coverage
+pytest --cov=spo --cov-report=html
 
-### Admin
-- Voller Zugriff auf alle Funktionen
-- User-Management (promote, ban)
-- Scraper-Ausführung
-- Shops & Programme manuell hinzufügen
+# Run specific test
+pytest tests/test_notifications.py
 
-## Scraper
+# Type checking
+pyright
 
-### Payback-Scraper
-
-In der Admin-Seite (`/admin`) auf "▶ Run Payback Scraper" klicken.
-
-Der Payback-Scraper:
-- Nutzt Playwright für JavaScript-Rendering
-- Klickt "Mehr anzeigen"-Button automatisch
-- Extrahiert Points/EUR und Cashback-Werte
-- Findet ~720 Partner-Shops
-- Historisiert Rate-Änderungen automatisch
-
-## Community-Proposals
-
-### Proposal-Types
-
-1. **rate_change**: Änderung von Points/EUR oder Cashback%
-2. **shop_add**: Neuen Shop hinzufügen
-3. **program_add**: Neues Bonusprogramm hinzufügen
-4. **coupon_add**: Sonderaktion/Coupon hinzufügen
-
-### Sonderaktionen (Coupons)
-
-Sonderaktionen sind zeitlich begrenzte Bonuspunkte-Multiplikatoren oder Rabatte, die von der Community eingereicht und verwaltet werden.
-
-**Coupon-Typen:**
-- **Multiplier**: z.B. "20x Punkte bei Payback" (5.000€ Einkauf = 20.000 Punkte)
-- **Discount**: z.B. "10% Rabatt auf Partner-Einkauf"
-
-**Eigenschaften:**
-- Können universal, shop-spezifisch oder programm-spezifisch sein
-- Kombinierbarkeit kann definiert sein (ja/nein) oder unbekannt
-- Mit Gültigkeitsdatum (valid_from / valid_to)
-- Werden bei der Berechnung automatisch berücksichtigt
-
-**Berechnung mit Coupons:**
-- Wenn aktive Coupons vorhanden: Beide Werte werden angezeigt
-- Basiswert + Mit Sonderaktion
-- ⚠️ Warnung wenn Kombinierbarkeit unbekannt ist
-
-**Beispiel Proposal:**
-```
-Art: Coupon-Add
-Aktion: Multiplikator 20x
-Beschreibung: "20-fach Punkte bei Zahlungszielen ab 50€"
-Shop: Payback (optional)
-Gültig bis: 31.12.2024
-Kombinierbar: Unbekannt
+# Security scan
+bandit -r spo/
+safety check
 ```
 
-### Approval-Workflow
+## 🔗 External Links
 
-1. User/Contributor erstellt Proposal
-2. Contributors stimmen ab (Upvote/Downvote)
-3. Bei **3+ Upvotes**: Automatische Approval
-4. Status wechselt zu "approved"
-5. Änderung wird in DB übernommen
+- **GitHub Repository**: https://github.com/kduchrow/shopping_points_optimiser
+- **Issue Tracker**: https://github.com/kduchrow/shopping_points_optimiser/issues
+- **CI/CD Pipeline**: https://github.com/kduchrow/shopping_points_optimiser/actions
 
-## Admin-Funktionen
+## 📞 Support
 
-### Zugriff
-Nur User mit `role='admin'` können auf `/admin` zugreifen.
+For questions or issues:
+1. Check this documentation
+2. Search [existing issues](https://github.com/kduchrow/shopping_points_optimiser/issues)
+3. Create a new issue with detailed information
 
-### Features
-- Scraper ausführen
-- Shops nach Name/Programm filtern (Top 20)
-- Neue Bonusprogramme hinzufügen
-- Contributor-Requests genehmigen
-- User-Status ändern (ban/unban)
-- Scraper-Logs einsehen (neueste 50)
+## 🤝 Contributing
 
-## Technologie-Stack
+See the [main README](../README.md#contributing) for contribution guidelines.
 
-- **Backend**: Flask + SQLAlchemy
-- **Frontend**: HTML/CSS/JavaScript (Vanilla)
-- **Auth**: Flask-Login
-- **Scraping**: Playwright (Chromium)
-- **Database**: SQLite
-- **Password-Hashing**: werkzeug.security
+---
 
-## Entwicklung
-
-### Database Migrations
-
-Bei Schema-Änderungen:
-```powershell
-# Aktuelle DB löschen (Vorsicht: alle Daten gehen verloren!)
-del shopping.db
-python app.py  # Neu erstellen mit neuem Schema
-```
-
-### Debugging
-
-```python
-# In app.py
-app.run(debug=True)  # Auto-Reload bei Code-Änderungen
-```
-
-## Rechtliche Hinweise
-
-- Scraper sollten `robots.txt` respektieren
-- Nutzungsbedingungen der Websites beachten
-- Rate-Limiting implementieren
-- Nur für private, nicht-kommerzielle Nutzung
+**Version**: See [CHANGELOG.md](CHANGELOG.md) for current version and release history.

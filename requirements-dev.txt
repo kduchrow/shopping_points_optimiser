@@ -1,0 +1,13 @@
+-r requirements.txt
+
+# Development tooling
+pre-commit
+black
+isort
+ruff
+pyright
+mypy
+pytest
+pytest-cov
+bandit
+safety

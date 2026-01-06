@@ -1,255 +1,90 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>Profil - Shopping Points Optimiser</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { 
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-        padding: 20px;
-      }
-      .container { 
-        max-width: 800px; 
-        margin: 0 auto;
-        background-color: white; 
-        padding: 30px; 
-        border-radius: 12px; 
-        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-      }
-      h1 { 
-        color: #333; 
-        margin-bottom: 20px;
-      }
-      .nav { 
-        margin-bottom: 20px;
-      }
-      .nav a {
-        padding: 8px 16px;
-        background-color: #666;
-        color: white;
-        text-decoration: none;
-        border-radius: 5px;
-        font-size: 13px;
-        margin-right: 10px;
-      }
-      .nav a:hover { background-color: #444; }
-      
-      .profile-section {
-        background-color: #f9f9f9;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        border-left: 4px solid #667eea;
-      }
-      
-      .profile-info {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-        margin-bottom: 15px;
-      }
-      
-      .info-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      
-      .info-label {
-        font-weight: 600;
-        color: #333;
-      }
-      
-      .info-value {
-        color: #666;
-      }
-      
-      .role-badge {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-      }
-      
-      .role-viewer { background-color: #e7f3ff; color: #0066cc; }
-      .role-user { background-color: #e8f5e9; color: #2e7d32; }
-      .role-contributor { background-color: #fff3e0; color: #e65100; }
-      .role-admin { background-color: #f3e5f5; color: #7b1fa2; }
-      
-      h2 {
-        color: #333;
-        margin-top: 30px;
-        margin-bottom: 15px;
-        font-size: 18px;
-      }
-      
-      .contributor-request {
-        background-color: #fff3e0;
-        padding: 15px;
-        border-radius: 8px;
-        border-left: 4px solid #ff9800;
-        margin-bottom: 20px;
-      }
-      
-      .request-form {
-        display: flex;
-        gap: 10px;
-      }
-      
-      button {
-        padding: 10px 20px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: 600;
-      }
-      
-      button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-      }
-      
-      .proposals-list {
-        list-style: none;
-      }
-      
-      .proposal-item {
-        background-color: #f9f9f9;
-        padding: 15px;
-        border-radius: 8px;
-        border-left: 4px solid #667eea;
-        margin-bottom: 10px;
-      }
-      
-      .proposal-type {
-        display: inline-block;
-        padding: 3px 8px;
-        background-color: #e7f3ff;
-        color: #0066cc;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 600;
-        margin-right: 10px;
-      }
-      
-      .proposal-status {
-        display: inline-block;
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 600;
-      }
-      
-      .status-pending { background-color: #fff3cd; color: #856404; }
-      .status-approved { background-color: #d4edda; color: #155724; }
-      .status-rejected { background-color: #f8d7da; color: #721c24; }
-      .status-withdrawn { background-color: #e2e3e5; color: #383d41; }
-      
-      .empty-message {
-        color: #999;
-        font-style: italic;
-        padding: 20px;
-        text-align: center;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="nav">
-        <a href="/">← Zurück zur Startseite</a>
-        {% if current_user.role in ['user', 'contributor', 'admin'] %}
-          <a href="/proposals">📝 Beiträge</a>
-          <a href="/proposals/new" style="background-color: #28a745;">➕ Neuer Beitrag</a>
-        {% endif %}
-        <a href="/logout">🚪 Logout</a>
+{% extends "base.html" %} {% block title %}Profil - Shopping Points Optimiser{%
+endblock %} {% block nav %}
+<nav class="top-nav">
+  <a class="nav-link" href="/">🏠 Startseite</a>
+  {% if current_user.role in ['user', 'contributor', 'admin'] %}
+  <a class="nav-link" href="/proposals">📝 Beiträge</a>
+  <a class="nav-link" href="/proposals/new">➕ Neuer Beitrag</a>
+  {% endif %}
+  <a class="nav-link" href="/logout">🚪 Logout</a>
+</nav>
+{% endblock %} {% block content %}
+<div class="card wide">
+  <h1>👤 Mein Profil</h1>
+
+  <div class="profile-section">
+    <div class="profile-info">
+      <div class="info-row">
+        <span class="info-label">Benutzername:</span>
+        <span class="info-value">{{ current_user.username }}</span>
       </div>
-      
-      <h1>👤 Mein Profil</h1>
-      
-      <div class="profile-section">
-        <div class="profile-info">
-          <div class="info-row">
-            <span class="info-label">Benutzername:</span>
-            <span class="info-value">{{ current_user.username }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Email:</span>
-            <span class="info-value">{{ current_user.email }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Rolle:</span>
-            <span class="info-value">
-              <span class="role-badge role-{{ current_user.role }}">
-                {{ current_user.role.upper() }}
-              </span>
-            </span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Status:</span>
-            <span class="info-value">
-              {% if current_user.status == 'active' %}
-                <span style="color: green;">✓ Aktiv</span>
-              {% else %}
-                <span style="color: red;">✗ Gesperrt</span>
-              {% endif %}
-            </span>
-          </div>
-        </div>
+      <div class="info-row">
+        <span class="info-label">Email:</span>
+        <span class="info-value">{{ current_user.email }}</span>
       </div>
-      
-      <!-- Contributor Request Section -->
-      {% if current_user.role == 'viewer' or current_user.role == 'user' %}
-        <h2>📢 Contributor werden</h2>
-        {% if contributor_request %}
-          <div class="contributor-request">
-            {% if contributor_request.status == 'pending' %}
-              ⏳ Ihre Anfrage ist ausstehend. Warten Sie auf die Bestätigung durch einen Admin.
-            {% elif contributor_request.status == 'approved' %}
-              ✓ Ihre Anfrage wurde genehmigt! Sie sind jetzt Contributor.
-            {% elif contributor_request.status == 'rejected' %}
-              ✗ Ihre Anfrage wurde abgelehnt.
-            {% endif %}
-          </div>
-        {% else %}
-          <div class="contributor-request">
-            Werden Sie Contributor, um Rate-Änderungen vorzuschlagen und abzustimmen!
-            <form method="post" action="/request-contributor" style="margin-top: 15px;">
-              <button type="submit">Contributor-Anfrage einreichen</button>
-            </form>
-          </div>
-        {% endif %}
-      {% endif %}
-      
-      <!-- My Proposals Section -->
-      {% if current_user.role in ['user', 'contributor'] %}
-        <h2>📝 Meine Vorschläge</h2>
-        {% if proposals %}
-          <ul class="proposals-list">
-            {% for proposal in proposals %}
-              <li class="proposal-item">
-                <span class="proposal-type">{{ proposal.proposal_type.upper() }}</span>
-                <span class="proposal-status status-{{ proposal.status }}">{{ proposal.status.upper() }}</span>
-                <p style="margin-top: 10px; color: #666;">
-                  {% if proposal.reason %}
-                    <strong>Grund:</strong> {{ proposal.reason }}
-                  {% endif %}
-                </p>
-                <p style="font-size: 12px; color: #999; margin-top: 8px;">
-                  Erstellt: {{ proposal.created_at.strftime('%d.%m.%Y %H:%M') }}
-                </p>
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="empty-message">Sie haben noch keine Vorschläge eingereicht.</p>
-        {% endif %}
-      {% endif %}
+      <div class="info-row">
+        <span class="info-label">Rolle:</span>
+        <span class="info-value">
+          <span class="role-badge role-{{ current_user.role }}">
+            {{ current_user.role.upper() }}
+          </span>
+        </span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Status:</span>
+        <span class="info-value">
+          {% if current_user.status == 'active' %}
+          <span class="status-badge status-active">✓ Aktiv</span>
+          {% else %}
+          <span class="status-badge status-inactive">✗ Gesperrt</span>
+          {% endif %}
+        </span>
+      </div>
     </div>
-  </body>
-</html>
+  </div>
+
+  {% if current_user.role == 'viewer' or current_user.role == 'user' %}
+  <h2>📢 Contributor werden</h2>
+  {% if contributor_request %}
+  <div class="contributor-request">
+    {% if contributor_request.status == 'pending' %} ⏳ Ihre Anfrage ist
+    ausstehend. Warten Sie auf die Bestätigung durch einen Admin. {% elif
+    contributor_request.status == 'approved' %} ✓ Ihre Anfrage wurde genehmigt!
+    Sie sind jetzt Contributor. {% elif contributor_request.status == 'rejected'
+    %} ✗ Ihre Anfrage wurde abgelehnt. {% endif %}
+  </div>
+  {% else %}
+  <div class="contributor-request">
+    Werden Sie Contributor, um Rate-Änderungen vorzuschlagen und abzustimmen!
+    <form method="post" action="/request-contributor" class="form-group">
+      <button type="submit" class="btn btn-inline">
+        Contributor-Anfrage einreichen
+      </button>
+    </form>
+  </div>
+  {% endif %} {% endif %} {% if current_user.role in ['user', 'contributor'] %}
+  <h2>📝 Meine Vorschläge</h2>
+  {% if proposals %}
+  <ul class="proposals-list">
+    {% for proposal in proposals %}
+    <li class="proposal-item">
+      <span class="proposal-type">{{ proposal.proposal_type.upper() }}</span>
+      <span class="proposal-status status-{{ proposal.status }}"
+        >{{ proposal.status.upper() }}</span
+      >
+      {% if proposal.reason %}
+      <p class="proposal-reason">
+        <strong>Grund:</strong> {{ proposal.reason }}
+      </p>
+      {% endif %}
+      <p class="proposal-meta">
+        Erstellt: {{ proposal.created_at.strftime('%d.%m.%Y %H:%M') }}
+      </p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty-message">Sie haben noch keine Vorschläge eingereicht.</p>
+  {% endif %} {% endif %}
+</div>
+{% endblock %}

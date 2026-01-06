@@ -3,9 +3,9 @@ Reset the SQLite database: drop all tables, recreate schema, and seed test accou
 Usage:
   python reset_db.py
 """
-import sys
-from app import app, db
 import create_test_accounts
+
+from app import app, db
 
 
 def reset_db():

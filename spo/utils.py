@@ -4,13 +4,13 @@ from spo.models import ShopVariant
 
 def ensure_variant_for_shop(shop):
     existing = ShopVariant.query.filter_by(
-        shop_main_id=shop.shop_main_id, source='manual', source_name=shop.name
+        shop_main_id=shop.shop_main_id, source="manual", source_name=shop.name
     ).first()
     if existing:
         return existing
     variant = ShopVariant(
         shop_main_id=shop.shop_main_id,
-        source='manual',
+        source="manual",
         source_name=shop.name,
         source_id=str(shop.id),
         confidence_score=100.0,

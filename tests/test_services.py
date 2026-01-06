@@ -73,7 +73,9 @@ def test_ensure_program_creates_and_updates(app, session):
 
 def test_ensure_variant_for_shop_creates_once(app, session):
     with app.app_context():
-        main = ShopMain(id="main-1", canonical_name="Demo", canonical_name_lower="demo", status="active")
+        main = ShopMain(
+            id="main-1", canonical_name="Demo", canonical_name_lower="demo", status="active"
+        )
         db.session.add(main)
         db.session.flush()
 

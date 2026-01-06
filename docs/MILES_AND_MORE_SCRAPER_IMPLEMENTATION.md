@@ -12,7 +12,7 @@ A Playwright-based web scraper that:
 - Handles uncertainty gracefully:
   - If points rate cannot be extracted → creates a Proposal marked `source='scraper'`
   - If an error occurs → logs error and creates a recovery Proposal
-  
+
 Features:
 - Auto-creates/updates Shop and ShopProgramRate records in database
 - Creates a system user `_scraper_system` for scraper-generated proposals
@@ -57,8 +57,8 @@ GET/POST route that:
   - Pre-filled form fields based on proposal type
   - Edit capability for all fields
   - Scraper badge indicator
-  
-- **POST**: 
+
+- **POST**:
   - Creates new User Proposal from reviewed data
   - Sets `source='user'` on new proposal
   - Marks original scraper proposal as 'approved'
@@ -93,7 +93,7 @@ The Proposal model already had these fields:
 2. **Auto-Create Proposals**: Scraper creates proposals for:
    - Successfully scraped partners (marked as scraped)
    - Partners with missing data (marked for manual review)
-3. **User Interaction**: 
+3. **User Interaction**:
    - User selects a shop that has a scraper proposal
    - Modal popup shows the proposal
    - User clicks "Review Proposal" button

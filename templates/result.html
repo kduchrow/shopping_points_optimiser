@@ -1,159 +1,173 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ergebnisse - Shopping Points Optimiser</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/result.css') }}">
-  </head>
-  <body>
-    <div class="container">
-      <h1>📊 Ergebnisse</h1>
-      
-      <div class="shop-info">
-        <p>🏪 <strong>Shop:</strong> {{ shop.name }}</p>
-        {% if mode == 'shopping' %}
-          <p>💵 <strong>Einkaufsbetrag:</strong> €{{ amount }}</p>
-        {% elif mode == 'voucher' %}
-          <p>🎁 <strong>Gewünschter Gutschein:</strong> €{{ voucher }}</p>
+{% extends "base.html" %} {% block title %}Ergebnisse - Shopping Points
+Optimiser{% endblock %} {% block extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/result.css') }}"
+/>
+{% endblock %} {% block nav %}
+<nav class="top-nav">
+  <a class="nav-link" href="/">🏠 Startseite</a>
+</nav>
+{% endblock %} {% block content %}
+<div class="card wide">
+  <h1>📊 Ergebnisse</h1>
+
+  <div class="info-box">
+    <p>🏪 <strong>Shop:</strong> {{ shop.name }}</p>
+    {% if mode == 'shopping' %}
+    <p>💵 <strong>Einkaufsbetrag:</strong> €{{ amount }}</p>
+    {% elif mode == 'voucher' %}
+    <p>🎁 <strong>Gewünschter Gutschein:</strong> €{{ voucher }}</p>
+    {% endif %}
+  </div>
+
+  {% if mode == 'shopping' %} {% if has_coupons %}
+  <div class="coupons-section">
+    <h3>🎉 Verfügbare Sonderaktionen für diesen Shop</h3>
+    <div class="coupons-list">
+      {% for coupon in active_coupons %}
+      <div class="coupon-card">
+        <h4>{{ coupon.name }}</h4>
+        <div class="coupon-type">
+          {% if coupon.coupon_type == 'multiplier' %} 🔢 {{ coupon.value }}x
+          Multiplikator {% else %} 💰 {{ coupon.value }}% Rabatt {% endif %}
+        </div>
+        <div class="coupon-value">
+          {% if coupon.coupon_type == 'multiplier' %} ×{{ coupon.value }} {%
+          else %} -{{ coupon.value }}% {% endif %}
+        </div>
+        <p class="text-small text-gray mt-8 mb-0">{{ coupon.description }}</p>
+        <div class="coupon-shop">
+          <strong>📍 {{ coupon.shop.name }}</strong>
+        </div>
+        {% if coupon.program %}
+        <div class="coupon-program">Programm: {{ coupon.program.name }}</div>
         {% endif %}
       </div>
+      {% endfor %}
+    </div>
+    {% if active_coupons|length > 3 %}
+    <p class="text-small text-gray-light mt-8 text-center">
+      ← Scroll für mehr Coupons →
+    </p>
+    {% endif %}
+  </div>
 
-      {% if mode == 'shopping' %}
-        {% if has_coupons %}
-          <div class="coupons-section">
-            <h3>🎉 Verfügbare Sonderaktionen für diesen Shop</h3>
-            <div class="coupons-list">
-              {% for coupon in active_coupons %}
-                <div class="coupon-card">
-                  <h4>{{ coupon.name }}</h4>
-                  <div class="coupon-type">
-                    {% if coupon.coupon_type == 'multiplier' %}
-                      🔢 {{ coupon.value }}x Multiplikator
-                    {% else %}
-                      💰 {{ coupon.value }}% Rabatt
-                    {% endif %}
-                  </div>
-                  <div class="coupon-value">
-                    {% if coupon.coupon_type == 'multiplier' %}
-                      ×{{ coupon.value }}
-                    {% else %}
-                      -{{ coupon.value }}%
-                    {% endif %}
-                  </div>
-                  <p style="font-size: 12px; color: #666; margin: 8px 0;">{{ coupon.description }}</p>
-                  <div class="coupon-shop">
-                    <strong>📍 {{ coupon.shop.name }}</strong>
-                  </div>
-                  {% if coupon.program %}
-                    <div class="coupon-program">
-                      Programm: {{ coupon.program.name }}
-                    </div>
-                  {% endif %}
-                </div>
-              {% endfor %}
-            </div>
-            {% if active_coupons|length > 3 %}
-              <p style="font-size: 12px; color: #999; margin-top: 8px; text-align: center;">
-                ← Scroll für mehr Coupons →
-              </p>
-            {% endif %}
-          </div>
-          
-          <div class="warning-box">
-            <strong>⚠️ Hinweis:</strong> Für diesen Shop sind Sonderaktionen verfügbar. Die Berechnungen berücksichtigen diese automatisch.
-          </div>
-          
-          <div class="sort-buttons">
-            <button class="sort-btn active" onclick="sortResults('base', event)">📊 Nach Basiswert</button>
-            <button class="sort-btn" onclick="sortResults('coupon', event)">🎉 Mit Sonderaktionen</button>
-          </div>
+  <div class="warning">
+    <strong>⚠️ Hinweis:</strong> Für diesen Shop sind Sonderaktionen verfügbar.
+    Die Berechnungen berücksichtigen diese automatisch.
+  </div>
+
+  <div class="mode-toggle">
+    <button class="mode-btn active" onclick="sortResults('base', event)">
+      📊 Nach Basiswert
+    </button>
+    <button class="mode-btn" onclick="sortResults('coupon', event)">
+      🎉 Mit Sonderaktionen
+    </button>
+  </div>
+  {% endif %}
+
+  <h2>🏆 Beste Programme (geschätzter Gegenwert in €)</h2>
+  <ul class="results-list" id="results-list">
+    {% for r in results %}
+    <li
+      data-base-value="{{ r.euros }}"
+      data-coupon-value="{% if r.coupon_info %}{{ r.coupon_info.euros }}{% else %}{{ r.euros }}{% endif %}"
+    >
+      <div class="flex-1">
+        <div class="program-name">{{ r.program }}</div>
+        <div class="program-details">
+          Basiswert: {{ r.points }} Punkte → €{{ r.euros }}
+        </div>
+
+        {% if r.coupon_info %}
+        <div class="coupon-info">
+          <strong>🎉 Mit Sonderaktion:</strong>
+          <span class="coupon-value">€{{ r.coupon_info.euros }}</span>
+          ({{ r.coupon_info.points }} Punkte) {% if r.coupon_info.multipliers %}
+          <br />{{ r.coupon_info.multipliers|join(', ') }} {% endif %} {% if
+          r.coupon_info.discounts %} <br />{{ r.coupon_info.discounts|join(', ')
+          }} {% endif %} {% if r.coupon_info.unknown_combinability %} <br /><em
+            style="color: #ff6600"
+            >⚠ Kombinierbarkeit unbekannt - Beide Werte angezeigt</em
+          >
+          {% endif %}
+        </div>
         {% endif %}
-        
-        <h2>🏆 Beste Programme (geschätzter Gegenwert in €)</h2>
-        <ul class="results-list" id="results-list">
-          {% for r in results %}
-            <li data-base-value="{{ r.euros }}" data-coupon-value="{% if r.coupon_info %}{{ r.coupon_info.euros }}{% else %}{{ r.euros }}{% endif %}">
-              <div style="flex: 1;">
-                <div class="program-name">{{ r.program }}</div>
-                <div class="program-details">Basiswert: {{ r.points }} Punkte → €{{ r.euros }}</div>
-                
-                {% if r.coupon_info %}
-                  <div class="coupon-info">
-                    <strong>🎉 Mit Sonderaktion:</strong> 
-                    <span class="coupon-value">€{{ r.coupon_info.euros }}</span> 
-                    ({{ r.coupon_info.points }} Punkte)
-                    {% if r.coupon_info.multipliers %}
-                      <br>{{ r.coupon_info.multipliers|join(', ') }}
-                    {% endif %}
-                    {% if r.coupon_info.discounts %}
-                      <br>{{ r.coupon_info.discounts|join(', ') }}
-                    {% endif %}
-                    {% if r.coupon_info.unknown_combinability %}
-                      <br><em style="color: #ff6600;">⚠ Kombinierbarkeit unbekannt - Beide Werte angezeigt</em>
-                    {% endif %}
-                  </div>
-                {% endif %}
-              </div>
-              <div class="program-value" id="value-{{ r.program|replace(' ', '-') }}">
-                €{{ r.euros }}
-              </div>
-            </li>
-          {% endfor %}
-        </ul>
-      {% elif mode == 'voucher' %}
-        <h2>🎯 Benötigter Umsatz nach Programm</h2>
-        <ul class="results-list">
-          {% for r in results %}
-            <li>
-              <div>
-                <div class="program-name">{{ r.program }}</div>
-                <div class="program-details">{{ r.req_points }} Punkte benötigt</div>
-              </div>
-              <div class="program-value">€{{ r.spend }}</div>
-            </li>
-          {% endfor %}
-        </ul>
-      {% elif mode == 'contract' %}
-        <h2>✍️ Vertragsabschluss Bonuspunkte</h2>
-        <div class="info-box">
-          Bei Abschluss eines Vertrages mit <strong>{{ shop.name }}</strong> erhältst du folgende Bonuspunkte pro Programm:
-        </div>
-        <ul class="results-list">
-          {% for r in results %}
-            <li>
-              <div class="program-name">{{ r.program }}</div>
-            </li>
-          {% endfor %}
-        </ul>
-        <div class="info-box" style="margin-top: 20px;">
-          ℹ️ Die genauen Werte und Vergütungen findest du in der <a href="/admin" style="color: #0066cc; text-decoration: underline;"><strong>Admin-Seite</strong></a> unter "Shops & Raten".
-        </div>
-      {% endif %}
-
-      <div class="nav">
-        <a href="/">← Zurück zur Startseite</a>
-         <a href="/shop/{{ shop.id }}/suggest" style="margin-left:10px;">✏️ Vorschlag einreichen</a>
       </div>
-    </div>
-    
-    <!-- Modal for scraper proposals -->
-    <div id="proposalModal" class="modal">
-      <div class="modal-content">
-        <span class="close" onclick="closeProposalModal()">&times;</span>
-        <h2>🤖 Scraper-Vorschlag</h2>
-        <p>Für den Shop <strong id="modalShopName"></strong> wurde automatisch ein Vorschlag erstellt:</p>
-        <p id="modalReason"></p>
-        <p>
-          <a id="modalSourceLink" href="#" target="_blank">📄 Quelle anzeigen</a>
-        </p>
-        <div class="modal-buttons">
-          <button id="reviewBtn" class="modal-btn primary">✏️ Vorschlag reviewen</button>
-          <button onclick="closeProposalModal()" class="modal-btn secondary">✕ Schließen</button>
-        </div>
+      <div class="program-value" id="value-{{ r.program|replace(' ', '-') }}">
+        €{{ r.euros }}
       </div>
-    </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% elif mode == 'voucher' %}
+  <h2>🎯 Benötigter Umsatz nach Programm</h2>
+  <ul class="results-list">
+    {% for r in results %}
+    <li>
+      <div>
+        <div class="program-name">{{ r.program }}</div>
+        <div class="program-details">{{ r.req_points }} Punkte benötigt</div>
+      </div>
+      <div class="program-value">€{{ r.spend }}</div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% elif mode == 'contract' %}
+  <h2>✍️ Vertragsabschluss Bonuspunkte</h2>
+  <div class="info-box">
+    Bei Abschluss eines Vertrages mit <strong>{{ shop.name }}</strong> erhältst
+    du folgende Bonuspunkte pro Programm:
+  </div>
+  <ul class="results-list">
+    {% for r in results %}
+    <li>
+      <div class="program-name">{{ r.program }}</div>
+    </li>
+    {% endfor %}
+  </ul>
+  <div class="info-box mt-20">
+    ℹ️ Die genauen Werte und Vergütungen findest du in der
+    <a href="/admin" class="text-decoration-underline"
+      ><strong>Admin-Seite</strong></a
+    >
+    unter "Shops & Raten".
+  </div>
+  {% endif %}
 
-    <script src="{{ url_for('static', filename='js/result.js') }}"></script>
-  </body>
-</html>
+  <div class="links-stack justify-center mt-30">
+    <a href="/" class="btn btn-inline btn-secondary">← Zurück zur Startseite</a>
+    <a href="/shop/{{ shop.id }}/suggest" class="btn btn-inline"
+      >✏️ Vorschlag einreichen</a
+    >
+  </div>
+</div>
+{% endblock %} {% block modals %}
+<!-- Modal for scraper proposals -->
+<div id="proposalModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeProposalModal()">&times;</span>
+    <h2>🤖 Scraper-Vorschlag</h2>
+    <p>
+      Für den Shop <strong id="modalShopName"></strong> wurde automatisch ein
+      Vorschlag erstellt:
+    </p>
+    <p id="modalReason"></p>
+    <p>
+      <a id="modalSourceLink" href="#" target="_blank">📄 Quelle anzeigen</a>
+    </p>
+    <div class="modal-buttons">
+      <button id="reviewBtn" class="modal-btn primary">
+        ✏️ Vorschlag reviewen
+      </button>
+      <button onclick="closeProposalModal()" class="modal-btn secondary">
+        ✕ Schließen
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/result.js') }}"></script>
+{% endblock %}

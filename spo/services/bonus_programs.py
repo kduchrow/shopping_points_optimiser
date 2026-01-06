@@ -3,11 +3,10 @@
 from spo.extensions import db
 from spo.models import BonusProgram
 
-
 DEFAULT_PROGRAMS = {
-    'MilesAndMore': 0.01,
-    'Payback': 0.005,
-    'Shoop': 0.008,
+    "MilesAndMore": 0.01,
+    "Payback": 0.005,
+    "Shoop": 0.008,
 }
 
 

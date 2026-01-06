@@ -7,6 +7,7 @@ WORKDIR /tmp
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements und install
@@ -29,9 +30,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy Python packages from builder
 COPY --from=builder /root/.local /root/.local
 
-# Set PATH
+# Set PATH and PYTHONPATH
 ENV PATH=/root/.local/bin:$PATH
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app:$PYTHONPATH
 
 # Install Playwright browser binaries and system deps (Chromium)
 RUN python -m playwright install-deps chromium && \

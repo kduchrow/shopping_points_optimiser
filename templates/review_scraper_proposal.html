@@ -1,303 +1,211 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vorschlag reviewen</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { 
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-        padding: 16px;
-      }
-      .container { 
-        max-width: 720px; 
-        margin: 0 auto;
-        background-color: white; 
-        padding: 36px; 
-        border-radius: 12px; 
-        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-      }
-      h1 {
-        color: #333;
-        margin-bottom: 10px;
-        font-size: 26px;
-      }
-      .subtitle {
-        color: #666;
-        margin-bottom: 20px;
-        font-size: 14px;
-      }
-      .proposal-info {
-        background-color: #f0f7ff;
-        padding: 15px;
-        border-radius: 8px;
-        border-left: 4px solid #667eea;
-        margin-bottom: 20px;
-      }
-      .proposal-info p {
-        margin: 8px 0;
-        color: #333;
-      }
-      .proposal-info strong { color: #667eea; }
-      
-      .form-section {
-        margin-bottom: 20px;
-      }
-      
-      label {
-        display: block;
-        color: #333;
-        font-weight: bold;
-        margin-bottom: 8px;
-      }
-      
-      input[type="text"],
-      input[type="number"],
-      input[type="datetime-local"],
-      textarea,
-      select {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        font-size: 14px;
-        font-family: inherit;
-      }
-      
-      input[type="text"]:focus,
-      input[type="number"]:focus,
-      input[type="datetime-local"]:focus,
-      textarea:focus,
-      select:focus {
-        outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-      }
-      
-      textarea {
-        resize: vertical;
-        min-height: 80px;
-      }
-      
-      .checkbox-group {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-top: 8px;
-      }
-      
-      input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        cursor: pointer;
-      }
-      
-      .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-      }
-      
-      .buttons {
-        display: flex;
-        gap: 10px;
-        margin-top: 25px;
-      }
-      
-      .btn {
-        flex: 1;
-        padding: 12px;
-        border: none;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s ease;
-      }
-      
-      .btn-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-      }
-      
-      .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-      }
-      
-      .btn-secondary {
-        background-color: #f0f0f0;
-        color: #333;
-      }
-      
-      .btn-secondary:hover {
-        background-color: #e0e0e0;
-      }
-      
-      .scraper-badge {
-        display: inline-block;
-        background-color: #e3f2fd;
-        color: #1976d2;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: bold;
-        margin-left: 8px;
-      }
-      
-      .field-info {
-        font-size: 12px;
-        color: #666;
-        margin-top: 4px;
-      }
+{% extends "base.html" %} {% block title %}Vorschlag reviewen - Shopping Points
+Optimiser{% endblock %} {% block nav %}
+<nav class="top-nav">
+  <a class="nav-link" href="/proposals">📝 Beiträge</a>
+</nav>
+{% endblock %} {% block content %}
+<div class="card narrow">
+  <h1>🤖 Scraper-Vorschlag reviewen</h1>
 
-      /* Tablet and below */
-      @media (max-width: 768px) {
-        body { padding: 12px; }
-        .container { padding: 24px; border-radius: 10px; }
-        h1 { font-size: 22px; }
-        .form-row { grid-template-columns: 1fr; }
-        .buttons { flex-direction: column; }
-        .btn { width: 100%; }
-      }
+  <!-- Original Proposal Info -->
+  <div class="info-box">
+    <p>
+      <strong>Vorschlagstyp:</strong>
+      {% if proposal.proposal_type == 'rate_change' %} Tarifänderung {% elif
+      proposal.proposal_type == 'shop_add' %} Neuer Shop {% elif
+      proposal.proposal_type == 'program_add' %} Neues Bonusprogramm {% elif
+      proposal.proposal_type == 'coupon_add' %} Neuer Coupon/Aktion {% endif %}
+      <span class="proposal-type">🤖 Scraper erstellt</span>
+    </p>
 
-      /* Mobile portrait */
-      @media (max-width: 480px) {
-        body { padding: 10px; }
-        .container { padding: 18px; }
-        h1 { font-size: 20px; margin-bottom: 12px; }
-        .subtitle { font-size: 13px; }
-        input, textarea, select { font-size: 15px; padding: 12px; }
-        .proposal-info { padding: 12px; border-radius: 8px; }
-        .buttons { gap: 8px; }
-        .btn { padding: 14px; border-radius: 6px; }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1>🤖 Scraper-Vorschlag reviewen</h1>
-      <p class="subtitle">Überprüfen und bestätigen Sie den automatisch erstellten Vorschlag</p>
-      
-      <!-- Original Proposal Info -->
-      <div class="proposal-info">
-        <p><strong>Vorschlagstyp:</strong> 
-          {% if proposal.proposal_type == 'rate_change' %}
-            Tarifänderung
-          {% elif proposal.proposal_type == 'shop_add' %}
-            Neuer Shop
-          {% elif proposal.proposal_type == 'program_add' %}
-            Neues Bonusprogramm
-          {% elif proposal.proposal_type == 'coupon_add' %}
-            Neuer Coupon/Aktion
-          {% endif %}
-          <span class="scraper-badge">🤖 Scraper erstellt</span>
-        </p>
-        
-        {% if proposal.shop %}
-          <p><strong>Shop:</strong> {{ proposal.shop.name }}</p>
-        {% endif %}
-        
-        {% if proposal.program %}
-          <p><strong>Bonusprogramm:</strong> {{ proposal.program.name }}</p>
-        {% endif %}
-        
-        {% if proposal.reason %}
-          <p><strong>Notiz:</strong> {{ proposal.reason }}</p>
-        {% endif %}
-        
-        {% if proposal.source_url %}
-          <p><strong>Quelle:</strong> <a href="{{ proposal.source_url }}" target="_blank">{{ proposal.source_url[:50] }}...</a></p>
-        {% endif %}
-      </div>
-      
-      <form method="post">
-        <!-- Rate Change Form -->
-        {% if proposal.proposal_type == 'rate_change' %}
-          <div class="form-section">
-            <label for="points_per_eur">Punkte pro EUR</label>
-            <input type="number" id="points_per_eur" name="points_per_eur" step="0.01" 
-                   value="{{ proposal.proposed_points_per_eur or '' }}" required>
-            <p class="field-info">Geben Sie die Punkte pro Euro ein oder akzeptieren Sie den Wert des Scrapers</p>
-          </div>
-          
-          <div class="form-section">
-            <label for="cashback_pct">Cashback %</label>
-            <input type="number" id="cashback_pct" name="cashback_pct" step="0.01" 
-                   value="{{ proposal.proposed_cashback_pct or 0 }}" min="0" max="100">
-          </div>
-        
-        <!-- Shop Add Form -->
-        {% elif proposal.proposal_type == 'shop_add' %}
-          <div class="form-section">
-            <label for="name">Shop Name</label>
-            <input type="text" id="name" name="name" value="{{ proposal.proposed_name or '' }}" required>
-          </div>
-        
-        <!-- Program Add Form -->
-        {% elif proposal.proposal_type == 'program_add' %}
-          <div class="form-section">
-            <label for="name">Programmname</label>
-            <input type="text" id="name" name="name" value="{{ proposal.proposed_name or '' }}" required>
-          </div>
-          
-          <div class="form-section">
-            <label for="point_value_eur">Punktwert (EUR)</label>
-            <input type="number" id="point_value_eur" name="point_value_eur" step="0.0001" 
-                   value="{{ proposal.proposed_point_value_eur or '' }}" required>
-          </div>
-        
-        <!-- Coupon Add Form -->
-        {% elif proposal.proposal_type == 'coupon_add' %}
-          <div class="form-section">
-            <label for="coupon_type">Coupon Typ</label>
-            <select id="coupon_type" name="coupon_type" required>
-              <option value="multiplier" {% if proposal.proposed_coupon_type == 'multiplier' %}selected{% endif %}>Multiplikator</option>
-              <option value="discount" {% if proposal.proposed_coupon_type == 'discount' %}selected{% endif %}>Rabatt</option>
-            </select>
-          </div>
-          
-          <div class="form-section">
-            <label for="coupon_value">Wert</label>
-            <input type="number" id="coupon_value" name="coupon_value" step="0.01" 
-                   value="{{ proposal.proposed_coupon_value or '' }}" required>
-            <p class="field-info">z.B. 2 für 2x Multiplikator oder 10 für 10% Rabatt</p>
-          </div>
-          
-          <div class="form-section">
-            <label for="coupon_description">Beschreibung</label>
-            <textarea id="coupon_description" name="coupon_description">{{ proposal.proposed_coupon_description or '' }}</textarea>
-          </div>
-          
-          <div class="form-section">
-            <div class="checkbox-group">
-              <input type="checkbox" id="coupon_combinable" name="coupon_combinable" 
-                     {% if proposal.proposed_coupon_combinable %}checked{% endif %}>
-              <label for="coupon_combinable">Mit anderen Coupons kombinierbar</label>
-            </div>
-          </div>
-          
-          <div class="form-section">
-            <label for="coupon_valid_to">Gültig bis</label>
-            <input type="datetime-local" id="coupon_valid_to" name="coupon_valid_to" 
-                   value="{{ proposal.proposed_coupon_valid_to.isoformat() if proposal.proposed_coupon_valid_to else '' }}">
-          </div>
-        {% endif %}
-        
-        <!-- Additional Notes -->
-        <div class="form-section">
-          <label for="reason">Ihre Notiz (optional)</label>
-          <textarea id="reason" name="reason" placeholder="Fügen Sie weitere Informationen oder Korrektionen hinzu..."></textarea>
-        </div>
-        
-        <div class="buttons">
-          <button type="submit" class="btn btn-primary">✓ Bestätigen und einreichen</button>
-          <a href="/proposals" class="btn btn-secondary" style="text-decoration: none; text-align: center;">⬅ Zurück</a>
-        </div>
-      </form>
+    {% if proposal.shop %}
+    <p><strong>Shop:</strong> {{ proposal.shop.name }}</p>
+    {% endif %} {% if proposal.program %}
+    <p><strong>Bonusprogramm:</strong> {{ proposal.program.name }}</p>
+    {% endif %} {% if proposal.reason %}
+    <p><strong>Notiz:</strong> {{ proposal.reason }}</p>
+    {% endif %} {% if proposal.source_url %}
+    <p>
+      <strong>Quelle:</strong>
+      <a href="{{ proposal.source_url }}" target="_blank"
+        >{{ proposal.source_url[:50] }}...</a
+      >
+    </p>
+    {% endif %}
+  </div>
+
+  <form method="post">
+    <!-- Rate Change Form -->
+    {% if proposal.proposal_type == 'rate_change' %}
+    <div class="form-group">
+      <label for="points_per_eur">Punkte pro EUR</label>
+      <input
+        type="number"
+        id="points_per_eur"
+        name="points_per_eur"
+        step="0.01"
+        value="{{ proposal.proposed_points_per_eur or '' }}"
+        required
+      />
+      <p style="font-size: 12px; color: #6b7280; margin-top: 4px">
+        Geben Sie die Punkte pro Euro ein oder akzeptieren Sie den Wert des
+        Scrapers
+      </p>
     </div>
-  </body>
-</html>
+
+    <div class="form-group">
+      <label for="cashback_pct">Cashback %</label>
+      <input
+        type="number"
+        id="cashback_pct"
+        name="cashback_pct"
+        step="0.01"
+        value="{{ proposal.proposed_cashback_pct or 0 }}"
+        min="0"
+        max="100"
+      />
+    </div>
+
+    <!-- Shop Add Form -->
+    {% elif proposal.proposal_type == 'shop_add' %}
+    <div class="form-group">
+      <label for="name">Shop Name</label>
+      <input
+        type="text"
+        id="name"
+        name="name"
+        value="{{ proposal.proposed_name or '' }}"
+        required
+      />
+    </div>
+
+    <!-- Program Add Form -->
+    {% elif proposal.proposal_type == 'program_add' %}
+    <div class="form-group">
+      <label for="name">Programmname</label>
+      <input
+        type="text"
+        id="name"
+        name="name"
+        value="{{ proposal.proposed_name or '' }}"
+        required
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="point_value_eur">Punktwert (EUR)</label>
+      <input
+        type="number"
+        id="point_value_eur"
+        name="point_value_eur"
+        step="0.0001"
+        value="{{ proposal.proposed_point_value_eur or '' }}"
+        required
+      />
+    </div>
+
+    <!-- Coupon Add Form -->
+    {% elif proposal.proposal_type == 'coupon_add' %}
+    <div class="form-group">
+      <label for="coupon_type">Coupon Typ</label>
+      <select id="coupon_type" name="coupon_type" required>
+        <option
+          value="multiplier"
+          {%
+          if
+          proposal.proposed_coupon_type=""
+          ="multiplier"
+          %}selected{%
+          endif
+          %}
+        >
+          Multiplikator
+        </option>
+        <option
+          value="discount"
+          {%
+          if
+          proposal.proposed_coupon_type=""
+          ="discount"
+          %}selected{%
+          endif
+          %}
+        >
+          Rabatt
+        </option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="coupon_value">Wert</label>
+      <input
+        type="number"
+        id="coupon_value"
+        name="coupon_value"
+        step="0.01"
+        value="{{ proposal.proposed_coupon_value or '' }}"
+        required
+      />
+      <p style="font-size: 12px; color: #6b7280; margin-top: 4px">
+        z.B. 2 für 2x Multiplikator oder 10 für 10% Rabatt
+      </p>
+    </div>
+
+    <div class="form-group">
+      <label for="coupon_description">Beschreibung</label>
+      <textarea id="coupon_description" name="coupon_description">
+{{ proposal.proposed_coupon_description or '' }}</textarea
+      >
+    </div>
+
+    <div class="form-group">
+      <div class="flex items-center gap-10">
+        <input
+          type="checkbox"
+          id="coupon_combinable"
+          name="coupon_combinable"
+          {%
+          if
+          proposal.proposed_coupon_combinable
+          %}checked{%
+          endif
+          %}
+        />
+        <label for="coupon_combinable" class="mb-0"
+          >Mit anderen Coupons kombinierbar</label
+        >
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="coupon_valid_to">Gültig bis</label>
+      <input
+        type="datetime-local"
+        id="coupon_valid_to"
+        name="coupon_valid_to"
+        value="{{ proposal.proposed_coupon_valid_to.isoformat() if proposal.proposed_coupon_valid_to else '' }}"
+      />
+    </div>
+    {% endif %}
+
+    <!-- Additional Notes -->
+    <div class="form-group">
+      <label for="reason">Ihre Notiz (optional)</label>
+      <textarea
+        id="reason"
+        name="reason"
+        placeholder="Fügen Sie weitere Informationen oder Korrektionen hinzu..."
+      ></textarea>
+    </div>
+
+    <div class="flex gap-10 mt-25">
+      <button type="submit" class="btn">✓ Bestätigen und einreichen</button>
+      <a
+        href="/proposals"
+        class="btn btn-secondary text-decoration-none text-center"
+        >⬅ Zurück</a
+      >
+    </div>
+  </form>
+</div>
+{% endblock %}

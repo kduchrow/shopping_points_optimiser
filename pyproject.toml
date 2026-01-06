@@ -1,0 +1,39 @@
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+lint.select = ["E", "F", "I", "W", "UP"]
+lint.ignore = ["E501"]  # Line too long (handled by black)
+
+[tool.pyright]
+include = ["spo", "scripts", "tests"]
+exclude = ["**/node_modules", "**/__pycache__", ".git"]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"
+reportPrivateUsage = false
+reportConstantRedefinition = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.coverage.run]
+branch = true
+source = ["spo"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]

@@ -110,14 +110,14 @@ def scrape_payback(job):
     with app.app_context():
         job.add_message('Starte Payback-Scraper...')
         job.set_progress(10, 100)
-        
+
         # ... scraping logic ...
-        
+
         job.add_message('Daten verarbeitet')
         job.set_progress(80, 100)
-        
+
         # ... more logic ...
-        
+
         job.set_progress(100, 100)
         return {'added': added, 'updated': updated}
 ```

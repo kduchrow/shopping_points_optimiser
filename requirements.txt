@@ -4,4 +4,6 @@ Flask-Login
 requests
 beautifulsoup4
 playwright
+alembic
+psycopg2-binary
 gunicorn>=20.0.0

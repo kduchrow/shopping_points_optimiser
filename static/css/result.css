@@ -1,12 +1,18 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
   padding: 20px;
 }
 @media (max-width: 768px) {
-  body { padding: 10px; }
+  body {
+    padding: 10px;
+  }
 }
 .container {
   max-width: 700px;
@@ -17,7 +23,10 @@ body {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 @media (max-width: 768px) {
-  .container { padding: 15px; border-radius: 8px; }
+  .container {
+    padding: 15px;
+    border-radius: 8px;
+  }
 }
 h1 {
   color: #333;
@@ -26,8 +35,13 @@ h1 {
   font-size: 28px;
 }
 @media (max-width: 768px) {
-  h1 { font-size: 22px; margin-bottom: 15px; }
-  h2 { font-size: 18px; }
+  h1 {
+    font-size: 22px;
+    margin-bottom: 15px;
+  }
+  h2 {
+    font-size: 18px;
+  }
 }
 .shop-info {
   background-color: #f0f7ff;
@@ -36,8 +50,13 @@ h1 {
   border-left: 4px solid #667eea;
   margin-bottom: 20px;
 }
-.shop-info p { margin: 8px 0; color: #333; }
-.shop-info strong { color: #667eea; }
+.shop-info p {
+  margin: 8px 0;
+  color: #333;
+}
+.shop-info strong {
+  color: #667eea;
+}
 
 h2 {
   color: #333;
@@ -48,7 +67,10 @@ h2 {
   padding-bottom: 10px;
 }
 
-.results-list { list-style: none; margin-bottom: 20px; }
+.results-list {
+  list-style: none;
+  margin-bottom: 20px;
+}
 .results-list li {
   background-color: #f9f9f9;
   padding: 15px;
@@ -64,13 +86,31 @@ h2 {
   transform: translateX(5px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
-.results-list li:nth-child(1) { border-left-color: #ffd700; background-color: #fffef0; }
-.results-list li:nth-child(2) { border-left-color: #c0c0c0; }
-.results-list li:nth-child(3) { border-left-color: #cd7f32; }
+.results-list li:nth-child(1) {
+  border-left-color: #ffd700;
+  background-color: #fffef0;
+}
+.results-list li:nth-child(2) {
+  border-left-color: #c0c0c0;
+}
+.results-list li:nth-child(3) {
+  border-left-color: #cd7f32;
+}
 
-.program-name { font-weight: 600; color: #333; }
-.program-value { font-size: 18px; font-weight: 700; color: #667eea; }
-.program-details { font-size: 13px; color: #666; margin-top: 5px; }
+.program-name {
+  font-weight: 600;
+  color: #333;
+}
+.program-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #667eea;
+}
+.program-details {
+  font-size: 13px;
+  color: #666;
+  margin-top: 5px;
+}
 
 .info-box {
   background-color: #e7f3ff;
@@ -82,7 +122,10 @@ h2 {
   color: #333;
 }
 
-.nav { text-align: center; margin-top: 30px; }
+.nav {
+  text-align: center;
+  margin-top: 30px;
+}
 .nav a {
   display: inline-block;
   padding: 12px 24px;
@@ -90,18 +133,31 @@ h2 {
   color: white;
   text-decoration: none;
   border-radius: 6px;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 @media (max-width: 768px) {
-  .nav { margin-top: 20px; }
-  .nav a { padding: 12px 20px; font-size: 14px; display: block; }
+  .nav {
+    margin-top: 20px;
+  }
+  .nav a {
+    padding: 12px 20px;
+    font-size: 14px;
+    display: block;
+  }
 }
 .nav a:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
 }
 
-.sort-buttons { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
+.sort-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  justify-content: center;
+}
 .sort-btn {
   padding: 10px 20px;
   border: 2px solid #667eea;
@@ -113,10 +169,20 @@ h2 {
   transition: all 0.2s;
 }
 @media (max-width: 768px) {
-  .sort-buttons { flex-direction: column; gap: 8px; }
-  .sort-btn { padding: 12px 16px; font-size: 14px; width: 100%; }
+  .sort-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .sort-btn {
+    padding: 12px 16px;
+    font-size: 14px;
+    width: 100%;
+  }
 }
-.sort-btn.active { background-color: #667eea; color: white; }
+.sort-btn.active {
+  background-color: #667eea;
+  color: white;
+}
 .sort-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
@@ -130,7 +196,11 @@ h2 {
   font-size: 13px;
   border-left: 3px solid #ffcc00;
 }
-.coupon-value { color: #28a745; font-weight: 700; font-size: 16px; }
+.coupon-value {
+  color: #28a745;
+  font-weight: 700;
+  font-size: 16px;
+}
 .warning-box {
   background-color: #fff3cd;
   border-left: 4px solid #ff9800;
@@ -138,7 +208,9 @@ h2 {
   margin: 15px 0;
   border-radius: 6px;
 }
-.warning-box strong { color: #ff6600; }
+.warning-box strong {
+  color: #ff6600;
+}
 
 .coupons-section {
   background-color: #f0f8ff;
@@ -147,7 +219,11 @@ h2 {
   border: 2px solid #667eea;
   margin: 15px 0;
 }
-.coupons-section h3 { color: #667eea; margin-bottom: 10px; font-size: 16px; }
+.coupons-section h3 {
+  color: #667eea;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
 
 .coupons-list {
   display: flex;
@@ -156,9 +232,17 @@ h2 {
   padding: 10px 0;
   scroll-behavior: smooth;
 }
-.coupons-list::-webkit-scrollbar { height: 6px; }
-.coupons-list::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
-.coupons-list::-webkit-scrollbar-thumb { background: #667eea; border-radius: 3px; }
+.coupons-list::-webkit-scrollbar {
+  height: 6px;
+}
+.coupons-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+.coupons-list::-webkit-scrollbar-thumb {
+  background: #667eea;
+  border-radius: 3px;
+}
 
 .coupon-card {
   flex-shrink: 0;
@@ -170,10 +254,20 @@ h2 {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 @media (max-width: 768px) {
-  .coupon-card { width: 240px; padding: 12px; }
-  .coupons-list { gap: 8px; }
+  .coupon-card {
+    width: 240px;
+    padding: 12px;
+  }
+  .coupons-list {
+    gap: 8px;
+  }
 }
-.coupon-card h4 { color: #333; margin: 0 0 5px 0; font-size: 14px; font-weight: bold; }
+.coupon-card h4 {
+  color: #333;
+  margin: 0 0 5px 0;
+  font-size: 14px;
+  font-weight: bold;
+}
 
 .coupon-type {
   display: inline-block;
@@ -186,10 +280,27 @@ h2 {
   margin-bottom: 8px;
 }
 
-.coupon-value { font-size: 20px; color: #28a745; font-weight: bold; margin: 5px 0; }
-.coupon-shop { font-size: 12px; color: #666; margin-top: 8px; border-top: 1px solid #eee; padding-top: 8px; }
-.coupon-shop strong { color: #667eea; }
-.coupon-program { font-size: 11px; color: #999; margin-top: 4px; }
+.coupon-value {
+  font-size: 20px;
+  color: #28a745;
+  font-weight: bold;
+  margin: 5px 0;
+}
+.coupon-shop {
+  font-size: 12px;
+  color: #666;
+  margin-top: 8px;
+  border-top: 1px solid #eee;
+  padding-top: 8px;
+}
+.coupon-shop strong {
+  color: #667eea;
+}
+.coupon-program {
+  font-size: 11px;
+  color: #999;
+  margin-top: 4px;
+}
 
 .modal {
   display: none;
@@ -203,8 +314,12 @@ h2 {
   animation: fadeIn 0.3s ease;
 }
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-content {
@@ -218,8 +333,14 @@ h2 {
   animation: slideIn 0.3s ease;
 }
 @keyframes slideIn {
-  from { transform: translateY(-50px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .modal-content h2 {
@@ -229,7 +350,11 @@ h2 {
   padding-bottom: 10px;
 }
 
-.modal-content p { color: #333; margin-bottom: 12px; line-height: 1.6; }
+.modal-content p {
+  color: #333;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
 
 .close {
   color: #aaa;
@@ -239,9 +364,15 @@ h2 {
   cursor: pointer;
   line-height: 1;
 }
-.close:hover { color: #667eea; }
+.close:hover {
+  color: #667eea;
+}
 
-.modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
 .modal-btn {
   flex: 1;
   padding: 12px;
@@ -260,8 +391,19 @@ h2 {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
 }
-.modal-btn.secondary { background-color: #f0f0f0; color: #333; }
-.modal-btn.secondary:hover { background-color: #e0e0e0; }
+.modal-btn.secondary {
+  background-color: #f0f0f0;
+  color: #333;
+}
+.modal-btn.secondary:hover {
+  background-color: #e0e0e0;
+}
 
-#modalSourceLink { color: #667eea; text-decoration: none; font-weight: bold; }
-#modalSourceLink:hover { text-decoration: underline; }
+#modalSourceLink {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: bold;
+}
+#modalSourceLink:hover {
+  text-decoration: underline;
+}

@@ -150,13 +150,69 @@ This is the initial release. No migration required.
 
 ## [Unreleased]
 
+### Development Infrastructure
+
+#### Added
+
+**Database Migration**
+- 🐘 PostgreSQL 16-Alpine support with Docker integration
+- 🔄 Alembic migration system with automatic schema versioning
+- 📦 SQLite → PostgreSQL migration script with data preservation
+- ✅ Automatic migration execution on container startup
+
+**CI/CD Pipeline**
+- 🚀 GitHub Actions workflow with 5-stage pipeline
+- 🔍 Lint stage: Ruff code analysis
+- 📋 Type checking: Pyright static analysis
+- 🧪 Test stage: pytest with coverage reporting to Codecov
+- 🏗️ Alembic schema validation
+- 🔐 Security scanning: bandit, safety, detect-secrets
+
+**Code Quality Automation**
+- 🪝 Pre-commit hooks framework (16 hooks)
+- 📐 Code formatting: black (100 char line-length), prettier
+- 🔧 Import management: isort (black-compatible profile)
+- 🧹 Lint: ruff with Python 3.10+ modernization rules (UP007)
+- 📄 YAML validation: yamllint
+- 🔐 Secret detection: detect-secrets with baseline
+
+**Template & Static Assets**
+- 🎨 Unified base.html template with footer showing version + GitHub link
+- 📦 CSS extracted to static/css/ folder structure
+- 🔗 All templates refactored to extend base.html
+
+**Documentation**
+- 📖 Migration guide: MIGRATION_SQLITE_TO_POSTGRES.md
+- 🔧 Pre-commit setup: PRE_COMMIT_SETUP.md
+
+#### Changed
+
+- 🔄 Type hints: Upgraded to Python 3.10+ union syntax (Optional[X] → X | None)
+- 📋 Docker: Added Postgres health checks and entrypoint migration
+- 🔑 Environment: DATABASE_URL now points to PostgreSQL by default
+
+#### Technical Details
+
+**Docker Compose Services**
+- `db`: PostgreSQL 16-Alpine with volume persistence
+- `shopping-points`: Flask application with auto-migrations
+
+**Database Configuration**
+- Connection: `postgresql+psycopg2://spo:spo@db:5432/spo`
+- Migrations: Alembic-managed, auto-executed on startup
+- Data: Full migration from SQLite with sequence resets and FK ordering
+
+**Versions Locked**
+- Python: 3.11+ (required for union type syntax)
+- PostgreSQL: 16-Alpine
+- Alembic: Latest stable
+- Pre-commit: v4.5.0
+
 ### Planned Features
 - Email notifications
 - Advanced analytics dashboard
 - Mobile responsive UI
 - Multi-language support
-- Docker deployment
-- PostgreSQL support
 - Redis caching
 - API rate limiting
 - OAuth integration

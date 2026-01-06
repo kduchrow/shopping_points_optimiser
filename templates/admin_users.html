@@ -1,173 +1,151 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User-Verwaltung - Admin</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-    <style>
-      .user-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-      }
-      .user-table th,
-      .user-table td {
-        padding: 12px;
-        text-align: left;
-        border-bottom: 1px solid #ddd;
-      }
-      .user-table th {
-        background-color: #667eea;
-        color: white;
-        font-weight: 600;
-      }
-      .user-table tr:hover {
-        background-color: #f5f5f5;
-      }
-      .role-badge {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-      }
-      .role-admin { background-color: #dc3545; color: white; }
-      .role-contributor { background-color: #28a745; color: white; }
-      .role-user { background-color: #007bff; color: white; }
-      .role-viewer { background-color: #6c757d; color: white; }
-      .status-badge {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 10px;
-        font-size: 11px;
-        font-weight: 600;
-      }
-      .status-active { background-color: #d4edda; color: #155724; }
-      .status-inactive { background-color: #f8d7da; color: #721c24; }
-      .action-form {
-        display: inline-block;
-        margin-right: 8px;
-      }
-      .action-form select {
-        padding: 6px 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 13px;
-      }
-      .btn-sm {
-        padding: 6px 12px;
-        font-size: 13px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: 600;
-        transition: all 0.2s;
-      }
-      .btn-primary { background-color: #667eea; color: white; }
-      .btn-primary:hover { background-color: #5568d3; }
-      .btn-warning { background-color: #ffc107; color: #333; }
-      .btn-warning:hover { background-color: #e0a800; }
-      .btn-danger { background-color: #dc3545; color: white; }
-      .btn-danger:hover { background-color: #c82333; }
-      .btn-success { background-color: #28a745; color: white; }
-      .btn-success:hover { background-color: #218838; }
-      @media (max-width: 768px) {
-        .user-table { font-size: 12px; }
-        .user-table th,
-        .user-table td { padding: 8px 4px; }
-        .action-form { display: block; margin-bottom: 8px; }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="header">
-      <h1>👥 User-Verwaltung</h1>
-      <div>
-        <a href="/admin" style="color: white; margin-right: 20px; text-decoration: none;">← Zurück zum Admin Panel</a>
-        <a href="/" style="color: white; margin-right: 10px; text-decoration: none;">🏠 Home</a>
-        <a href="/logout" style="color: white; text-decoration: none;">🚪 Logout</a>
-      </div>
-    </div>
-    
-    <div class="container">
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          {% for category, message in messages %}
-            <div class="alert alert-{{ category }}" style="padding: 12px; margin-bottom: 20px; border-radius: 6px; background-color: {% if category == 'success' %}#d4edda{% elif category == 'error' %}#f8d7da{% else %}#d1ecf1{% endif %}; border: 1px solid {% if category == 'success' %}#c3e6cb{% elif category == 'error' %}#f5c6cb{% else %}#bee5eb{% endif %}; color: {% if category == 'success' %}#155724{% elif category == 'error' %}#721c24{% else %}#0c5460{% endif %};">
-              {{ message }}
-            </div>
-          {% endfor %}
-        {% endif %}
-      {% endwith %}
+{% extends "base.html" %} {% block title %}User-Verwaltung - Admin{% endblock %}
+{% block nav %}
+<nav class="top-nav">
+  <a class="nav-link" href="/admin">← Admin Panel</a>
+  <a class="nav-link" href="/">🏠 Startseite</a>
+  <a class="nav-link" href="/logout">🚪 Logout</a>
+</nav>
+{% endblock %} {% block content %}
+<div class="card wide">
+  <h1>👥 User-Verwaltung</h1>
 
-      <div class="card">
-        <div class="card-title">Alle registrierten User ({{ users|length }})</div>
-        
-        <table class="user-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Username</th>
-              <th>Email</th>
-              <th>Rolle</th>
-              <th>Status</th>
-              <th>Registriert</th>
-              <th>Aktionen</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for user in users %}
-              <tr>
-                <td>{{ user.id }}</td>
-                <td><strong>{{ user.username }}</strong></td>
-                <td>{{ user.email }}</td>
-                <td>
-                  <span class="role-badge role-{{ user.role }}">{{ user.role }}</span>
-                </td>
-                <td>
-                  <span class="status-badge status-{{ user.status }}">{{ user.status }}</span>
-                </td>
-                <td>{{ user.created_at.strftime('%d.%m.%Y') }}</td>
-                <td>
-                  <form action="/admin/users/{{ user.id }}/update_role" method="POST" class="action-form">
-                    <select name="role" onchange="this.form.submit()">
-                      <option value="">Rolle ändern...</option>
-                      <option value="viewer" {% if user.role == 'viewer' %}disabled{% endif %}>Viewer</option>
-                      <option value="user" {% if user.role == 'user' %}disabled{% endif %}>User</option>
-                      <option value="contributor" {% if user.role == 'contributor' %}disabled{% endif %}>Contributor</option>
-                      <option value="admin" {% if user.role == 'admin' %}disabled{% endif %}>Admin</option>
-                    </select>
-                  </form>
-                  
-                  <form action="/admin/users/{{ user.id }}/toggle_status" method="POST" class="action-form" onsubmit="return confirm('Status von {{ user.username }} wirklich ändern?');">
-                    {% if user.status == 'active' %}
-                      <button type="submit" class="btn-sm btn-warning">🔒 Deaktivieren</button>
-                    {% else %}
-                      <button type="submit" class="btn-sm btn-success">✅ Aktivieren</button>
-                    {% endif %}
-                  </form>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        
-        {% if users|length == 0 %}
-          <p style="text-align: center; color: #999; margin: 40px 0;">Keine User gefunden.</p>
-        {% endif %}
-      </div>
-      
-      <div class="card" style="margin-top: 20px;">
-        <div class="card-title">ℹ️ Rollen-Erklärung</div>
-        <ul style="line-height: 1.8;">
-          <li><strong>Viewer:</strong> Kann nur öffentliche Inhalte sehen</li>
-          <li><strong>User:</strong> Kann Proposals erstellen</li>
-          <li><strong>Contributor:</strong> Kann Proposals erstellen und über Proposals abstimmen</li>
-          <li><strong>Admin:</strong> Volle Rechte (User-Verwaltung, Scrapers, Proposals direkt genehmigen)</li>
-        </ul>
-      </div>
-    </div>
-  </body>
-</html>
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %}
+  <div class="flash-messages">
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %} {% endwith %}
+
+  <h2>Alle registrierten User ({{ users|length }})</h2>
+
+  {% if users|length > 0 %}
+  <table class="user-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Rolle</th>
+        <th>Status</th>
+        <th>Registriert</th>
+        <th>Aktionen</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr>
+        <td>{{ user.id }}</td>
+        <td><strong>{{ user.username }}</strong></td>
+        <td>{{ user.email }}</td>
+        <td>
+          <span class="role-badge role-{{ user.role }}">{{ user.role }}</span>
+        </td>
+        <td>
+          <span class="status-badge status-{{ user.status }}"
+            >{{ user.status }}</span
+          >
+        </td>
+        <td>{{ user.created_at.strftime('%d.%m.%Y') }}</td>
+        <td>
+          <form
+            action="/admin/users/{{ user.id }}/update_role"
+            method="POST"
+            class="action-form"
+          >
+            <select name="role" onchange="this.form.submit()">
+              <option value="">Rolle ändern...</option>
+              <option
+                value="viewer"
+                {%
+                if
+                user.role=""
+                ="viewer"
+                %}disabled{%
+                endif
+                %}
+              >
+                Viewer
+              </option>
+              <option
+                value="user"
+                {%
+                if
+                user.role=""
+                ="user"
+                %}disabled{%
+                endif
+                %}
+              >
+                User
+              </option>
+              <option
+                value="contributor"
+                {%
+                if
+                user.role=""
+                ="contributor"
+                %}disabled{%
+                endif
+                %}
+              >
+                Contributor
+              </option>
+              <option
+                value="admin"
+                {%
+                if
+                user.role=""
+                ="admin"
+                %}disabled{%
+                endif
+                %}
+              >
+                Admin
+              </option>
+            </select>
+          </form>
+
+          <form
+            action="/admin/users/{{ user.id }}/toggle_status"
+            method="POST"
+            class="action-form"
+            onsubmit="return confirm('Status von {{ user.username }} wirklich ändern?');"
+          >
+            {% if user.status == 'active' %}
+            <button type="submit" class="btn btn-sm btn-warning">
+              🔒 Deaktivieren
+            </button>
+            {% else %}
+            <button type="submit" class="btn btn-sm btn-success">
+              ✅ Aktivieren
+            </button>
+            {% endif %}
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <p>Keine User gefunden.</p>
+  </div>
+  {% endif %}
+
+  <h2 class="mt-30">ℹ️ Rollen-Erklärung</h2>
+  <ul class="line-height-1-8 pl-20">
+    <li><strong>Viewer:</strong> Kann nur öffentliche Inhalte sehen</li>
+    <li><strong>User:</strong> Kann Proposals erstellen</li>
+    <li>
+      <strong>Contributor:</strong> Kann Proposals erstellen und über Proposals
+      abstimmen
+    </li>
+    <li>
+      <strong>Admin:</strong> Volle Rechte (User-Verwaltung, Scrapers, Proposals
+      direkt genehmigen)
+    </li>
+  </ul>
+</div>
+{% endblock %}

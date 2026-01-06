@@ -1,7 +1,8 @@
+from datetime import datetime, timedelta
+
 from app import app
 from spo.extensions import db
-from spo.models import Coupon, Shop, BonusProgram
-from datetime import datetime, timedelta
+from spo.models import Coupon, Shop
 
 app.app_context().push()
 
@@ -12,16 +13,16 @@ if not shop:
 else:
     # Create a test coupon
     coupon = Coupon(
-        coupon_type='multiplier',
-        name='20x Punkte Test',
-        description='20-fach Punkte beim Einkauf',
+        coupon_type="multiplier",
+        name="20x Punkte Test",
+        description="20-fach Punkte beim Einkauf",
         value=20.0,
         combinable=True,
         shop_id=shop.id,
         program_id=None,  # For all programs
         valid_from=datetime.utcnow(),
         valid_to=datetime.utcnow() + timedelta(days=30),
-        status='active'
+        status="active",
     )
     db.session.add(coupon)
     db.session.commit()

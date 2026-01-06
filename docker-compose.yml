@@ -1,30 +1,50 @@
-version: '3.8'
+---
+version: "3.8"
 
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: shopping-points-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-spo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-spo}
+      POSTGRES_DB: ${POSTGRES_DB:-spo}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-spo}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - shopping-network
+
   shopping-points:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: shopping-points-optimiser
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "5000:5000"
     environment:
       - FLASK_ENV=${FLASK_ENV:-production}
       - SECRET_KEY=${SECRET_KEY}
-      - DATABASE_URL=sqlite:////app/instance/shopping_points.db
+      - DATABASE_URL=${DATABASE_URL:-postgresql+psycopg2://spo:spo@db:5432/spo}
       - DEBUG=False
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - GITHUB_REPO_URL=${GITHUB_REPO_URL:-https://github.com/kduchrow/shopping_points_optimiser}
     volumes:
-      # Persistent database storage
-      - shopping-db:/app/instance
-      # Optional: persistent logs
       - shopping-logs:/app/logs
     networks:
       - shopping-network
     # Für UNRAID: AppData Mount (optional, für zusätzliche Daten)
     # - /mnt/user/appdata/shopping-points:/app/appdata
-    
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
@@ -33,7 +53,7 @@ services:
       start_period: 40s
 
 volumes:
-  shopping-db:
+  pgdata:
     driver: local
   shopping-logs:
     driver: local

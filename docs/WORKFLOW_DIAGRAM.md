@@ -286,7 +286,7 @@ RESULT:
 ```
 Internet                                    Database
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                                           
+
 Miles-and-More Website                      shops
   └─ [Partner Data]                         shop_program_rates
        ↓                                    proposals (scraped)

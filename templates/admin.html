@@ -1,120 +1,294 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>Admin - Shopping Points Optimiser</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-  </head>
-  <body>
-    <div class="header">
-      <h1>🛠️ Admin Panel</h1>
-      <div>
-        <span>👤 {{ current_user.username }}</span>
-        <span class="notification-badge" id="unread-badge" style="display: none;">0</span>
-        <a href="/" style="color: white; margin-left: 20px; text-decoration: none;">🏠 Home</a>
-        <a href="/logout" style="color: white; margin-left: 10px; text-decoration: none;">🚪 Logout</a>
-      </div>
+{% extends "base.html" %} {% block title %}Admin - Shopping Points Optimiser{%
+endblock %} {% block extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/admin.css') }}"
+/>
+{% endblock %} {% block nav %}
+<nav class="top-nav">
+  <span class="flex-1 text-muted">👤 {{ current_user.username }}</span>
+  <span class="notification-badge hidden mr-10" id="unread-badge">0</span>
+  <a class="nav-link" href="/">🏠 Startseite</a>
+  <a class="nav-link" href="/logout">🚪 Logout</a>
+</nav>
+{% endblock %} {% block content %}
+<div class="card wide">
+  <h1>🛠️ Admin Panel</h1>
+
+  <div class="admin-tabs">
+    <div class="tab-nav">
+      <button
+        class="tab-button active"
+        data-tab="scrapers"
+        onclick="switchTab('scrapers', event)"
+      >
+        🤖 Scrapers
+      </button>
+      <button
+        class="tab-button"
+        data-tab="shops"
+        onclick="switchTab('shops', event)"
+      >
+        🏬 Shops
+      </button>
+      <button
+        class="tab-button"
+        data-tab="users"
+        onclick="switchTab('users', event)"
+      >
+        👥 Users
+      </button>
+      <button
+        class="tab-button"
+        data-tab="merges"
+        onclick="switchTab('merges', event)"
+      >
+        🔗 Shop Merges
+      </button>
+      <button
+        class="tab-button"
+        data-tab="metadata"
+        onclick="switchTab('metadata', event)"
+      >
+        ✏️ Metadaten
+      </button>
+      <button
+        class="tab-button"
+        data-tab="rates"
+        onclick="switchTab('rates', event)"
+      >
+        ⭐ Rate Review
+      </button>
+      <button
+        class="tab-button"
+        data-tab="notifications"
+        onclick="switchTab('notifications', event)"
+      >
+        🔔 Notifications
+        <span
+          id="notification-badge"
+          class="notification-badge"
+          style="display: none"
+          >0</span
+        >
+      </button>
     </div>
-    
-    <div class="container">
-      <div class="tabs">
-        <div class="tab-nav">
-          <button class="tab-button active" data-tab="scrapers" onclick="switchTab('scrapers', event)">🤖 Scrapers</button>
-          <button class="tab-button" data-tab="shops" onclick="switchTab('shops', event)">🏬 Shops</button>
-          <button class="tab-button" data-tab="users" onclick="switchTab('users', event)">👥 Users</button>
-          <button class="tab-button" data-tab="merges" onclick="switchTab('merges', event)">🔗 Shop Merges</button>
-          <button class="tab-button" data-tab="metadata" onclick="switchTab('metadata', event)">✏️ Metadaten</button>
-          <button class="tab-button" data-tab="rates" onclick="switchTab('rates', event)">⭐ Rate Review</button>
-          <button class="tab-button" data-tab="notifications" onclick="switchTab('notifications', event)">🔔 Notifications <span id="notification-badge" class="notification-badge" style="display:none;">0</span></button>
-        </div>
-        
-        <!-- Scrapers Tab -->
-        <div id="tab-scrapers" class="tab-content active">
-          <div class="card">
-            <div class="card-title">Run Scrapers</div>
-            
-            <div id="job-progress" class="job-progress">
-              <h3>Job Status: <span id="job-status" class="job-status">RUNNING</span></h3>
-              <div class="progress-bar">
-                <div id="progress-fill" class="progress-fill">0%</div>
-              </div>
-              <h4>Messages:</h4>
-              <div id="job-messages" class="job-messages"></div>
-            </div>
-            
-            <form id="miles-and-more-form" style="display: inline;">
-              <button type="submit" class="btn btn-warning">✈️ Run Miles & More Scraper</button>
-            </form>
-            
-            <form id="payback-form" style="display: inline;">
-              <button type="submit" class="btn btn-warning">💳 Run Payback Scraper</button>
-            </form>
+
+    <!-- Scrapers Tab -->
+    <div id="tab-scrapers" class="tab-content active">
+      <div class="admin-card">
+        <h3>Run Scrapers</h3>
+
+        <div id="job-progress" class="job-progress">
+          <h4>
+            Job Status: <span id="job-status" class="job-status">READY</span>
+          </h4>
+          <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill">0%</div>
           </div>
+          <h5>Messages:</h5>
+          <div id="job-messages" class="job-messages"></div>
         </div>
 
-        <!-- Shops Tab -->
-        <div id="tab-shops" class="tab-content">
-          <div class="card">
-            <div class="card-title">Shop Übersicht</div>
-            <input id="shop-search" type="text" placeholder="Suche nach Shop..." style="width: 100%; padding: 10px; margin-bottom: 10px;">
-            <div id="shop-list"></div>
-            <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
-            <div style="padding-top: 15px;">
-              <h3 style="margin-bottom: 10px;">Verwaltung</h3>
-              <button onclick="clearAllShops()" class="btn btn-danger" style="background-color: #dc3545;">
-                🗑️ Alle Shops clearen
-              </button>
-              <p style="font-size: 12px; color: #666; margin-top: 10px;">Löscht alle Shops aus der Legacy Shop-Tabelle. ShopMain Einträge bleiben erhalten.</p>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Users Tab -->
-        <div id="tab-users" class="tab-content">
-          <div class="card">
-            <div class="card-title">User Verwaltung</div>
-            <p style="margin-bottom: 15px; color: #666;">Hier können Sie User-Rollen verwalten und Accounts aktivieren/deaktivieren.</p>
-            <a href="/admin/users" class="btn btn-primary" style="display: inline-block; margin-bottom: 20px;">👥 Zur User-Übersicht</a>
-          </div>
-        </div>
-        
-        <!-- Shop Merges Tab -->
-        <div id="tab-merges" class="tab-content">
-          <div class="card">
-            <div class="card-title">Pending Shop Merge Proposals</div>
-            <div id="merge-proposals-list"></div>
-          </div>
-        </div>
+        <form id="miles-and-more-form" style="display: inline">
+          <button type="submit" class="btn btn-warning">
+            ✈️ Run Miles & More Scraper
+          </button>
+        </form>
 
-        <!-- Metadata Tab -->
-        <div id="tab-metadata" class="tab-content">
-          <div class="card">
-            <div class="card-title">Pending Shop Metadata Proposals</div>
-            <div id="metadata-proposals-list"></div>
-          </div>
-        </div>
-        
-        <!-- Rate Review Tab -->
-        <div id="tab-rates" class="tab-content">
-          <div class="card">
-            <div class="card-title">Rates Needing Review</div>
-            <div id="rates-list"></div>
-          </div>
-        </div>
-        
-        <!-- Notifications Tab -->
-        <div id="tab-notifications" class="tab-content">
-          <div class="card">
-            <div class="card-title">
-              Your Notifications
-              <button class="btn btn-primary" onclick="markAllAsRead()" style="float: right;">Mark All as Read</button>
-            </div>
-            <ul id="notifications-list" class="notification-list"></ul>
-          </div>
+        <form id="payback-form" style="display: inline">
+          <button type="submit" class="btn btn-warning">
+            💳 Run Payback Scraper
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Shops Tab -->
+    <div id="tab-shops" class="tab-content">
+      <div class="admin-card">
+        <h3>Shop Übersicht</h3>
+        <input
+          id="shop-search"
+          type="text"
+          placeholder="Suche nach Shop..."
+          style="
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+          "
+        />
+        <div id="shop-list"></div>
+        <hr
+          style="
+            margin: 20px 0;
+            border: none;
+            border-top: 1px solid var(--border);
+          "
+        />
+        <div style="padding-top: 15px">
+          <h4>Verwaltung</h4>
+          <button onclick="clearAllShops()" class="btn btn-danger">
+            🗑️ Alle Shops clearen
+          </button>
+          <p style="font-size: 12px; color: #6b7280; margin-top: 10px">
+            Löscht alle Shops aus der Legacy Shop-Tabelle. ShopMain Einträge
+            bleiben erhalten.
+          </p>
         </div>
       </div>
     </div>
-    
-    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
-  </body>
-</html>
+
+    <!-- Users Tab -->
+    <div id="tab-users" class="tab-content">
+      <div class="admin-card">
+        <h3>User Verwaltung</h3>
+        <p style="margin-bottom: 15px; color: #4b5563">
+          Hier können Sie User-Rollen verwalten und Accounts
+          aktivieren/deaktivieren.
+        </p>
+        <a href="/admin/users" class="btn btn-inline">👥 Zur User-Übersicht</a>
+      </div>
+    </div>
+
+    <!-- Shop Merges Tab -->
+    <div id="tab-merges" class="tab-content">
+      <div class="admin-card">
+        <h3>Pending Shop Merge Proposals</h3>
+        <div id="merge-proposals-list"></div>
+      </div>
+    </div>
+
+    <!-- Metadata Tab -->
+    <div id="tab-metadata" class="tab-content">
+      <div class="admin-card">
+        <h3>Pending Shop Metadata Proposals</h3>
+        <div id="metadata-proposals-list"></div>
+      </div>
+    </div>
+
+    <!-- Rate Review Tab -->
+    <div id="tab-rates" class="tab-content">
+      <div class="admin-card">
+        <h3>Rates Needing Review</h3>
+        <div id="rates-list"></div>
+      </div>
+    </div>
+
+    <!-- Notifications Tab -->
+    <div id="tab-notifications" class="tab-content">
+      <div class="admin-card">
+        <h3>Your Notifications</h3>
+        <button
+          class="btn btn-inline"
+          onclick="markAllAsRead()"
+          style="margin-bottom: 15px"
+        >
+          Mark All as Read
+        </button>
+        <ul id="notifications-list" class="notification-list"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .admin-tabs {
+    margin-top: 20px;
+  }
+  .tab-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--border);
+  }
+  .tab-button {
+    padding: 12px 16px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6b7280;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .tab-button.active {
+    color: var(--brand-primary);
+    border-bottom-color: var(--brand-primary);
+  }
+  .tab-button:hover {
+    color: var(--brand-primary);
+  }
+  .tab-content {
+    display: none;
+  }
+  .tab-content.active {
+    display: block;
+  }
+  .admin-card {
+    background: var(--surface);
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .job-progress {
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid var(--brand-primary);
+  }
+  .progress-bar {
+    height: 24px;
+    background: #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 10px 0;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--brand-primary);
+    width: 0%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    transition: width 0.3s ease;
+  }
+  .job-status {
+    font-weight: 700;
+    color: var(--brand-primary);
+  }
+  .job-messages {
+    background: #fff;
+    padding: 10px;
+    border-radius: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 12px;
+    color: #4b5563;
+  }
+  .notification-list {
+    list-style: none;
+    padding: 0;
+  }
+  .notification-badge {
+    display: inline-block;
+    background: #dc3545;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+</style>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

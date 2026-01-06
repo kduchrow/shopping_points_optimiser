@@ -24,10 +24,10 @@ def notify_proposal_rejected(proposal, reason):
     """Send notification when proposal is rejected."""
     create_notification(
         user_id=proposal.user_id,
-        notification_type='PROPOSAL_REJECTED',
-        title='Proposal Rejected',
-        message=f'Your proposal has been rejected. Reason: {reason}',
-        link_type='proposal',
+        notification_type="PROPOSAL_REJECTED",
+        title="Proposal Rejected",
+        message=f"Your proposal has been rejected. Reason: {reason}",
+        link_type="proposal",
         link_id=proposal.id,
     )
 
@@ -36,24 +36,26 @@ def notify_proposal_approved(proposal):
     """Send notification when proposal is approved."""
     create_notification(
         user_id=proposal.user_id,
-        notification_type='PROPOSAL_APPROVED',
-        title='Proposal Approved',
-        message='Your proposal has been approved and applied!',
-        link_type='proposal',
+        notification_type="PROPOSAL_APPROVED",
+        title="Proposal Approved",
+        message="Your proposal has been approved and applied!",
+        link_type="proposal",
         link_id=proposal.id,
     )
 
 
 def notify_rate_comment(rate, comment, commenter_username):
     """Send notification when someone comments on a rate."""
-    proposal = Proposal.query.filter_by(shop_id=rate.shop_id, program_id=rate.program_id, status='approved').first()
+    proposal = Proposal.query.filter_by(
+        shop_id=rate.shop_id, program_id=rate.program_id, status="approved"
+    ).first()
     if proposal:
         create_notification(
             user_id=proposal.user_id,
-            notification_type='RATE_COMMENT',
-            title='New Comment on Your Rate',
-            message=f'{commenter_username} commented: {comment.comment_text[:100]}...',
-            link_type='rate',
+            notification_type="RATE_COMMENT",
+            title="New Comment on Your Rate",
+            message=f"{commenter_username} commented: {comment.comment_text[:100]}...",
+            link_type="rate",
             link_id=rate.id,
         )
 
@@ -62,10 +64,10 @@ def notify_merge_rejected(merge_proposal, reason):
     """Send notification when merge proposal is rejected."""
     create_notification(
         user_id=merge_proposal.proposed_by_user_id,
-        notification_type='MERGE_REJECTED',
-        title='Shop Merge Rejected',
-        message=f'Your shop merge proposal was rejected. Reason: {reason}',
-        link_type='merge_proposal',
+        notification_type="MERGE_REJECTED",
+        title="Shop Merge Rejected",
+        message=f"Your shop merge proposal was rejected. Reason: {reason}",
+        link_type="merge_proposal",
         link_id=merge_proposal.id,
     )
 
@@ -74,10 +76,10 @@ def notify_merge_approved(merge_proposal):
     """Send notification when merge proposal is approved."""
     create_notification(
         user_id=merge_proposal.proposed_by_user_id,
-        notification_type='MERGE_APPROVED',
-        title='Shop Merge Approved',
-        message='Your shop merge proposal has been approved and executed!',
-        link_type='merge_proposal',
+        notification_type="MERGE_APPROVED",
+        title="Shop Merge Approved",
+        message="Your shop merge proposal has been approved and executed!",
+        link_type="merge_proposal",
         link_id=merge_proposal.id,
     )
 
@@ -86,10 +88,10 @@ def notify_metadata_approved(metadata_proposal):
     """Notify user when their metadata proposal is approved."""
     create_notification(
         user_id=metadata_proposal.proposed_by_user_id,
-        notification_type='METADATA_APPROVED',
-        title='Shop Metadata Approved',
-        message='Your shop metadata proposal was approved.',
-        link_type='metadata_proposal',
+        notification_type="METADATA_APPROVED",
+        title="Shop Metadata Approved",
+        message="Your shop metadata proposal was approved.",
+        link_type="metadata_proposal",
         link_id=metadata_proposal.id,
     )
 
@@ -98,10 +100,10 @@ def notify_metadata_rejected(metadata_proposal, reason: str):
     """Notify user when their metadata proposal is rejected."""
     create_notification(
         user_id=metadata_proposal.proposed_by_user_id,
-        notification_type='METADATA_REJECTED',
-        title='Shop Metadata Rejected',
-        message=f'Your shop metadata proposal was rejected. Reason: {reason}',
-        link_type='metadata_proposal',
+        notification_type="METADATA_REJECTED",
+        title="Shop Metadata Rejected",
+        message=f"Your shop metadata proposal was rejected. Reason: {reason}",
+        link_type="metadata_proposal",
         link_id=metadata_proposal.id,
     )
 
@@ -123,5 +125,5 @@ def mark_as_read(notification_id, user_id):
 
 def mark_all_as_read(user_id):
     """Mark all notifications as read for a user."""
-    Notification.query.filter_by(user_id=user_id, is_read=False).update({'is_read': True})
+    Notification.query.filter_by(user_id=user_id, is_read=False).update({"is_read": True})
     db.session.commit()
