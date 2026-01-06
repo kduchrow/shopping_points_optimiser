@@ -6,6 +6,8 @@ services:
     image: postgres:16-alpine
     container_name: shopping-points-db
     restart: unless-stopped
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-spo}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-spo}
