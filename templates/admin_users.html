@@ -1,5 +1,4 @@
-{% extends "base.html" %} {% block title %}User-Verwaltung - Admin{% endblock %}
-{% block nav %}
+{% extends "base.html" %} {% block title %}User-Verwaltung - Admin{% endblock %} {% block nav %}
 <nav class="top-nav">
   <a class="nav-link" href="/admin">← Admin Panel</a>
   <a class="nav-link" href="/">🏠 Startseite</a>
@@ -9,8 +8,7 @@
 <div class="card wide">
   <h1>👥 User-Verwaltung</h1>
 
-  {% with messages = get_flashed_messages(with_categories=true) %} {% if
-  messages %}
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}
   <div class="flash-messages">
     {% for category, message in messages %}
     <div class="alert alert-{{ category }}">{{ message }}</div>
@@ -43,67 +41,18 @@
           <span class="role-badge role-{{ user.role }}">{{ user.role }}</span>
         </td>
         <td>
-          <span class="status-badge status-{{ user.status }}"
-            >{{ user.status }}</span
-          >
+          <span class="status-badge status-{{ user.status }}">{{ user.status }}</span>
         </td>
         <td>{{ user.created_at.strftime('%d.%m.%Y') }}</td>
         <td>
-          <form
-            action="/admin/users/{{ user.id }}/update_role"
-            method="POST"
-            class="action-form"
-          >
+          <!-- prettier-ignore -->
+          <form action="/admin/users/{{ user.id }}/update_role" method="POST" class="action-form">
             <select name="role" onchange="this.form.submit()">
               <option value="">Rolle ändern...</option>
-              <option
-                value="viewer"
-                {%
-                if
-                user.role=""
-                ="viewer"
-                %}disabled{%
-                endif
-                %}
-              >
-                Viewer
-              </option>
-              <option
-                value="user"
-                {%
-                if
-                user.role=""
-                ="user"
-                %}disabled{%
-                endif
-                %}
-              >
-                User
-              </option>
-              <option
-                value="contributor"
-                {%
-                if
-                user.role=""
-                ="contributor"
-                %}disabled{%
-                endif
-                %}
-              >
-                Contributor
-              </option>
-              <option
-                value="admin"
-                {%
-                if
-                user.role=""
-                ="admin"
-                %}disabled{%
-                endif
-                %}
-              >
-                Admin
-              </option>
+              <option value="viewer" {% if user.role == "viewer" %}disabled{% endif %}>Viewer</option>
+              <option value="user" {% if user.role == "user" %}disabled{% endif %}>User</option>
+              <option value="contributor" {% if user.role == "contributor" %}disabled{% endif %}>Contributor</option>
+              <option value="admin" {% if user.role == "admin" %}disabled{% endif %}>Admin</option>
             </select>
           </form>
 
@@ -114,13 +63,9 @@
             onsubmit="return confirm('Status von {{ user.username }} wirklich ändern?');"
           >
             {% if user.status == 'active' %}
-            <button type="submit" class="btn btn-sm btn-warning">
-              🔒 Deaktivieren
-            </button>
+            <button type="submit" class="btn btn-sm btn-warning">🔒 Deaktivieren</button>
             {% else %}
-            <button type="submit" class="btn btn-sm btn-success">
-              ✅ Aktivieren
-            </button>
+            <button type="submit" class="btn btn-sm btn-success">✅ Aktivieren</button>
             {% endif %}
           </form>
         </td>
@@ -138,14 +83,8 @@
   <ul class="line-height-1-8 pl-20">
     <li><strong>Viewer:</strong> Kann nur öffentliche Inhalte sehen</li>
     <li><strong>User:</strong> Kann Proposals erstellen</li>
-    <li>
-      <strong>Contributor:</strong> Kann Proposals erstellen und über Proposals
-      abstimmen
-    </li>
-    <li>
-      <strong>Admin:</strong> Volle Rechte (User-Verwaltung, Scrapers, Proposals
-      direkt genehmigen)
-    </li>
+    <li><strong>Contributor:</strong> Kann Proposals erstellen und über Proposals abstimmen</li>
+    <li><strong>Admin:</strong> Volle Rechte (User-Verwaltung, Scrapers, Proposals direkt genehmigen)</li>
   </ul>
 </div>
 {% endblock %}
