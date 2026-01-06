@@ -136,7 +136,9 @@ def find_duplicate_shops(threshold: float = 98.0) -> list[tuple]:
     return duplicates
 
 
-def run_deduplication(job=None, auto_merge_threshold: float = 98.0, system_user_id: int = None):
+def run_deduplication(
+    job=None, auto_merge_threshold: float = 98.0, system_user_id: int | None = None
+):
     """Find and merge duplicate shops automatically.
 
     Args:
