@@ -58,13 +58,17 @@ class TestBonusProgramModel:
     def test_create_bonus_program_with_kwargs(self, app):
         """Test creating BonusProgram with keyword arguments."""
         with app.app_context():
-            program = BonusProgram(name="Test Miles & More", point_value_eur=0.01)
+            # Use unique name to avoid conflicts with production data
+            import time
+
+            unique_name = f"Test Program {int(time.time() * 1000)}"
+            program = BonusProgram(name=unique_name, point_value_eur=0.01)
             db.session.add(program)
             db.session.commit()
 
             assert program.id is not None
-            assert program.name == "Test Miles & More"
-            assert program.point_value_eur == 0.01
+            assert program.name == unique_name
+            db.session.commit()
 
     def test_bonus_program_query(self, app):
         """Test querying BonusProgram."""

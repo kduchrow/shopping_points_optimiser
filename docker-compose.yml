@@ -40,7 +40,7 @@ services:
     environment:
       - FLASK_ENV=${FLASK_ENV:-production}
       - SECRET_KEY=${SECRET_KEY}
-      - DATABASE_URL=${DATABASE_URL:-postgresql+psycopg2://spo:spo@db:5432/spo}
+      - DATABASE_URL=postgresql+psycopg2://spo:spo@db:5432/spo
       - DEBUG=False
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - GITHUB_REPO_URL=${GITHUB_REPO_URL:-https://github.com/kduchrow/shopping_points_optimiser}
