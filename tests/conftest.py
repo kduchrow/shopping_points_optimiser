@@ -1,5 +1,10 @@
 import os
 
+# CRITICAL: ALWAYS override DATABASE_URL with TEST_DATABASE_URL for tests
+# This ensures that when spo.extensions.db is initialized, it uses the test database
+if "TEST_DATABASE_URL" in os.environ:
+    os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
+
 import pytest
 
 from spo import create_app
@@ -8,28 +13,17 @@ from spo.extensions import db as _db
 
 @pytest.fixture(scope="function")
 def app():
-    # Set DATABASE_URL environment variable before create_app is called
-    original_db_url = os.environ.get("DATABASE_URL")
-    os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL", "sqlite:///:memory:")
+    # DATABASE_URL should already point to test DB from module-level setup above
+    app = create_app(start_jobs=False, run_seed=False)
+    app.config.update(
+        TESTING=True,
+    )
 
-    try:
-        app = create_app(start_jobs=False, run_seed=False)
-        app.config.update(
-            TESTING=True,
-        )
-
-        with app.app_context():
-            _db.drop_all()
-            _db.create_all()
-            yield app
-            _db.session.remove()
-            _db.drop_all()
-    finally:
-        # Restore original DATABASE_URL
-        if original_db_url is not None:
-            os.environ["DATABASE_URL"] = original_db_url
-        elif "DATABASE_URL" in os.environ:
-            del os.environ["DATABASE_URL"]
+    with app.app_context():
+        _db.create_all()
+        yield app
+        _db.session.remove()
+        _db.drop_all()
 
 
 @pytest.fixture(scope="function")
