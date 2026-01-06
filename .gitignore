@@ -28,6 +28,13 @@ env/
 
 # Flask
 instance/
+
+# Node.js / npm
+node_modules/
+package-lock.json
+
+# Local static files (symlinks/copies)
+spo/static/
 *.db
 *.sqlite
 *.sqlite3
