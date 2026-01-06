@@ -38,7 +38,7 @@ def register_public(app):
     def evaluate():
         mode = request.form.get("mode")
         shop_id = int(request.form.get("shop"))
-        shop = Shop.query.get(shop_id)
+        shop = db.session.get(Shop, shop_id)
 
         shop_ids = [shop.id]
         if shop and shop.shop_main_id:
@@ -62,7 +62,7 @@ def register_public(app):
             ).all()
             has_coupons = bool(shop_coupons)
             for rate in rates:
-                program = BonusProgram.query.get(rate.program_id)
+                program = db.session.get(BonusProgram, rate.program_id)
                 # Base values without coupons
                 base_points = amount * rate.points_per_eur
                 base_cashback = amount * (rate.cashback_pct / 100.0)

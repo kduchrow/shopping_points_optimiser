@@ -1,5 +1,10 @@
 {% extends "base.html" %} {% block title %}Shopping Points Optimiser{% endblock
-%} {% block content %}
+%} {% block extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/choices.min.css') }}"
+/>
+{% endblock %} {% block content %}
 <div class="card medium">
   <h1>💰 Shopping Points Optimiser</h1>
 
@@ -54,38 +59,20 @@
     </div>
 
     <div class="form-group">
-      <label>🏪 Shop wählen:</label>
-      <div class="shop-picker">
-        <div class="shop-search">
-          <input
-            type="search"
-            id="shop-search-input"
-            placeholder="Shop suchen oder tippen..."
-            oninput="filterShopOptions()"
-          />
-          <button
-            type="button"
-            aria-label="Suche zurücksetzen"
-            onclick="resetShopSearch()"
-          >
-            ✖
-          </button>
-        </div>
-        <div class="shop-meta" id="shop-meta">Alle Shops</div>
-        <select name="shop" id="shop-select" required onchange="updateUI()">
-          <option value="">-- Shop auswählen --</option>
-          {% for shop in shops_data %}
-          <option
-            value="{{ shop.id }}"
-            data-supports-shopping="{{ shop.supports_shopping|lower }}"
-            data-supports-voucher="{{ shop.supports_voucher|lower }}"
-            data-supports-contract="{{ shop.supports_contract|lower }}"
-          >
-            {{ shop.name }}
-          </option>
-          {% endfor %}
-        </select>
-      </div>
+      <label for="shop-select">🏪 Shop wählen:</label>
+      <select name="shop" id="shop-select" required>
+        <option value="">-- Shop auswählen --</option>
+        {% for shop in shops_data %}
+        <option
+          value="{{ shop.id }}"
+          data-supports-shopping="{{ 'true' if shop.supports_shopping else 'false' }}"
+          data-supports-voucher="{{ 'true' if shop.supports_voucher else 'false' }}"
+          data-supports-contract="{{ 'true' if shop.supports_contract else 'false' }}"
+        >
+          {{ shop.name }}
+        </option>
+        {% endfor %}
+      </select>
     </div>
 
     <div id="shopping-fields" class="input-fields" style="display: block">
@@ -131,7 +118,19 @@
   </form>
 </div>
 {% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/choices.min.js') }}"></script>
 <script>
+  // Store shop support data in JavaScript object (Choices.js replaces the original options)
+  const shopSupportData = {
+    {% for shop in shops_data %}
+    {{ shop.id }}: {
+      shopping: {{ 'true' if shop.supports_shopping else 'false' }},
+      voucher: {{ 'true' if shop.supports_voucher else 'false' }},
+      contract: {{ 'true' if shop.supports_contract else 'false' }}
+    },
+    {% endfor %}
+  };
+
   function selectMode(mode) {
     const radio = document.getElementById(`mode-${mode}`);
     if (radio) {
@@ -167,85 +166,97 @@
       document.getElementById("voucher").required = false;
     }
 
-    const options = shopSelect.querySelectorAll('option:not([value=""])');
-    let hasCompatibleShop = false;
-
-    options.forEach((option) => {
-      const supportsMode =
-        option.getAttribute(`data-supports-${mode}`) === "true";
-      option.style.display = supportsMode ? "block" : "none";
-      if (supportsMode) hasCompatibleShop = true;
-    });
+    // Check if selected shop supports the current mode
+    let selectedShopSupportsMode = true;
 
     if (selectedShopId) {
-      const selectedOption = shopSelect.querySelector(
-        `option[value="${selectedShopId}"]`,
-      );
-      if (selectedOption && selectedOption.style.display === "none") {
-        shopSelect.value = "";
-        document.getElementById("shop-warning").style.display = "block";
-      } else {
-        document.getElementById("shop-warning").style.display = "none";
+      // Use the stored shop data instead of DOM attributes (Choices.js modifies the DOM)
+      const shopData = shopSupportData[selectedShopId];
+
+      if (shopData) {
+        selectedShopSupportsMode = shopData[mode] === true;
+
+        if (!selectedShopSupportsMode) {
+          document.getElementById("shop-warning").style.display = "block";
+          document.getElementById("submit-btn").disabled = true;
+        } else {
+          document.getElementById("shop-warning").style.display = "none";
+          document.getElementById("submit-btn").disabled = false;
+        }
       }
-    }
-
-    document.getElementById("submit-btn").disabled =
-      !selectedShopId || !hasCompatibleShop;
-  }
-
-  function filterShopOptions() {
-    const input = document.getElementById("shop-search-input");
-    const select = document.getElementById("shop-select");
-    const meta = document.getElementById("shop-meta");
-    if (!input || !select) return;
-
-    const query = input.value.trim().toLowerCase();
-    let visible = 0;
-
-    Array.from(select.options).forEach((opt, idx) => {
-      if (idx === 0) {
-        opt.hidden = false;
-        return;
-      }
-      const text = (opt.textContent || "").toLowerCase();
-      const match = !query || text.includes(query);
-      opt.hidden = !match;
-      if (match) visible += 1;
-    });
-
-    if (select.value) {
-      const selected = select.selectedOptions[0];
-      if (selected && selected.hidden) {
-        select.value = "";
-        updateUI();
-      }
-    }
-
-    if (meta) {
-      if (query && visible === 0) {
-        meta.textContent = "Keine Shops gefunden";
-      } else if (query) {
-        meta.textContent = `${visible} Treffer`;
-      } else {
-        meta.textContent = `Alle Shops (${Math.max(
-          select.options.length - 1,
-          0,
-        )})`;
-      }
+    } else {
+      document.getElementById("shop-warning").style.display = "none";
+      document.getElementById("submit-btn").disabled = true;
     }
   }
 
-  function resetShopSearch() {
-    const input = document.getElementById("shop-search-input");
-    if (input) {
-      input.value = "";
-    }
-    filterShopOptions();
-  }
-
+  // Initialize Choices.js for the shop dropdown
+  let choicesInstance = null;
   document.addEventListener("DOMContentLoaded", () => {
     selectMode("shopping");
-    filterShopOptions();
+
+    const shopSelect = document.getElementById("shop-select");
+    if (shopSelect) {
+      choicesInstance = new Choices(shopSelect, {
+        searchEnabled: true,
+        searchPlaceholderValue: "Shop suchen oder tippen...",
+        itemSelectText: "",
+        noResultsText: "Keine Shops gefunden",
+        noChoicesText: "Keine Shops verfügbar",
+        maxItemCount: 100,
+        shouldSort: true,
+        searchResultLimit: 100,
+        renderChoiceLimit: 100,
+        removeItemButton: false,
+        allowHTML: false,
+        classNames: {
+          containerOuter: "choices",
+          containerInner: "choices__inner",
+          input: "choices__input",
+          inputCloned: "choices__input--cloned",
+          list: "choices__list",
+          listItems: "choices__list--multiple",
+          listSingle: "choices__list--single",
+          listDropdown: "choices__list--dropdown",
+          item: "choices__item",
+          itemSelectable: "choices__item--selectable",
+          itemDisabled: "choices__item--disabled",
+          itemChoice: "choices__item--choice",
+          placeholder: "choices__placeholder",
+          group: "choices__group",
+          groupHeading: "choices__heading",
+          button: "choices__button",
+          activeState: "is-active",
+          focusState: "is-focused",
+          openState: "is-open",
+          disabledState: "is-disabled",
+          highlightedState: "is-highlighted",
+          selectedState: "is-selected",
+          flippedState: "is-flipped",
+          loadingState: "is-loading",
+          notice: "choices__notice",
+        },
+      });
+
+      // Listen to Choices.js change events (native onchange doesn't fire with Choices.js)
+      shopSelect.addEventListener("change", function() {
+        updateUI();
+      });
+
+      // Show message if results are limited
+      const totalOptions = shopSelect.options.length - 1; // Exclude placeholder
+      if (totalOptions > 100) {
+        const choicesContainer = shopSelect.parentElement;
+        const notice = document.createElement("div");
+        notice.className = "choices-notice";
+        notice.textContent = `Zeige die ersten 100 von ${totalOptions} Shops. Bitte Suche verfeinern.`;
+        notice.style.cssText =
+          "padding: 8px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-top: 8px; font-size: 0.9em;";
+        choicesContainer.appendChild(notice);
+      }
+    }
+
+    updateUI();
   });
 
   updateUI();

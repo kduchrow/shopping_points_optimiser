@@ -8,18 +8,28 @@ from spo.extensions import db
 
 @pytest.fixture(scope="function")
 def app():
-    app = create_app(start_jobs=False, run_seed=False)
-    app.config.update(
-        TESTING=True,
-        SQLALCHEMY_DATABASE_URI=os.environ.get("TEST_DATABASE_URL", "sqlite:///:memory:"),
-    )
+    # Set DATABASE_URL environment variable before create_app is called
+    original_db_url = os.environ.get("DATABASE_URL")
+    os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL", "sqlite:///:memory:")
 
-    with app.app_context():
-        db.drop_all()
-        db.create_all()
-        yield app
-        db.session.remove()
-        db.drop_all()
+    try:
+        app = create_app(start_jobs=False, run_seed=False)
+        app.config.update(
+            TESTING=True,
+        )
+
+        with app.app_context():
+            db.drop_all()
+            db.create_all()
+            yield app
+            db.session.remove()
+            db.drop_all()
+    finally:
+        # Restore original DATABASE_URL
+        if original_db_url is not None:
+            os.environ["DATABASE_URL"] = original_db_url
+        elif "DATABASE_URL" in os.environ:
+            del os.environ["DATABASE_URL"]
 
 
 @pytest.fixture(scope="function")

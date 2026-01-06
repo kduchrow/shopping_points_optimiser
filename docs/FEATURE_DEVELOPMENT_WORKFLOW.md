@@ -304,10 +304,17 @@ pre-commit run --all-files
 [Brief description of the feature]
 
 ### How to Test
-1. Start the application: `docker-compose up` or `python app.py`
-2. Navigate to [URL/Page]
-3. [Step-by-step testing instructions]
-4. Expected behavior: [What should happen]
+1. **IMPORTANT**: If static files (CSS, JS) were changed, rebuild the Docker container:
+   ```bash
+   docker-compose build shopping-points
+   docker-compose up -d
+   ```
+   Note: Simple `docker-compose restart` does NOT update static files!
+
+2. Start the application: `docker-compose up` or `python app.py`
+3. Navigate to [URL/Page]
+4. [Step-by-step testing instructions]
+5. Expected behavior: [What should happen]
 
 ### Test Cases to Verify
 - [ ] Happy path: [Main scenario]
