@@ -10,6 +10,7 @@ from spo.models import (
     BonusProgram,
     Coupon,
     Proposal,
+    ProposalAuditTrail,
     RateComment,
     ScrapeLog,
     Shop,
@@ -366,22 +367,25 @@ def register_admin_shops(app):
             # 2. Delete ShopMetadataProposal (references both Shop and ShopMain)
             ShopMetadataProposal.query.delete()
 
-            # 3. Delete Proposal (references Shop) - THIS WAS MISSING!
+            # 3. Delete ProposalAuditTrail (references Proposal)
+            ProposalAuditTrail.query.delete()
+
+            # 4. Delete Proposal (references Shop)
             Proposal.query.delete()
 
-            # 4. Delete Coupon (references Shop)
+            # 5. Delete Coupon (references Shop)
             Coupon.query.delete()
 
-            # 5. Delete ShopProgramRate (references Shop)
+            # 6. Delete ShopProgramRate (references Shop)
             ShopProgramRate.query.delete()
 
-            # 6. Delete Shop entries (references ShopMain)
+            # 7. Delete Shop entries (references ShopMain)
             Shop.query.delete()
 
-            # 6. Delete ShopVariant (references ShopMain)
+            # 8. Delete ShopVariant (references ShopMain)
             ShopVariant.query.delete()
 
-            # 7. Delete ShopMain
+            # 9. Delete ShopMain
             ShopMain.query.delete()
 
             db.session.commit()
