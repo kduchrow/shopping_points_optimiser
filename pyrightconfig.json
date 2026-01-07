@@ -1,12 +1,5 @@
 {
-  "include": [
-    "spo",
-    "tests",
-    "scripts",
-    "scrapers",
-    "bonus_programs",
-    "migrations"
-  ],
+  "include": ["spo", "tests", "scripts", "scrapers", "bonus_programs", "migrations"],
   "exclude": [
     "**/__pycache__",
     "**/.venv",

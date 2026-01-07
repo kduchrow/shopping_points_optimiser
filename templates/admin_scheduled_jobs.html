@@ -37,7 +37,19 @@
     gap: 8px;
   }
   .btn-sm {
-    padding: 4px 12px;
+    padding: 6px 8px;
+    font-size: 16px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+  }
+  .btn-sm .icon {
+    font-size: 16px;
+    line-height: 1;
+  }
+  .status-icon {
     font-size: 14px;
   }
 </style>
@@ -104,16 +116,31 @@
         </td>
         <td>
           <div class="btn-group">
-            <a href="{{ url_for('admin_edit_scheduled_job', job_id=job.id) }}" class="btn btn-sm btn-secondary">
-              ✏️ Bearbeiten
+            <a
+              href="{{ url_for('admin_edit_scheduled_job', job_id=job.id) }}"
+              class="btn btn-sm btn-secondary"
+              title="Job bearbeiten"
+            >
+              ✏️
             </a>
+            <form
+              method="POST"
+              action="{{ url_for('admin_run_scheduled_job', job_id=job.id) }}"
+              style="display: inline"
+            >
+              <button type="submit" class="btn btn-sm btn-success" title="Jetzt ausführen">▶️</button>
+            </form>
             <form
               method="POST"
               action="{{ url_for('admin_toggle_scheduled_job', job_id=job.id) }}"
               style="display: inline"
             >
-              <button type="submit" class="btn btn-sm btn-primary">
-                {% if job.enabled %}⏸️ Deaktivieren{% else %}▶️ Aktivieren{% endif %}
+              <button
+                type="submit"
+                class="btn btn-sm btn-primary"
+                title="{% if job.enabled %}Deaktivieren{% else %}Aktivieren{% endif %}"
+              >
+                {% if job.enabled %}⏸️{% else %}▶️{% endif %}
               </button>
             </form>
             <form
@@ -122,8 +149,15 @@
               onsubmit="return confirm('Job \'{{ job.job_name }}\' wirklich löschen?');"
               style="display: inline"
             >
-              <button type="submit" class="btn btn-sm btn-danger">🗑️ Löschen</button>
+              <button type="submit" class="btn btn-sm btn-danger" title="Job löschen">🗑️</button>
             </form>
+            <a
+              href="{{ url_for('admin_scheduled_job_logs', job_id=job.id) }}"
+              class="btn btn-sm btn-secondary"
+              title="Logs anzeigen"
+            >
+              📜
+            </a>
           </div>
         </td>
       </tr>

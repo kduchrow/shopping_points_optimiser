@@ -1,45 +1,23 @@
-{% extends "base.html" %} {% block title %}Registrierung - Shopping Points
-Optimiser{% endblock %} {% block content %}
+{% extends "base.html" %} {% block title %}Registrierung - Shopping Points Optimiser{% endblock %} {% block content %}
 <div class="card narrow">
   <h1>📝 Registrierung</h1>
 
-  <div class="info-box">
-    ℹ️ Registrieren Sie sich, um Änderungsvorschläge einzureichen und
-    abzustimmen.
-  </div>
+  <div class="info-box">ℹ️ Registrieren Sie sich, um Änderungsvorschläge einzureichen und abzustimmen.</div>
 
   <form method="post">
     <div class="form-group">
       <label for="username">Benutzername:</label>
-      <input
-        type="text"
-        id="username"
-        name="username"
-        required
-        autocomplete="username"
-      />
+      <input type="text" id="username" name="username" required autocomplete="username" />
     </div>
 
     <div class="form-group">
       <label for="email">Email:</label>
-      <input
-        type="email"
-        id="email"
-        name="email"
-        required
-        autocomplete="email"
-      />
+      <input type="email" id="email" name="email" required autocomplete="email" />
     </div>
 
     <div class="form-group">
       <label for="password">Passwort:</label>
-      <input
-        type="password"
-        id="password"
-        name="password"
-        required
-        autocomplete="new-password"
-      />
+      <input type="password" id="password" name="password" required autocomplete="new-password" />
     </div>
 
     <button type="submit">Registrieren</button>

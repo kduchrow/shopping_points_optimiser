@@ -1,5 +1,4 @@
-{% extends "base.html" %} {% block title %}Profil - Shopping Points Optimiser{%
-endblock %} {% block nav %}
+{% extends "base.html" %} {% block title %}Profil - Shopping Points Optimiser{% endblock %} {% block nav %}
 <nav class="top-nav">
   <a class="nav-link" href="/">🏠 Startseite</a>
   {% if current_user.role in ['user', 'contributor', 'admin'] %}
@@ -25,9 +24,7 @@ endblock %} {% block nav %}
       <div class="info-row">
         <span class="info-label">Rolle:</span>
         <span class="info-value">
-          <span class="role-badge role-{{ current_user.role }}">
-            {{ current_user.role.upper() }}
-          </span>
+          <span class="role-badge role-{{ current_user.role }}"> {{ current_user.role.upper() }} </span>
         </span>
       </div>
       <div class="info-row">
@@ -47,19 +44,15 @@ endblock %} {% block nav %}
   <h2>📢 Contributor werden</h2>
   {% if contributor_request %}
   <div class="contributor-request">
-    {% if contributor_request.status == 'pending' %} ⏳ Ihre Anfrage ist
-    ausstehend. Warten Sie auf die Bestätigung durch einen Admin. {% elif
-    contributor_request.status == 'approved' %} ✓ Ihre Anfrage wurde genehmigt!
-    Sie sind jetzt Contributor. {% elif contributor_request.status == 'rejected'
-    %} ✗ Ihre Anfrage wurde abgelehnt. {% endif %}
+    {% if contributor_request.status == 'pending' %} ⏳ Ihre Anfrage ist ausstehend. Warten Sie auf die Bestätigung
+    durch einen Admin. {% elif contributor_request.status == 'approved' %} ✓ Ihre Anfrage wurde genehmigt! Sie sind
+    jetzt Contributor. {% elif contributor_request.status == 'rejected' %} ✗ Ihre Anfrage wurde abgelehnt. {% endif %}
   </div>
   {% else %}
   <div class="contributor-request">
     Werden Sie Contributor, um Rate-Änderungen vorzuschlagen und abzustimmen!
     <form method="post" action="/request-contributor" class="form-group">
-      <button type="submit" class="btn btn-inline">
-        Contributor-Anfrage einreichen
-      </button>
+      <button type="submit" class="btn btn-inline">Contributor-Anfrage einreichen</button>
     </form>
   </div>
   {% endif %} {% endif %} {% if current_user.role in ['user', 'contributor'] %}
@@ -69,17 +62,11 @@ endblock %} {% block nav %}
     {% for proposal in proposals %}
     <li class="proposal-item">
       <span class="proposal-type">{{ proposal.proposal_type.upper() }}</span>
-      <span class="proposal-status status-{{ proposal.status }}"
-        >{{ proposal.status.upper() }}</span
-      >
+      <span class="proposal-status status-{{ proposal.status }}">{{ proposal.status.upper() }}</span>
       {% if proposal.reason %}
-      <p class="proposal-reason">
-        <strong>Grund:</strong> {{ proposal.reason }}
-      </p>
+      <p class="proposal-reason"><strong>Grund:</strong> {{ proposal.reason }}</p>
       {% endif %}
-      <p class="proposal-meta">
-        Erstellt: {{ proposal.created_at.strftime('%d.%m.%Y %H:%M') }}
-      </p>
+      <p class="proposal-meta">Erstellt: {{ proposal.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
     </li>
     {% endfor %}
   </ul>

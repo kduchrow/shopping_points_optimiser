@@ -39,3 +39,12 @@ class ScheduledJob(db.Model):
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow, nullable=False)
     created_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+
+class ScheduledJobRun(db.Model):
+    __tablename__ = "scheduled_job_runs"
+    id = db.Column(db.Integer, primary_key=True)
+    scheduled_job_id = db.Column(db.Integer, db.ForeignKey("scheduled_jobs.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+    status = db.Column(db.String, nullable=False)
+    message = db.Column(db.String, nullable=True)

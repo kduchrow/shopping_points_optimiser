@@ -1,5 +1,8 @@
 import os
 
+import psycopg2
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+
 # CRITICAL: ALWAYS override DATABASE_URL with TEST_DATABASE_URL for tests
 # This ensures that when spo.extensions.db is initialized, it uses the test database
 if "TEST_DATABASE_URL" in os.environ:
@@ -9,6 +12,59 @@ import pytest
 
 from spo import create_app
 from spo.extensions import db as _db
+
+
+def ensure_test_database_exists():
+    """Create test database if it doesn't exist."""
+    # Parse TEST_DATABASE_URL to extract connection parameters
+    test_db_url = os.environ.get("TEST_DATABASE_URL", "")
+    if not test_db_url or "postgresql" not in test_db_url:
+        # Not using PostgreSQL for tests, skip
+        return
+
+    # Extract connection params from URL like:
+    # postgresql+psycopg2://user:password@host:port/dbname
+    try:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(test_db_url)
+        host = parsed.hostname or "db"
+        port = parsed.port or 5432
+        user = parsed.username or "spo"
+        password = parsed.password or "spo"
+        dbname = parsed.path.lstrip("/") or "spo_test"
+
+        # Connect to default 'postgres' database to create test database
+        conn = psycopg2.connect(
+            host=host, port=port, user=user, password=password, database="postgres"
+        )
+        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        cursor = conn.cursor()
+
+        # Check if test database exists
+        cursor.execute(
+            "SELECT 1 FROM pg_database WHERE datname = %s",
+            (dbname,),
+        )
+        exists = cursor.fetchone()
+
+        if not exists:
+            print(f"Creating test database: {dbname}")
+            cursor.execute(f'CREATE DATABASE "{dbname}"')
+            print(f"✅ Test database '{dbname}' created successfully")
+        else:
+            print(f"✅ Test database '{dbname}' already exists")
+
+        cursor.close()
+        conn.close()
+
+    except Exception as e:
+        print(f"⚠️  Warning: Could not ensure test database exists: {e}")
+        print("Tests may fail if database doesn't exist")
+
+
+# Ensure test database exists before any tests run
+ensure_test_database_exists()
 
 
 @pytest.fixture(scope="function")

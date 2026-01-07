@@ -61,9 +61,7 @@
 .choices[data-type*="select-one"] .choices__button:focus {
   box-shadow: 0 0 0 2px #00bcd4;
 }
-.choices[data-type*="select-one"]
-  .choices__item[data-value=""]
-  .choices__button {
+.choices[data-type*="select-one"] .choices__item[data-value=""] .choices__button {
   display: none;
 }
 .choices[data-type*="select-one"]::after {

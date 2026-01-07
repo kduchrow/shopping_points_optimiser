@@ -3,9 +3,7 @@ function sortResults(sortBy, evt) {
   if (!resultsList) return;
   const items = Array.from(resultsList.querySelectorAll("li"));
 
-  document
-    .querySelectorAll(".sort-btn")
-    .forEach((btn) => btn.classList.remove("active"));
+  document.querySelectorAll(".sort-btn").forEach((btn) => btn.classList.remove("active"));
   if (evt?.target) {
     evt.target.classList.add("active");
   }

@@ -1,7 +1,7 @@
 from .core import BonusProgram, ContributorRequest, User
 from .coupons import Coupon
 from .helpers import utcnow
-from .logs import Notification, ScheduledJob, ScrapeLog
+from .logs import Notification, ScheduledJob, ScheduledJobRun, ScrapeLog
 from .proposals import (
     Proposal,
     ProposalAuditTrail,
@@ -24,6 +24,7 @@ __all__ = [
     "Coupon",
     "Notification",
     "ScheduledJob",
+    "ScheduledJobRun",
     "ScrapeLog",
     "Proposal",
     "ProposalAuditTrail",

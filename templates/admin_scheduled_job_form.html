@@ -68,11 +68,11 @@ endblock %} {% block extra_css %}
       <label for="job_type">Job Type *</label>
       <select id="job_type" name="job_type" required>
         <option value="">-- Bitte wählen --</option>
-        <option value="deduplication" {% if job and job.job_type="" ="deduplication" %}selected{% endif %}>
-          Shop Deduplication
+        {% for job_type in available_job_types %}
+        <option value="{{ job_type }}" {% if job and job.job_type="" ="job_type" %}selected{% endif %}>
+          {{ job_type | replace('_', ' ') | title }}
         </option>
-        <option value="cleanup" {% if job and job.job_type="" ="cleanup" %}selected{% endif %}>Database Cleanup</option>
-        <option value="scraper" {% if job and job.job_type="" ="scraper" %}selected{% endif %}>Scraper Run</option>
+        {% endfor %}
       </select>
       <div class="help-text">Art des Jobs der ausgeführt werden soll</div>
     </div>

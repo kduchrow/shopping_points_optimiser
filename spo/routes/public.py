@@ -17,21 +17,34 @@ from spo.utils import ensure_variant_for_shop
 def register_public(app):
     @app.route("/", methods=["GET"])
     def index():
-        shops = Shop.query.all()
+        # Get all ShopMain entries to avoid showing duplicate shops
+        # Use ShopMain as the source of truth, then find the associated Shop entry
+        shop_mains = (
+            ShopMain.query.filter_by(status="active").order_by(ShopMain.canonical_name).all()
+        )
         shops_data = []
-        for shop in shops:
+
+        for shop_main in shop_mains:
+            # Get the first Shop linked to this ShopMain (there may be multiple, but we only need one)
+            shop = Shop.query.filter_by(shop_main_id=shop_main.id).first()
+            if not shop:
+                continue  # Skip if no Shop is linked yet
+
+            # Get rates for this shop
             rates = ShopProgramRate.query.filter_by(shop_id=shop.id, valid_to=None).all()
             supports_shopping_voucher = any(r.points_per_eur > 0 for r in rates)
             supports_contract = True
+
             shops_data.append(
                 {
-                    "id": shop.id,
-                    "name": shop.name,
+                    "id": shop.id,  # Use Shop.id for backwards compatibility with evaluate route
+                    "name": shop_main.canonical_name,  # Use canonical name from ShopMain
                     "supports_shopping": supports_shopping_voucher,
                     "supports_voucher": supports_shopping_voucher,
                     "supports_contract": supports_contract,
                 }
             )
+
         return render_template("index.html", shops_data=shops_data)
 
     @app.route("/evaluate", methods=["POST"])
