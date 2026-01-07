@@ -7,6 +7,7 @@ from spo.models import (
     BonusProgram,
     Coupon,
     Proposal,
+    ProposalAuditTrail,
     Shop,
     ShopMain,
     ShopMergeProposal,
@@ -61,7 +62,7 @@ def test_clear_shops_with_all_foreign_keys(client, admin_user):
     )
     db.session.add(rate)
 
-    # 6. Create Proposal (references Shop) - THIS WAS MISSING!
+    # 6. Create Proposal (references Shop)
     proposal = Proposal(
         proposal_type="rate",
         status="pending",
@@ -72,8 +73,18 @@ def test_clear_shops_with_all_foreign_keys(client, admin_user):
         proposed_points_per_eur=2.0,
     )
     db.session.add(proposal)
+    db.session.flush()  # Get proposal.id
 
-    # 7. Create ShopMetadataProposal (references ShopMain)
+    # 7. Create ProposalAuditTrail (references Proposal)
+    audit_trail = ProposalAuditTrail(
+        proposal_id=proposal.id,
+        action="created",
+        actor_id=admin_user.id,
+        details="Test audit trail",
+    )
+    db.session.add(audit_trail)
+
+    # 8. Create ShopMetadataProposal (references ShopMain)
     metadata_proposal = ShopMetadataProposal(
         shop_main_id=shop_main.id,
         proposed_name="Updated Name",
@@ -82,7 +93,7 @@ def test_clear_shops_with_all_foreign_keys(client, admin_user):
     )
     db.session.add(metadata_proposal)
 
-    # 8. Create another ShopMain and ShopVariant for merge proposal
+    # 9. Create another ShopMain and ShopVariant for merge proposal
     shop_main_2 = ShopMain(
         id="test-main-2",
         canonical_name="Test Shop 2",
@@ -100,7 +111,7 @@ def test_clear_shops_with_all_foreign_keys(client, admin_user):
     db.session.add(shop_variant_2)
     db.session.flush()  # Get variant IDs for merge proposal
 
-    # 9. Create ShopMergeProposal (references ShopVariant)
+    # 10. Create ShopMergeProposal (references ShopVariant)
     merge_proposal = ShopMergeProposal(
         variant_a_id=shop_variant.id,
         variant_b_id=shop_variant_2.id,
@@ -109,7 +120,7 @@ def test_clear_shops_with_all_foreign_keys(client, admin_user):
     )
     db.session.add(merge_proposal)
 
-    # 10. Create Coupon (references Shop)
+    # 11. Create Coupon (references Shop)
     coupon = Coupon(
         shop_id=shop.id,
         name="Test Coupon",
@@ -128,6 +139,7 @@ def test_clear_shops_with_all_foreign_keys(client, admin_user):
     assert ShopVariant.query.count() == 2
     assert ShopProgramRate.query.count() == 1
     assert Proposal.query.count() == 1
+    assert ProposalAuditTrail.query.count() == 1
     assert ShopMetadataProposal.query.count() == 1
     assert ShopMergeProposal.query.count() == 1
     assert Coupon.query.count() == 1
@@ -146,6 +158,7 @@ def test_clear_shops_with_all_foreign_keys(client, admin_user):
     assert ShopVariant.query.count() == 0
     assert ShopProgramRate.query.count() == 0
     assert Proposal.query.count() == 0
+    assert ProposalAuditTrail.query.count() == 0
     assert ShopMetadataProposal.query.count() == 0
     assert ShopMergeProposal.query.count() == 0
     assert Coupon.query.count() == 0
