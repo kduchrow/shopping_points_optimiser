@@ -98,3 +98,34 @@ def db(app):
     """Provide the database instance for tests."""
     with app.app_context():
         yield _db
+
+
+@pytest.fixture(scope="function")
+def admin_user(app, db):
+    """Create an admin user for tests using credentials from environment."""
+    from spo.models import User
+
+    with app.app_context():
+        # Get test credentials from environment variables (required - no defaults)
+        test_admin_username = os.environ.get("TEST_ADMIN_USERNAME")
+        test_admin_password = os.environ.get("TEST_ADMIN_PASSWORD")
+
+        if not test_admin_username or not test_admin_password:
+            raise ValueError(
+                "TEST_ADMIN_USERNAME and TEST_ADMIN_PASSWORD must be set in environment. "
+                "Add them to your .env file."
+            )
+
+        admin = User()
+        admin.username = test_admin_username
+        admin.email = "admin@test.com"
+        admin.role = "admin"
+        admin.set_password(test_admin_password)
+        db.session.add(admin)
+        db.session.commit()
+
+        # Store the plain password as an attribute for use in tests
+        # (This is safe since it's only used in tests and the object is not persisted with this)
+        admin._test_password = test_admin_password
+
+        yield admin
