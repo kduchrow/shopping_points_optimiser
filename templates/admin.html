@@ -230,7 +230,8 @@
     try {
       const resp = await fetch('/admin/variants/rescore', {
         method: 'POST',
-        headers: { 'Accept': 'application/json' }
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin'
       });
       if (!resp.ok) {
         const text = await resp.text();
