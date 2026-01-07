@@ -1,5 +1,6 @@
 """Shop deduplication and similarity scoring utilities."""
 
+import re
 import uuid
 from datetime import UTC, datetime
 from difflib import SequenceMatcher
@@ -8,14 +9,63 @@ from spo.extensions import db
 from spo.models import ShopMain, ShopVariant
 
 
+def _normalize_shop_name(name: str) -> str:
+    """Normalize a shop name to improve fuzzy matching.
+
+    - Lowercase and trim
+    - Strip protocols and common domain noise (www., TLDs)
+    - Remove generic tokens like 'online', 'shop', 'store', 'club'
+    - Collapse punctuation and whitespace to single spaces
+    """
+    s = name.lower().strip()
+
+    # Remove protocol prefixes
+    s = re.sub(r"^(https?://)", "", s)
+    s = re.sub(r"^www\.", "", s)
+
+    # If domain-like (no spaces, has dots), extract main label before TLD
+    if " " not in s and "." in s:
+        parts = s.split(".")
+        # Drop leading 'www' and trailing TLDs
+        parts = [p for p in parts if p and p not in {"www", "com", "de", "net", "org", "eu"}]
+        if parts:
+            s = " ".join(parts)
+
+    # Replace punctuation with spaces
+    s = re.sub(r"[\-_/&|,:;.!?\"'()+]", " ", s)
+    # Collapse whitespace
+    s = re.sub(r"\s+", " ", s).strip()
+
+    # Remove generic tokens
+    stop = {
+        "online",
+        "onlineshop",
+        "shop",
+        "store",
+        "club",
+        "produkte",
+        "gutscheine",
+        "official",
+    }
+    tokens = [t for t in s.split(" ") if t and t not in stop]
+    return " ".join(tokens)
+
+
 def fuzzy_match_score(str1: str, str2: str) -> float:
     """Calculate similarity score between two strings (0-100)."""
-    s1 = str1.lower().strip()
-    s2 = str2.lower().strip()
+    s1 = _normalize_shop_name(str1)
+    s2 = _normalize_shop_name(str2)
 
-    for char in ["-", "_", ".", ",", "&", "!", "?", "'", '"']:
-        s1 = s1.replace(char, "")
-        s2 = s2.replace(char, "")
+    if not s1 or not s2:
+        return 0.0
+
+    # Treat whitespace-only differences (e.g., "Media Markt" vs "mediamarkt") as exact
+    if s1.replace(" ", "") == s2.replace(" ", ""):
+        return 100.0
+
+    # If one contains the other (after normalization), it's a very strong match
+    if s1 in s2 or s2 in s1:
+        return 98.0
 
     ratio = SequenceMatcher(None, s1, s2).ratio()
     return round(ratio * 100, 1)
@@ -104,8 +154,8 @@ def merge_shops(main_from_id: str, main_to_id: str, user_id: int):
     """Merge one shop into another and re-point variants and Shop entries."""
     from spo.models import Shop
 
-    from_shop = ShopMain.query.get(main_from_id)
-    to_shop = ShopMain.query.get(main_to_id)
+    from_shop = db.session.get(ShopMain, main_from_id)
+    to_shop = db.session.get(ShopMain, main_to_id)
 
     if not from_shop or not to_shop:
         raise ValueError("One or both shops not found")

@@ -68,6 +68,14 @@
           <p style="font-size: 12px; color: #6b7280; margin-top: 10px">
             Löscht ALLE Shops (ShopMain, ShopVariant, Shop, Rates). Komplett bereinigen der Datenbank.
           </p>
+
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border)" />
+          <h4>Datenpflege</h4>
+          <button onclick="rescoreVariants()" class="btn btn-inline">🔁 Shop-Varianten neu bewerten</button>
+          <p style="font-size: 12px; color: #6b7280; margin-top: 8px">
+            Führt eine Neuberechnung der <strong>confidence_score</strong> für alle Shop-Varianten durch.
+          </p>
+          <div id="rescore-result" style="margin-top: 10px; font-family: monospace; color: #374151"></div>
         </div>
       </div>
     </div>
@@ -215,4 +223,33 @@
 </style>
 {% endblock %} {% block scripts %}
 <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<script>
+  async function rescoreVariants() {
+    const target = document.getElementById('rescore-result');
+    target.textContent = '⏳ Starte Neuberechnung...';
+    try {
+      const resp = await fetch('/admin/variants/rescore', {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin'
+      });
+      if (!resp.ok) {
+        const text = await resp.text();
+        target.textContent = `❌ Fehler: ${resp.status} ${text}`;
+        return;
+      }
+      const data = await resp.json();
+      // Erwartete Felder: total, improved, unchanged, skipped
+      const summary = [
+        `✅ Fertig. Insgesamt: ${data.total ?? '?'}`,
+        `⬆️ Verbessert: ${data.improved ?? '?'}`,
+        `➖ Unverändert: ${data.unchanged ?? '?'}`,
+        `⏭️ Übersprungen: ${data.skipped ?? 0}`
+      ].join(' | ');
+      target.textContent = summary;
+    } catch (e) {
+      target.textContent = `❌ Fehler beim Abruf: ${e}`;
+    }
+  }
+</script>
 {% endblock %}

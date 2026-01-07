@@ -218,13 +218,26 @@ def register_admin_shops(app):
         if proposal.status != "PENDING":
             return jsonify({"error": "Proposal already decided"}), 400
 
-        variant_a = ShopVariant.query.get(proposal.variant_a_id)
-        variant_b = ShopVariant.query.get(proposal.variant_b_id)
+        variant_a = db.session.get(ShopVariant, proposal.variant_a_id)
+        variant_b = db.session.get(ShopVariant, proposal.variant_b_id)
 
         try:
+            # Choose target/main_to as the older ShopMain to keep canonical continuity
+            main_a = db.session.get(ShopMain, variant_a.shop_main_id)
+            main_b = db.session.get(ShopMain, variant_b.shop_main_id)
+            if not main_a or not main_b:
+                return jsonify({"error": "ShopMain not found for one or both variants"}), 404
+
+            if main_a.created_at <= main_b.created_at:
+                source_id = main_b.id
+                target_id = main_a.id
+            else:
+                source_id = main_a.id
+                target_id = main_b.id
+
             merge_shops(
-                main_from_id=variant_a.shop_main_id,
-                main_to_id=variant_b.shop_main_id,
+                main_from_id=source_id,
+                main_to_id=target_id,
                 user_id=current_user.id,
             )
             proposal.status = "APPROVED"
@@ -257,6 +270,38 @@ def register_admin_shops(app):
         notify_merge_rejected(proposal, reason)
 
         return jsonify({"success": True})
+
+    @app.route("/admin/variants/rescore", methods=["POST"])
+    @login_required
+    def admin_rescore_variants():
+        """Recompute confidence scores for all ShopVariants.
+
+        Uses improved fuzzy matching between `ShopVariant.source_name` and the
+        `ShopMain.canonical_name`. Admin-only.
+        """
+        if current_user.role != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+
+        from spo.services.dedup import fuzzy_match_score
+
+        updated = 0
+        total = 0
+
+        variants = ShopVariant.query.all()
+        for v in variants:
+            total += 1
+            main = db.session.get(ShopMain, v.shop_main_id) if v.shop_main_id else None
+            if not main:
+                continue
+            new_score = fuzzy_match_score(v.source_name or "", main.canonical_name or "")
+            # Clamp to [0, 100]
+            new_score = max(0.0, min(100.0, new_score))
+            if round(v.confidence_score or 0.0, 1) != round(new_score, 1):
+                v.confidence_score = round(new_score, 1)
+                updated += 1
+        db.session.commit()
+
+        return jsonify({"success": True, "updated": updated, "total": total})
 
     @app.route("/admin/shops/metadata_proposals", methods=["GET"])
     @login_required
