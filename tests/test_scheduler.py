@@ -1,6 +1,5 @@
 """Tests for scheduler functionality."""
 
-
 from spo.models import ScheduledJob
 from spo.services.scheduler import JOB_REGISTRY, register_job_type
 
