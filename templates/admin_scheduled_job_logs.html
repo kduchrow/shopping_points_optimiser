@@ -108,7 +108,7 @@
     </thead>
     <tbody>
       {% for r in runs %}
-      <tr {% if r.status="" ="running" %}style="background-color: #fff3cd;" {% endif %}>
+      <tr {% if r.status == "running" %}style="background-color: #fff3cd;" {% endif %}>
         <td>{{ r.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
         <td>
           {% if r.status == 'success' %}<span class="status-success">✅ Erfolgreich</span> {% elif r.status == 'failed'

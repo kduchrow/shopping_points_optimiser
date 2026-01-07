@@ -42,6 +42,23 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
     def load_user(user_id):
         return User.query.get(int(user_id))
 
+    # Clean up stale job runs on startup
+    with app.app_context():
+        try:
+            from spo.models import ScheduledJobRun
+
+            stale_runs = ScheduledJobRun.query.filter(
+                ScheduledJobRun.status.in_(["running", "queued"])
+            ).all()
+            if stale_runs:
+                for run in stale_runs:
+                    run.status = "failed"
+                    run.message = "Container restarted while job was running"
+                db.session.commit()
+        except Exception:
+            # Table might not exist yet on first startup
+            pass
+
     @app.context_processor
     def inject_meta():
         return {
