@@ -1,15 +1,38 @@
 #!/usr/bin/env pwsh
 # Test and Rebuild Script for Shopping Points Optimiser
 # This script rebuilds the Docker image, restarts the container, and shows logs
+# When docker-compose.override.yml exists, skip build by default (volume mounts active)
 
 param(
     [switch]$SkipBuild,
+    [switch]$ForceBuild,
     [switch]$CleanStart,
     [int]$LogLines = 40
 )
 
 Write-Host "[*] Shopping Points Optimiser - Test and Rebuild" -ForegroundColor Cyan
 Write-Host "=================================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Check if docker-compose.override.yml exists (volume mounts active)
+$overrideExists = Test-Path "docker-compose.override.yml"
+$shouldBuild = $false
+
+if ($ForceBuild) {
+    $shouldBuild = $true
+    Write-Host "[INFO] Force build requested" -ForegroundColor Yellow
+} elseif ($SkipBuild) {
+    $shouldBuild = $false
+    Write-Host "[INFO] Build skipped by parameter" -ForegroundColor Yellow
+} elseif ($overrideExists) {
+    Write-Host "[INFO] docker-compose.override.yml detected - using volume mounts" -ForegroundColor Green
+    Write-Host "[INFO] Skipping build (code changes reflect instantly via volumes)" -ForegroundColor Green
+    Write-Host "[INFO] Use -ForceBuild to rebuild if Dockerfile or requirements changed" -ForegroundColor Yellow
+    $shouldBuild = $false
+} else {
+    Write-Host "[INFO] No volume mounts detected - build required" -ForegroundColor Yellow
+    $shouldBuild = $true
+}
 Write-Host ""
 
 if ($CleanStart) {
@@ -22,7 +45,7 @@ if ($CleanStart) {
     Write-Host ""
 }
 
-if (-not $SkipBuild) {
+if ($shouldBuild) {
     Write-Host "[BUILD] Building Docker image..." -ForegroundColor Cyan
     docker-compose build --no-cache shopping-points
     if ($LASTEXITCODE -ne 0) {
@@ -37,7 +60,7 @@ Write-Host "[START] Starting containers..." -ForegroundColor Cyan
 if ($CleanStart) {
     docker-compose up -d
 } else {
-    # Force recreate to pick up new image
+    # Force recreate to pick up new image (or refresh mounts)
     docker-compose up -d --force-recreate shopping-points
 }
 

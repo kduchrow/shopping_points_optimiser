@@ -1,0 +1,35 @@
+# Docker Compose Override Example for Local Development
+# Copy this file to docker-compose.override.yml and customize as needed
+# docker-compose.override.yml is automatically merged with docker-compose.yml
+
+version: "3.8"
+
+services:
+  shopping-points:
+    # Mount source code for live reload (no rebuild needed for code changes)
+    volumes:
+      # Application code
+      - ./spo:/app/spo
+      - ./templates:/app/templates
+      - ./static:/app/static
+      - ./migrations:/app/migrations
+
+      # Tests (for pytest)
+      - ./tests:/app/tests
+
+      # Configuration files
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./pyrightconfig.json:/app/pyrightconfig.json
+
+      # Keep logs volume
+      - shopping-logs:/app/logs
+
+    # Development environment variables
+    environment:
+      - FLASK_ENV=development
+      - DEBUG=True
+      - FLASK_DEBUG=1
+
+    # Optional: Add port for debugging
+    # ports:
+    #   - "5678:5678"  # Python debugger port

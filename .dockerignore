@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Database files - WICHTIG: Nie ins Docker Image!
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+instance/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Tests - excluded from production builds
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Docker development files
+docker-compose.override.yml
+docker-compose.*.yml
+!docker-compose.yml
+
+# Documentation
+docs/_build/

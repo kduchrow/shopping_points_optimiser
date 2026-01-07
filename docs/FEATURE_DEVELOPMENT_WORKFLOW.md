@@ -2,7 +2,75 @@
 
 This document outlines the **mandatory** workflow for implementing new features in Shopping Points Optimiser. Following this process ensures code quality, test coverage, and maintainability.
 
-## 📋 Development Process
+## �️ Development Environment Setup
+
+### Docker Compose Override for Development
+
+For efficient development, use `docker-compose.override.yml` to mount your source code as volumes. This eliminates the need to rebuild Docker images for every code change.
+
+**Setup:**
+
+1. Copy the example override file:
+   ```bash
+   Copy-Item docker-compose.override.yml.example docker-compose.override.yml
+   ```
+
+2. The override file mounts your local code into the container:
+   ```yaml
+   volumes:
+     - ./spo:/app/spo              # Python application code
+     - ./tests:/app/tests          # Test suite
+     - ./templates:/app/templates  # Jinja2 templates
+     - ./static:/app/static        # CSS/JS/images
+     - ./migrations:/app/migrations
+     - ./pyproject.toml:/app/pyproject.toml
+     - ./pyrightconfig.json:/app/pyrightconfig.json
+   ```
+
+3. Start containers (override is automatically merged):
+   ```bash
+   docker-compose up -d
+   ```
+
+**Benefits:**
+- ✅ **Instant code changes** - No rebuild needed, changes reflect immediately
+- ✅ **Clean production images** - tests/ excluded via `.dockerignore`
+- ✅ **Fast development cycle** - Edit code → Run tests instantly
+- ✅ **Environment consistency** - Same Python/dependencies as production
+
+**Note:** `docker-compose.override.yml` is gitignored (personal config), but `docker-compose.override.yml.example` is committed as a template.
+
+### Environment Variables for Testing
+
+Tests require admin credentials via environment variables:
+
+1. Copy `.env.example` to `.env` (if not exists)
+2. Set these variables in `.env`:
+   ```env
+   TEST_ADMIN_USERNAME=test_admin
+   TEST_ADMIN_PASSWORD=your_secure_password_here
+   ```
+
+**Security:** Never commit hardcoded passwords. Tests will fail with a clear error if these variables are missing.
+
+### Running Tests
+
+With volume mounts active, tests run instantly without rebuild:
+
+```bash
+# Run all tests
+docker-compose exec -T shopping-points python -m pytest -v
+
+# Run specific test file
+docker-compose exec -T shopping-points python -m pytest tests/test_admin_clear_shops.py -v
+
+# Run tests with coverage
+docker-compose exec -T shopping-points python -m pytest --cov=spo --cov-report=html
+```
+
+---
+
+## �📋 Development Process
 
 ### 1. 🤔 Understand & Clarify Requirements
 

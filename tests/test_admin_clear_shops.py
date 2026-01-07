@@ -1,6 +1,8 @@
 """Test admin clear_shops endpoint with all FK constraints."""
 
 
+from datetime import datetime, timedelta
+
 from spo.extensions import db
 from spo.models import (
     BonusProgram,
@@ -17,10 +19,10 @@ from spo.models import (
 
 def test_clear_shops_with_all_foreign_keys(client, admin_user):
     """Test that clear_shops deletes all shops and related data without FK violations."""
-    # Login as admin
+    # Login as admin using credentials from fixture
     client.post(
         "/login",
-        data={"username": admin_user.username, "password": "admin123"},
+        data={"username": admin_user.username, "password": admin_user._test_password},
         follow_redirects=True,
     )
 
@@ -33,6 +35,7 @@ def test_clear_shops_with_all_foreign_keys(client, admin_user):
         status="active",
     )
     db.session.add(shop_main)
+    db.session.commit()  # Commit ShopMain first for FK references
 
     # 2. Create ShopVariant (references ShopMain)
     shop_variant = ShopVariant(
@@ -96,6 +99,7 @@ def test_clear_shops_with_all_foreign_keys(client, admin_user):
         source_id="test-2",
     )
     db.session.add(shop_variant_2)
+    db.session.flush()  # Get variant IDs for merge proposal
 
     # 9. Create ShopMergeProposal (references ShopVariant)
     merge_proposal = ShopMergeProposal(
@@ -109,9 +113,11 @@ def test_clear_shops_with_all_foreign_keys(client, admin_user):
     # 10. Create Coupon (references Shop)
     coupon = Coupon(
         shop_id=shop.id,
+        name="Test Coupon",
         coupon_type="percentage",
         value=10.0,
         description="Test coupon",
+        valid_to=datetime.utcnow() + timedelta(days=30),
     )
     db.session.add(coupon)
 
