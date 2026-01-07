@@ -69,7 +69,7 @@ endblock %} {% block extra_css %}
       <select id="job_type" name="job_type" required>
         <option value="">-- Bitte wählen --</option>
         {% for job_type in available_job_types %}
-        <option value="{{ job_type }}" {% if job and job.job_type="" ="job_type" %}selected{% endif %}>
+        <option value="{{ job_type }}" {% if job and job.job_type == job_type %}selected{% endif %}>
           {{ job_type | replace('_', ' ') | title }}
         </option>
         {% endfor %}
