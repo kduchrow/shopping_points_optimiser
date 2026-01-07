@@ -361,19 +361,24 @@ def register_admin_shops(app):
             # 1. Delete ShopMergeProposal (references ShopVariant)
             ShopMergeProposal.query.delete()
 
-            # 2. Delete ShopMetadataProposal (references ShopMain)
+            # 2. Delete ShopMetadataProposal (references both Shop and ShopMain)
             ShopMetadataProposal.query.delete()
 
-            # 3. Delete ShopProgramRate (references Shop)
+            # 3. Delete Coupon (references Shop)
+            from spo.models import Coupon
+
+            Coupon.query.delete()
+
+            # 4. Delete ShopProgramRate (references Shop)
             ShopProgramRate.query.delete()
 
-            # 4. Delete Shop entries (references ShopMain)
+            # 5. Delete Shop entries (references ShopMain)
             Shop.query.delete()
 
-            # 5. Delete ShopVariant (references ShopMain)
+            # 6. Delete ShopVariant (references ShopMain)
             ShopVariant.query.delete()
 
-            # 6. Delete ShopMain
+            # 7. Delete ShopMain
             ShopMain.query.delete()
 
             db.session.commit()
