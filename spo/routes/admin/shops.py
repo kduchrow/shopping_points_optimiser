@@ -271,6 +271,38 @@ def register_admin_shops(app):
 
         return jsonify({"success": True})
 
+    @app.route("/admin/variants/rescore", methods=["POST"])
+    @login_required
+    def admin_rescore_variants():
+        """Recompute confidence scores for all ShopVariants.
+
+        Uses improved fuzzy matching between `ShopVariant.source_name` and the
+        `ShopMain.canonical_name`. Admin-only.
+        """
+        if current_user.role != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+
+        from spo.services.dedup import fuzzy_match_score
+
+        updated = 0
+        total = 0
+
+        variants = ShopVariant.query.all()
+        for v in variants:
+            total += 1
+            main = db.session.get(ShopMain, v.shop_main_id) if v.shop_main_id else None
+            if not main:
+                continue
+            new_score = fuzzy_match_score(v.source_name or "", main.canonical_name or "")
+            # Clamp to [0, 100]
+            new_score = max(0.0, min(100.0, new_score))
+            if round(v.confidence_score or 0.0, 1) != round(new_score, 1):
+                v.confidence_score = round(new_score, 1)
+                updated += 1
+        db.session.commit()
+
+        return jsonify({"success": True, "updated": updated, "total": total})
+
     @app.route("/admin/shops/metadata_proposals", methods=["GET"])
     @login_required
     def list_metadata_proposals():
