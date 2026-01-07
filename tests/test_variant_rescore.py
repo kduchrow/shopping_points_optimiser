@@ -2,7 +2,6 @@
 Test admin endpoint to rescore ShopVariant confidence scores.
 """
 
-
 from spo import create_app
 from spo.extensions import db
 from spo.models import Shop, ShopMain, ShopVariant

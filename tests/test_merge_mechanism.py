@@ -2,7 +2,6 @@
 Tests for shop merge mechanism and UI support flags.
 """
 
-
 from spo import create_app
 from spo.extensions import db
 from spo.models import (
