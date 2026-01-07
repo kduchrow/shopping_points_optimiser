@@ -239,6 +239,9 @@ jobs:
       SECRET_KEY: test-secret-key-for-ci
       ADMIN_PASSWORD: test-admin-password
       DATABASE_URL: postgresql+psycopg2://spo:spo@db:5432/spo
+      POSTGRES_USER: spo
+      POSTGRES_PASSWORD: spo
+      POSTGRES_DB: spo
 
     steps:
       - uses: actions/checkout@v4
