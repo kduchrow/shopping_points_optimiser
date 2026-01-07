@@ -457,13 +457,13 @@ def register_admin(app):
             if request.headers.get("Accept") == "application/json":
                 return jsonify({"success": True, "deleted": shop_count})
 
-            flash(f"✅ {shop_count} Shops gelöscht. ({rate_count} Raten wurden gelöscht)", "success")
+            flash(f"{shop_count} Shops gelöscht. ({rate_count} Raten wurden gelöscht)", "success")
             return redirect(url_for("admin"))
         except Exception as e:
             db.session.rollback()
             if request.headers.get("Accept") == "application/json":
                 return jsonify({"error": str(e)}), 500
-            flash(f"❌ Fehler beim Löschen: {str(e)}", "error")
+            flash(f"Fehler beim Löschen: {str(e)}", "error")
             return redirect(url_for("admin"))
 
     return app
