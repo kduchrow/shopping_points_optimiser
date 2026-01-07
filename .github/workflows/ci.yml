@@ -100,6 +100,8 @@ jobs:
       FLASK_ENV: testing
       DEBUG: "false"
       GITHUB_REPO_URL: https://github.com/kduchrow/shopping_points_optimiser
+      TEST_ADMIN_USERNAME: test_admin_ci
+      TEST_ADMIN_PASSWORD: test_password_ci_12345
 
     steps:
       - uses: actions/checkout@v4
