@@ -47,21 +47,21 @@ def test_stale_jobs_cleaned_on_startup(app: Flask):
 
         with new_app.app_context():
             # Check that running and queued jobs are now failed
-            running_run = ScheduledJobRun.query.get(running_id)
-            assert running_run.status == "failed"
+            running_run = db.session.get(ScheduledJobRun, running_id)
+            assert running_run is not None and running_run.status == "failed"
             assert "Container restarted" in running_run.message
 
-            queued_run = ScheduledJobRun.query.get(queued_id)
-            assert queued_run.status == "failed"
+            queued_run = db.session.get(ScheduledJobRun, queued_id)
+            assert queued_run is not None and queued_run.status == "failed"
             assert "Container restarted" in queued_run.message
 
             # Check that success and failed jobs are unchanged
-            success_run = ScheduledJobRun.query.get(success_id)
-            assert success_run.status == "success"
+            success_run = db.session.get(ScheduledJobRun, success_id)
+            assert success_run is not None and success_run.status == "success"
             assert success_run.message == "Completed successfully"
 
-            failed_run = ScheduledJobRun.query.get(failed_id)
-            assert failed_run.status == "failed"
+            failed_run = db.session.get(ScheduledJobRun, failed_id)
+            assert failed_run is not None and failed_run.status == "failed"
             assert failed_run.message == "Already failed"
 
         # Cleanup

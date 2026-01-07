@@ -218,13 +218,26 @@ def register_admin_shops(app):
         if proposal.status != "PENDING":
             return jsonify({"error": "Proposal already decided"}), 400
 
-        variant_a = ShopVariant.query.get(proposal.variant_a_id)
-        variant_b = ShopVariant.query.get(proposal.variant_b_id)
+        variant_a = db.session.get(ShopVariant, proposal.variant_a_id)
+        variant_b = db.session.get(ShopVariant, proposal.variant_b_id)
 
         try:
+            # Choose target/main_to as the older ShopMain to keep canonical continuity
+            main_a = db.session.get(ShopMain, variant_a.shop_main_id)
+            main_b = db.session.get(ShopMain, variant_b.shop_main_id)
+            if not main_a or not main_b:
+                return jsonify({"error": "ShopMain not found for one or both variants"}), 404
+
+            if main_a.created_at <= main_b.created_at:
+                source_id = main_b.id
+                target_id = main_a.id
+            else:
+                source_id = main_a.id
+                target_id = main_b.id
+
             merge_shops(
-                main_from_id=variant_a.shop_main_id,
-                main_to_id=variant_b.shop_main_id,
+                main_from_id=source_id,
+                main_to_id=target_id,
                 user_id=current_user.id,
             )
             proposal.status = "APPROVED"

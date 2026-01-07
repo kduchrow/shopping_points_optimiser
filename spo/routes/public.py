@@ -25,19 +25,23 @@ def register_public(app):
         shops_data = []
 
         for shop_main in shop_mains:
-            # Get the first Shop linked to this ShopMain (there may be multiple, but we only need one)
-            shop = Shop.query.filter_by(shop_main_id=shop_main.id).first()
-            if not shop:
+            # Collect all Shop entries under this ShopMain
+            shops = Shop.query.filter_by(shop_main_id=shop_main.id).all()
+            if not shops:
                 continue  # Skip if no Shop is linked yet
 
-            # Get rates for this shop
-            rates = ShopProgramRate.query.filter_by(shop_id=shop.id, valid_to=None).all()
+            # Compute support flags across all sibling shops
+            shop_ids = [s.id for s in shops]
+            rates = ShopProgramRate.query.filter(
+                ShopProgramRate.shop_id.in_(shop_ids), ShopProgramRate.valid_to.is_(None)
+            ).all()
             supports_shopping_voucher = any(r.points_per_eur > 0 for r in rates)
             supports_contract = True
 
             shops_data.append(
                 {
-                    "id": shop.id,  # Use Shop.id for backwards compatibility with evaluate route
+                    # Use the first Shop.id for backwards compatibility with evaluate route
+                    "id": shops[0].id,
                     "name": shop_main.canonical_name,  # Use canonical name from ShopMain
                     "supports_shopping": supports_shopping_voucher,
                     "supports_voucher": supports_shopping_voucher,
@@ -129,7 +133,7 @@ def register_public(app):
             results = []
             rates = ShopProgramRate.query.filter_by(shop_id=shop.id, valid_to=None).all()
             for rate in rates:
-                program = BonusProgram.query.get(rate.program_id)
+                program = db.session.get(BonusProgram, rate.program_id)
                 req_points = (
                     voucher / program.point_value_eur
                     if program.point_value_eur > 0
@@ -153,7 +157,7 @@ def register_public(app):
         results = []
         rates = ShopProgramRate.query.filter_by(shop_id=shop.id, valid_to=None).all()
         for rate in rates:
-            program = BonusProgram.query.get(rate.program_id)
+            program = db.session.get(BonusProgram, rate.program_id)
             results.append(
                 {
                     "program": program.name,
@@ -166,7 +170,7 @@ def register_public(app):
     @login_required
     def suggest_shop(shop_id):
         shop = Shop.query.get_or_404(shop_id)
-        main = ShopMain.query.get(shop.shop_main_id) if shop.shop_main_id else None
+        main = db.session.get(ShopMain, shop.shop_main_id) if shop.shop_main_id else None
         message = None
 
         if request.method == "POST":
@@ -198,7 +202,7 @@ def register_public(app):
                 if merge_shop_id:
                     try:
                         merge_shop_id = int(merge_shop_id)
-                        target_shop = Shop.query.get(merge_shop_id)
+                        target_shop = db.session.get(Shop, merge_shop_id)
                     except Exception:
                         target_shop = None
                     if not target_shop or not target_shop.shop_main_id:
