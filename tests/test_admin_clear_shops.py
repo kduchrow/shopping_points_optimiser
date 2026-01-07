@@ -1,6 +1,5 @@
 """Test admin clear_shops endpoint with all FK constraints."""
 
-
 from datetime import datetime, timedelta
 
 from spo.extensions import db
