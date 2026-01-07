@@ -251,9 +251,13 @@ jobs:
 
       - name: Start services with docker compose
         run: |
+          set -e
+          echo "Starting Docker services..."
           docker compose up -d --build
           echo "Waiting for services to be healthy..."
-          sleep 20
+          sleep 30
+          echo "Checking service status..."
+          docker compose ps || true
 
       - name: Check container health
         run: |

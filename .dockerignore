@@ -44,8 +44,10 @@ Thumbs.db
 .git/
 .gitignore
 
-# Tests - excluded from production builds
+# Tests - keep only smoke tests for production, exclude others
 tests/
+!tests/test_smoke.py
+!tests/conftest.py
 .pytest_cache/
 .coverage
 htmlcov/
