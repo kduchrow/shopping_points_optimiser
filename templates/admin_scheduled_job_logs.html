@@ -1,0 +1,138 @@
+{% extends "base.html" %} {% block title %}Job Logs - {{ job.job_name }}{% endblock %} {% block extra_css %}
+<style>
+  .runs-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  .runs-table th,
+  .runs-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+  }
+  .runs-table th {
+    background-color: #f5f5f5;
+  }
+  .status-success {
+    color: #28a745;
+  }
+  .status-failed {
+    color: #dc3545;
+  }
+  .status-queued {
+    color: #007bff;
+  }
+  .status-running {
+    color: #ffc107;
+    font-weight: bold;
+  }
+  .runs-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .run-message {
+    max-width: 500px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: monospace;
+    font-size: 11px;
+  }
+  .refresh-info {
+    margin-top: 10px;
+    color: #6c757d;
+    font-size: 12px;
+  }
+  .running-indicator {
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+</style>
+<script>
+  // Auto-refresh every 3 seconds if there are running/queued jobs
+  let refreshInterval = null;
+
+  function checkForActiveJobs() {
+    const hasActive = document.querySelector(".status-running, .status-queued") !== null;
+    if (hasActive && !refreshInterval) {
+      refreshInterval = setInterval(() => {
+        window.location.reload();
+      }, 3000);
+    } else if (!hasActive && refreshInterval) {
+      clearInterval(refreshInterval);
+      refreshInterval = null;
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", checkForActiveJobs);
+</script>
+{% endblock %} {% block nav %}
+<nav class="top-nav">
+  <span class="flex-1 text-muted">👤 {{ current_user.username }}</span>
+  <a class="nav-link" href="/">🏠 Startseite</a>
+  <a class="nav-link" href="/admin">🛠️ Admin Panel</a>
+  <a class="nav-link" href="/logout">🚪 Logout</a>
+</nav>
+{% endblock %} {% block content %}
+<div class="card wide">
+  <div style="display: flex; justify-content: space-between; align-items: center">
+    <h1>📜 Logs: {{ job.job_name }}</h1>
+    <a href="{{ url_for('admin_scheduled_jobs') }}" class="btn btn-secondary">⬅️ Zurück</a>
+  </div>
+
+  {% if runs|length == 0 %}
+  <p class="text-muted">Keine Ausführungen aufgezeichnet.</p>
+  {% else %}
+  <div class="refresh-info">
+    <span>📊 Zeigt die letzten {{ runs|length }} Läufe</span>
+    {% if runs|selectattr('status', 'in', ['running', 'queued'])|list|length > 0 %}
+    <span class="running-indicator">🔄 Auto-Refresh aktiv (alle 3 Sek.)</span>
+    {% endif %}
+  </div>
+  <table class="runs-table">
+    <thead>
+      <tr>
+        <th style="width: 150px">Zeitpunkt</th>
+        <th style="width: 120px">Status</th>
+        <th>Nachricht / Fortschritt</th>
+        <th style="width: 100px">Aktionen</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in runs %}
+      <tr {% if r.status="" ="running" %}style="background-color: #fff3cd;" {% endif %}>
+        <td>{{ r.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+        <td>
+          {% if r.status == 'success' %}<span class="status-success">✅ Erfolgreich</span> {% elif r.status == 'failed'
+          %}<span class="status-failed">❌ Fehlgeschlagen</span> {% elif r.status == 'running' %}<span
+            class="status-running running-indicator"
+            >▶️ Läuft</span
+          >
+          {% elif r.status == 'queued' %}<span class="status-queued">⏳ In Warteschlange</span> {% else %}<span
+            class="text-muted"
+            >—</span
+          >{% endif %}
+        </td>
+        <td><div class="run-message">{{ r.message or '(keine Nachricht)' }}</div></td>
+        <td>
+          {% if r.status in ('queued', 'running') %}
+          <form action="{{ url_for('admin_cancel_job_run', run_id=r.id) }}" method="POST" style="display: inline">
+            <button type="submit" class="btn btn-sm btn-danger" title="Job abbrechen">⏹️</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

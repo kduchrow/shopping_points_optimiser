@@ -1,5 +1,4 @@
-{% extends "base.html" %} {% block title %}Vorschlag reviewen - Shopping Points
-Optimiser{% endblock %} {% block nav %}
+{% extends "base.html" %} {% block title %}Vorschlag reviewen - Shopping Points Optimiser{% endblock %} {% block nav %}
 <nav class="top-nav">
   <a class="nav-link" href="/proposals">📝 Beiträge</a>
 </nav>
@@ -11,10 +10,9 @@ Optimiser{% endblock %} {% block nav %}
   <div class="info-box">
     <p>
       <strong>Vorschlagstyp:</strong>
-      {% if proposal.proposal_type == 'rate_change' %} Tarifänderung {% elif
-      proposal.proposal_type == 'shop_add' %} Neuer Shop {% elif
-      proposal.proposal_type == 'program_add' %} Neues Bonusprogramm {% elif
-      proposal.proposal_type == 'coupon_add' %} Neuer Coupon/Aktion {% endif %}
+      {% if proposal.proposal_type == 'rate_change' %} Tarifänderung {% elif proposal.proposal_type == 'shop_add' %}
+      Neuer Shop {% elif proposal.proposal_type == 'program_add' %} Neues Bonusprogramm {% elif proposal.proposal_type
+      == 'coupon_add' %} Neuer Coupon/Aktion {% endif %}
       <span class="proposal-type">🤖 Scraper erstellt</span>
     </p>
 
@@ -27,9 +25,7 @@ Optimiser{% endblock %} {% block nav %}
     {% endif %} {% if proposal.source_url %}
     <p>
       <strong>Quelle:</strong>
-      <a href="{{ proposal.source_url }}" target="_blank"
-        >{{ proposal.source_url[:50] }}...</a
-      >
+      <a href="{{ proposal.source_url }}" target="_blank">{{ proposal.source_url[:50] }}...</a>
     </p>
     {% endif %}
   </div>
@@ -48,8 +44,7 @@ Optimiser{% endblock %} {% block nav %}
         required
       />
       <p style="font-size: 12px; color: #6b7280; margin-top: 4px">
-        Geben Sie die Punkte pro Euro ein oder akzeptieren Sie den Wert des
-        Scrapers
+        Geben Sie die Punkte pro Euro ein oder akzeptieren Sie den Wert des Scrapers
       </p>
     </div>
 
@@ -70,26 +65,14 @@ Optimiser{% endblock %} {% block nav %}
     {% elif proposal.proposal_type == 'shop_add' %}
     <div class="form-group">
       <label for="name">Shop Name</label>
-      <input
-        type="text"
-        id="name"
-        name="name"
-        value="{{ proposal.proposed_name or '' }}"
-        required
-      />
+      <input type="text" id="name" name="name" value="{{ proposal.proposed_name or '' }}" required />
     </div>
 
     <!-- Program Add Form -->
     {% elif proposal.proposal_type == 'program_add' %}
     <div class="form-group">
       <label for="name">Programmname</label>
-      <input
-        type="text"
-        id="name"
-        name="name"
-        value="{{ proposal.proposed_name or '' }}"
-        required
-      />
+      <input type="text" id="name" name="name" value="{{ proposal.proposed_name or '' }}" required />
     </div>
 
     <div class="form-group">
@@ -109,28 +92,10 @@ Optimiser{% endblock %} {% block nav %}
     <div class="form-group">
       <label for="coupon_type">Coupon Typ</label>
       <select id="coupon_type" name="coupon_type" required>
-        <option
-          value="multiplier"
-          {%
-          if
-          proposal.proposed_coupon_type=""
-          ="multiplier"
-          %}selected{%
-          endif
-          %}
-        >
+        <option value="multiplier" {% if proposal.proposed_coupon_type="" ="multiplier" %}selected{% endif %}>
           Multiplikator
         </option>
-        <option
-          value="discount"
-          {%
-          if
-          proposal.proposed_coupon_type=""
-          ="discount"
-          %}selected{%
-          endif
-          %}
-        >
+        <option value="discount" {% if proposal.proposed_coupon_type="" ="discount" %}selected{% endif %}>
           Rabatt
         </option>
       </select>
@@ -146,9 +111,7 @@ Optimiser{% endblock %} {% block nav %}
         value="{{ proposal.proposed_coupon_value or '' }}"
         required
       />
-      <p style="font-size: 12px; color: #6b7280; margin-top: 4px">
-        z.B. 2 für 2x Multiplikator oder 10 für 10% Rabatt
-      </p>
+      <p style="font-size: 12px; color: #6b7280; margin-top: 4px">z.B. 2 für 2x Multiplikator oder 10 für 10% Rabatt</p>
     </div>
 
     <div class="form-group">
@@ -171,9 +134,7 @@ Optimiser{% endblock %} {% block nav %}
           endif
           %}
         />
-        <label for="coupon_combinable" class="mb-0"
-          >Mit anderen Coupons kombinierbar</label
-        >
+        <label for="coupon_combinable" class="mb-0">Mit anderen Coupons kombinierbar</label>
       </div>
     </div>
 
@@ -200,11 +161,7 @@ Optimiser{% endblock %} {% block nav %}
 
     <div class="flex gap-10 mt-25">
       <button type="submit" class="btn">✓ Bestätigen und einreichen</button>
-      <a
-        href="/proposals"
-        class="btn btn-secondary text-decoration-none text-center"
-        >⬅ Zurück</a
-      >
+      <a href="/proposals" class="btn btn-secondary text-decoration-none text-center">⬅ Zurück</a>
     </div>
   </form>
 </div>

@@ -6,6 +6,8 @@ services:
     image: postgres:16-alpine
     container_name: shopping-points-db
     restart: unless-stopped
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-spo}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-spo}
@@ -27,10 +29,10 @@ services:
       dockerfile: Dockerfile
       args:
         FLASK_ENV: ${FLASK_ENV:-production}
-        APP_VERSION: ${APP_VERSION:-0.2.0}
+        APP_VERSION: ${APP_VERSION:-0.2.1}
         BUILD_DATE: ${BUILD_DATE:-unknown}
         VCS_REF: ${VCS_REF:-unknown}
-    image: shopping-points-optimiser:${APP_VERSION:-0.2.0}
+    image: shopping-points-optimiser:${APP_VERSION:-0.2.1}
     container_name: shopping-points-optimiser
     restart: unless-stopped
     depends_on:

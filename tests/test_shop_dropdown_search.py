@@ -10,6 +10,7 @@ import pytest
 
 from spo.extensions import db
 from spo.models import BonusProgram, Shop, ShopProgramRate
+from spo.services.dedup import get_or_create_shop_main
 
 
 @pytest.fixture
@@ -35,7 +36,13 @@ def shop_test_data(app, session):
     ]
 
     for name in test_shop_names:
-        shop = Shop(name=name)
+        # Create ShopMain entry using dedup service
+        shop_main, _, _ = get_or_create_shop_main(
+            shop_name=name, source="test", source_id=f"test_{name}"
+        )
+
+        # Create Shop entry linked to ShopMain
+        shop = Shop(name=name, shop_main_id=shop_main.id)
         session.add(shop)
         session.flush()
 
@@ -227,7 +234,13 @@ class TestShopDropdownPerformance:
             # Add many more shops
             program = BonusProgram.query.first()
             for i in range(50):
-                shop = Shop(name=f"Test Shop {i:03d}")
+                # Create ShopMain and Shop entries
+                shop_main, _, _ = get_or_create_shop_main(
+                    shop_name=f"Test Shop {i:03d}",
+                    source="test",
+                    source_id=f"test_shop_{i}",
+                )
+                shop = Shop(name=f"Test Shop {i:03d}", shop_main_id=shop_main.id)
                 db.session.add(shop)
                 db.session.flush()
 
@@ -298,7 +311,11 @@ class TestShopDropdownEdgeCases:
         """Test that shops with special characters work correctly."""
         with app.app_context():
             program = BonusProgram.query.first()
-            special_shop = Shop(name="Café & Restaurant")
+            # Create ShopMain and Shop entries
+            shop_main, _, _ = get_or_create_shop_main(
+                shop_name="Café & Restaurant", source="test", source_id="test_cafe"
+            )
+            special_shop = Shop(name="Café & Restaurant", shop_main_id=shop_main.id)
             db.session.add(special_shop)
             db.session.flush()
 

@@ -1,5 +1,4 @@
-{% extends "base.html" %} {% block title %}Beiträge - Shopping Points
-Optimiser{% endblock %} {% block nav %}
+{% extends "base.html" %} {% block title %}Beiträge - Shopping Points Optimiser{% endblock %} {% block nav %}
 <nav class="top-nav">
   <a class="nav-link" href="/">🏠 Startseite</a>
   <a class="nav-link" href="/profile">👤 Profil</a>
@@ -17,52 +16,31 @@ Optimiser{% endblock %} {% block nav %}
   {% endif %} {% if proposals_data %} {% for item in proposals_data %}
   <div class="proposal-card">
     <div class="proposal-header">
-      <span class="proposal-type"
-        >{{ item.proposal.proposal_type.upper() }}</span
-      >
+      <span class="proposal-type">{{ item.proposal.proposal_type.upper() }}</span>
       <div class="proposal-meta">
-        Von: {{ item.submitter.username }} | {{
-        item.proposal.created_at.strftime('%d.%m.%Y %H:%M') }}
+        Von: {{ item.submitter.username }} | {{ item.proposal.created_at.strftime('%d.%m.%Y %H:%M') }}
       </div>
     </div>
 
     <div class="proposal-content">
       {% if item.proposal.proposal_type == 'rate_change' %}
-      <p>
-        <strong>Shop:</strong> {{ item.shop.name if item.shop else
-        item.proposal.shop_id }}
-      </p>
-      <p>
-        <strong>Programm:</strong> {{ item.program.name if item.program else
-        item.proposal.program_id }}
-      </p>
-      <p>
-        <strong>Neue Points/EUR:</strong> {{
-        item.proposal.proposed_points_per_eur }}
-      </p>
-      <p>
-        <strong>Neuer Cashback %:</strong> {{
-        item.proposal.proposed_cashback_pct }}
-      </p>
+      <p><strong>Shop:</strong> {{ item.shop.name if item.shop else item.proposal.shop_id }}</p>
+      <p><strong>Programm:</strong> {{ item.program.name if item.program else item.proposal.program_id }}</p>
+      <p><strong>Neue Points/EUR:</strong> {{ item.proposal.proposed_points_per_eur }}</p>
+      <p><strong>Neuer Cashback %:</strong> {{ item.proposal.proposed_cashback_pct }}</p>
       {% elif item.proposal.proposal_type == 'shop_add' %}
       <p><strong>Neuer Shop:</strong> {{ item.proposal.proposed_name }}</p>
       {% elif item.proposal.proposal_type == 'program_add' %}
       <p><strong>Neues Programm:</strong> {{ item.proposal.proposed_name }}</p>
-      <p>
-        <strong>Punktwert (EUR):</strong> {{
-        item.proposal.proposed_point_value_eur }}
-      </p>
+      <p><strong>Punktwert (EUR):</strong> {{ item.proposal.proposed_point_value_eur }}</p>
       {% elif item.proposal.proposal_type == 'coupon_add' %}
       <p>
         <strong>Art der Aktion:</strong>
-        {% if item.proposal.proposed_coupon_type == 'multiplier' %} 🔢
-        Multiplikator {{ item.proposal.proposed_coupon_value }}x {% else %} 💰
-        Rabatt {{ item.proposal.proposed_coupon_value }}% {% endif %}
+        {% if item.proposal.proposed_coupon_type == 'multiplier' %} 🔢 Multiplikator {{
+        item.proposal.proposed_coupon_value }}x {% else %} 💰 Rabatt {{ item.proposal.proposed_coupon_value }}% {% endif
+        %}
       </p>
-      <p>
-        <strong>Beschreibung:</strong> {{
-        item.proposal.proposed_coupon_description }}
-      </p>
+      <p><strong>Beschreibung:</strong> {{ item.proposal.proposed_coupon_description }}</p>
       {% if item.shop %}
       <p><strong>Shop:</strong> {{ item.shop.name }}</p>
       {% elif item.proposal.shop_id %}
@@ -74,25 +52,17 @@ Optimiser{% endblock %} {% block nav %}
       {% endif %}
       <p>
         <strong>Kombinierbar:</strong>
-        {% if item.proposal.proposed_coupon_combinable is true %} ✓ Ja {% elif
-        item.proposal.proposed_coupon_combinable is false %} ✗ Nein {% else %}
-        ❓ Unbekannt {% endif %}
+        {% if item.proposal.proposed_coupon_combinable is true %} ✓ Ja {% elif item.proposal.proposed_coupon_combinable
+        is false %} ✗ Nein {% else %} ❓ Unbekannt {% endif %}
       </p>
       {% if item.proposal.proposed_coupon_valid_to %}
-      <p>
-        <strong>Gültig bis:</strong> {{
-        item.proposal.proposed_coupon_valid_to.strftime('%d.%m.%Y') }}
-      </p>
+      <p><strong>Gültig bis:</strong> {{ item.proposal.proposed_coupon_valid_to.strftime('%d.%m.%Y') }}</p>
       {% endif %} {% endif %} {% if item.proposal.reason %}
-      <div class="proposal-reason">
-        <strong>Begründung:</strong> {{ item.proposal.reason }}
-      </div>
+      <div class="proposal-reason"><strong>Begründung:</strong> {{ item.proposal.reason }}</div>
       {% endif %} {% if item.proposal.source_url %}
       <p style="margin-top: 10px">
         <strong>Quelle:</strong>
-        <a href="{{ item.proposal.source_url }}" target="_blank"
-          >{{ item.proposal.source_url }}</a
-        >
+        <a href="{{ item.proposal.source_url }}" target="_blank">{{ item.proposal.source_url }}</a>
       </p>
       {% endif %}
     </div>
@@ -101,52 +71,28 @@ Optimiser{% endblock %} {% block nav %}
       <div class="vote-count upvotes">▲ {{ item.upvotes }}</div>
       <div class="vote-count downvotes">▼ {{ item.downvotes }}</div>
 
-      {% if item.proposal.status == 'pending' %} {% if current_user.role in
-      ['contributor', 'admin'] %}
+      {% if item.proposal.status == 'pending' %} {% if current_user.role in ['contributor', 'admin'] %}
       <div class="vote-buttons">
-        <form
-          method="post"
-          action="/vote/{{ item.proposal.id }}"
-          class="inline"
-        >
+        <form method="post" action="/vote/{{ item.proposal.id }}" class="inline">
           <input type="hidden" name="vote" value="1" />
-          <button
-            type="submit"
-            class="btn btn-upvote {% if item.user_vote == 1 %}active{% endif %}"
-          >
-            {% if current_user.role == 'admin' %}👍 Admin+3{% else %}👍 Upvote{%
-            endif %}
+          <button type="submit" class="btn btn-upvote {% if item.user_vote == 1 %}active{% endif %}">
+            {% if current_user.role == 'admin' %}👍 Admin+3{% else %}👍 Upvote{% endif %}
           </button>
         </form>
-        <form
-          method="post"
-          action="/vote/{{ item.proposal.id }}"
-          style="display: inline"
-        >
+        <form method="post" action="/vote/{{ item.proposal.id }}" style="display: inline">
           <input type="hidden" name="vote" value="-1" />
-          <button
-            type="submit"
-            class="btn btn-downvote {% if item.user_vote == -1 %}active{% endif %}"
-          >
+          <button type="submit" class="btn btn-downvote {% if item.user_vote == -1 %}active{% endif %}">
             👎 Downvote
           </button>
         </form>
         {% if current_user.role == 'admin' %}
-        <form
-          method="post"
-          action="/approve/{{ item.proposal.id }}"
-          style="display: inline; margin-left: 10px"
-        >
-          <button type="submit" class="btn btn-warning">
-            ✓ Direkt genehmigen
-          </button>
+        <form method="post" action="/approve/{{ item.proposal.id }}" style="display: inline; margin-left: 10px">
+          <button type="submit" class="btn btn-warning">✓ Direkt genehmigen</button>
         </form>
         {% endif %}
       </div>
       {% endif %} {% else %}
-      <div class="status-badge status-approved">
-        ✓ {{ item.proposal.status|upper }}
-      </div>
+      <div class="status-badge status-approved">✓ {{ item.proposal.status|upper }}</div>
       {% endif %}
     </div>
   </div>
@@ -162,16 +108,13 @@ Optimiser{% endblock %} {% block nav %}
     <div class="proposal-header">
       <span class="proposal-type">METADATA_EDIT</span>
       <div class="proposal-meta">
-        Von: {{ item.submitter.username if item.submitter else 'Unbekannt' }} |
-        {{ item.proposal.created_at.strftime('%d.%m.%Y %H:%M') }}
+        Von: {{ item.submitter.username if item.submitter else 'Unbekannt' }} | {{
+        item.proposal.created_at.strftime('%d.%m.%Y %H:%M') }}
       </div>
     </div>
 
     <div class="proposal-content">
-      <p>
-        <strong>Shop:</strong> {{ item.main.canonical_name if item.main else
-        item.proposal.shop_main_id }}
-      </p>
+      <p><strong>Shop:</strong> {{ item.main.canonical_name if item.main else item.proposal.shop_main_id }}</p>
       {% if item.proposal.proposed_name %}
       <p><strong>Neuer Name:</strong> {{ item.proposal.proposed_name }}</p>
       {% endif %} {% if item.proposal.proposed_website %}
@@ -179,13 +122,9 @@ Optimiser{% endblock %} {% block nav %}
       {% endif %} {% if item.proposal.proposed_logo_url %}
       <p><strong>Logo:</strong> {{ item.proposal.proposed_logo_url }}</p>
       {% endif %} {% if item.proposal.reason %}
-      <div class="proposal-reason">
-        <strong>Begründung:</strong> {{ item.proposal.reason }}
-      </div>
+      <div class="proposal-reason"><strong>Begründung:</strong> {{ item.proposal.reason }}</div>
       {% endif %}
-      <p style="margin-top: 10px">
-        <strong>Status:</strong> {{ item.proposal.status }}
-      </p>
+      <p style="margin-top: 10px"><strong>Status:</strong> {{ item.proposal.status }}</p>
     </div>
   </div>
   {% endfor %} {% else %}
@@ -200,28 +139,18 @@ Optimiser{% endblock %} {% block nav %}
     <div class="proposal-header">
       <span class="proposal-type">MERGE_REQUEST</span>
       <div class="proposal-meta">
-        Von: {{ item.submitter.username if item.submitter else 'Unbekannt' }} |
-        {{ item.proposal.created_at.strftime('%d.%m.%Y %H:%M') }}
+        Von: {{ item.submitter.username if item.submitter else 'Unbekannt' }} | {{
+        item.proposal.created_at.strftime('%d.%m.%Y %H:%M') }}
       </div>
     </div>
 
     <div class="proposal-content">
-      <p>
-        <strong>Shop A:</strong> {{ item.variant_a.source_name if item.variant_a
-        else 'Unbekannt' }}
-      </p>
-      <p>
-        <strong>Shop B:</strong> {{ item.variant_b.source_name if item.variant_b
-        else 'Unbekannt' }}
-      </p>
+      <p><strong>Shop A:</strong> {{ item.variant_a.source_name if item.variant_a else 'Unbekannt' }}</p>
+      <p><strong>Shop B:</strong> {{ item.variant_b.source_name if item.variant_b else 'Unbekannt' }}</p>
       {% if item.proposal.reason %}
-      <div class="proposal-reason">
-        <strong>Begründung:</strong> {{ item.proposal.reason }}
-      </div>
+      <div class="proposal-reason"><strong>Begründung:</strong> {{ item.proposal.reason }}</div>
       {% endif %}
-      <p style="margin-top: 10px">
-        <strong>Status:</strong> {{ item.proposal.status }}
-      </p>
+      <p style="margin-top: 10px"><strong>Status:</strong> {{ item.proposal.status }}</p>
     </div>
   </div>
   {% endfor %} {% else %}

@@ -1,13 +1,8 @@
 function switchTab(tabName, evt) {
-  document
-    .querySelectorAll(".tab-button")
-    .forEach((btn) => btn.classList.remove("active"));
-  document
-    .querySelectorAll(".tab-content")
-    .forEach((content) => content.classList.remove("active"));
+  document.querySelectorAll(".tab-button").forEach((btn) => btn.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach((content) => content.classList.remove("active"));
 
-  const target =
-    evt?.target || document.querySelector(`[data-tab="${tabName}"]`);
+  const target = evt?.target || document.querySelector(`[data-tab="${tabName}"]`);
   if (target) target.classList.add("active");
   const tab = document.getElementById(`tab-${tabName}`);
   if (tab) tab.classList.add("active");
@@ -44,8 +39,7 @@ function loadNotifications() {
     list.innerHTML = "";
 
     if (!data.notifications.length) {
-      list.innerHTML =
-        '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No notifications</p></div>';
+      list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No notifications</p></div>';
       return;
     }
 
@@ -67,15 +61,11 @@ function loadNotifications() {
 }
 
 function markAsRead(notificationId) {
-  fetch(`/api/notifications/${notificationId}/read`, { method: "POST" }).then(
-    () => loadNotifications(),
-  );
+  fetch(`/api/notifications/${notificationId}/read`, { method: "POST" }).then(() => loadNotifications());
 }
 
 function markAllAsRead() {
-  fetch("/api/notifications/read_all", { method: "POST" }).then(() =>
-    loadNotifications(),
-  );
+  fetch("/api/notifications/read_all", { method: "POST" }).then(() => loadNotifications());
 }
 
 function loadMergeProposals() {
@@ -98,29 +88,19 @@ function loadMergeProposals() {
         div.innerHTML = `
           <div class="proposal-header">
             <span>Proposed by: <strong>${p.proposed_by}</strong></span>
-            <span style="font-size: 12px; color: #999;">${new Date(
-              p.created_at,
-            ).toLocaleString()}</span>
+            <span style="font-size: 12px; color: #999;">${new Date(p.created_at).toLocaleString()}</span>
           </div>
           <div class="proposal-shops">
-            <div class="shop-badge">${p.variant_a.source}: ${
-              p.variant_a.name
-            }</div>
+            <div class="shop-badge">${p.variant_a.source}: ${p.variant_a.name}</div>
             <span class="merge-arrow">→</span>
-            <div class="shop-badge">${p.variant_b.source}: ${
-              p.variant_b.name
-            }</div>
+            <div class="shop-badge">${p.variant_b.source}: ${p.variant_b.name}</div>
           </div>
           <div style="margin: 10px 0; font-size: 13px; color: #666;"><strong>Reason:</strong> ${
             p.reason || "No reason provided"
           }</div>
           <div>
-            <button class="btn btn-success" onclick="approveMerge(${
-              p.id
-            })">✓ Approve</button>
-            <button class="btn btn-danger" onclick="rejectMerge(${
-              p.id
-            })">✗ Reject</button>
+            <button class="btn btn-success" onclick="approveMerge(${p.id})">✓ Approve</button>
+            <button class="btn btn-danger" onclick="rejectMerge(${p.id})">✗ Reject</button>
           </div>
         `;
         list.appendChild(div);
@@ -187,37 +167,15 @@ function loadMetadataProposals() {
             <span style="font-size: 12px; color: #999;">${created}</span>
           </div>
           <div style="margin: 8px 0; font-size: 13px; color: #333;">
-            ${
-              p.proposed_name
-                ? `<div><strong>Name:</strong> ${p.proposed_name}</div>`
-                : ""
-            }
-            ${
-              p.proposed_website
-                ? `<div><strong>Website:</strong> ${p.proposed_website}</div>`
-                : ""
-            }
-            ${
-              p.proposed_logo_url
-                ? `<div><strong>Logo:</strong> ${p.proposed_logo_url}</div>`
-                : ""
-            }
-            ${
-              p.reason
-                ? `<div style="margin-top:6px;"><strong>Begründung:</strong> ${p.reason}</div>`
-                : ""
-            }
+            ${p.proposed_name ? `<div><strong>Name:</strong> ${p.proposed_name}</div>` : ""}
+            ${p.proposed_website ? `<div><strong>Website:</strong> ${p.proposed_website}</div>` : ""}
+            ${p.proposed_logo_url ? `<div><strong>Logo:</strong> ${p.proposed_logo_url}</div>` : ""}
+            ${p.reason ? `<div style="margin-top:6px;"><strong>Begründung:</strong> ${p.reason}</div>` : ""}
           </div>
           <div>
-            <button class="btn btn-success" onclick="approveMetadata(${
-              p.id
-            })">✓ Freigeben</button>
-            <button class="btn btn-danger" onclick="rejectMetadata(${
-              p.id
-            })">✗ Ablehnen</button>
-            <button class="btn btn-warning" onclick="deleteMetadata(${
-              p.id
-            })">🗑 Löschen</button>
+            <button class="btn btn-success" onclick="approveMetadata(${p.id})">✓ Freigeben</button>
+            <button class="btn btn-danger" onclick="rejectMetadata(${p.id})">✗ Ablehnen</button>
+            <button class="btn btn-warning" onclick="deleteMetadata(${p.id})">🗑 Löschen</button>
           </div>
         `;
         list.appendChild(div);
@@ -374,30 +332,17 @@ function renderShopList(data) {
   const rows = data.shops
     .map((shop) => {
       const variants = shop.variants
-        .map(
-          (v) => `${v.source}: ${v.name} (conf ${Math.round(v.confidence)}%)`,
-        )
+        .map((v) => `${v.source}: ${v.name} (conf ${Math.round(v.confidence)}%)`)
         .join("<br>");
       const rates = shop.rates
-        .map(
-          (r) =>
-            `${r.program}: ${r.points_per_eur} P/EUR${
-              r.cashback_pct ? `, ${r.cashback_pct}% CB` : ""
-            }`,
-        )
+        .map((r) => `${r.program}: ${r.points_per_eur} P/EUR${r.cashback_pct ? `, ${r.cashback_pct}% CB` : ""}`)
         .join("<br>");
       return `
         <div style="border-bottom:1px solid #eee; padding:10px 0;">
           <div style="font-weight:600;">${shop.name}</div>
-          <div style="color:#666;">${shop.status}${
-            shop.website ? " • " + shop.website : ""
-          }</div>
-          <div style="margin-top:6px;"><strong>Varianten:</strong><br>${
-            variants || "—"
-          }</div>
-          <div style="margin-top:6px;"><strong>Raten:</strong><br>${
-            rates || "—"
-          }</div>
+          <div style="color:#666;">${shop.status}${shop.website ? " • " + shop.website : ""}</div>
+          <div style="margin-top:6px;"><strong>Varianten:</strong><br>${variants || "—"}</div>
+          <div style="margin-top:6px;"><strong>Raten:</strong><br>${rates || "—"}</div>
         </div>
       `;
     })

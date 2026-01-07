@@ -51,12 +51,7 @@ repos:
     rev: v1.33.0
     hooks:
       - id: yamllint
-        args:
-          [
-            --strict,
-            -d,
-            "{extends: default, rules: {line-length: {max: 120}, truthy: {check-keys: false}}}",
-          ]
+        args: [--strict, -d, "{extends: default, rules: {line-length: {max: 120}, truthy: {check-keys: false}}}"]
 
   # Security: Detect secrets
   - repo: https://github.com/Yelp/detect-secrets

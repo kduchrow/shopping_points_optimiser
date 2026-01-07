@@ -1,0 +1,125 @@
+{% extends "base.html" %} {% block title %}{% if job %}Job bearbeiten{% else %}Job erstellen{% endif %} - Admin{%
+endblock %} {% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+<style>
+  .form-group {
+    margin-bottom: 20px;
+  }
+  .form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  .form-group input[type="text"],
+  .form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+  .form-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
+  }
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 30px;
+  }
+  .help-text {
+    color: #6c757d;
+    font-size: 14px;
+    margin-top: 4px;
+  }
+</style>
+{% endblock %} {% block nav %}
+<nav class="top-nav">
+  <span class="flex-1 text-muted">👤 {{ current_user.username }}</span>
+  <a class="nav-link" href="/">🏠 Startseite</a>
+  <a class="nav-link" href="/admin">🛠️ Admin Panel</a>
+  <a class="nav-link" href="/admin/scheduled_jobs">⏰ Scheduled Jobs</a>
+  <a class="nav-link" href="/logout">🚪 Logout</a>
+</nav>
+{% endblock %} {% block content %}
+<div class="card wide">
+  <h1>{% if job %}✏️ Job bearbeiten{% else %}➕ Neuen Job erstellen{% endif %}</h1>
+
+  <form method="POST">
+    <div class="form-group">
+      <label for="job_name">Job Name *</label>
+      <input
+        type="text"
+        id="job_name"
+        name="job_name"
+        value="{% if job %}{{ job.job_name }}{% endif %}"
+        required
+        {%
+        if
+        job
+        %}readonly{%
+        endif
+        %}
+      />
+      <div class="help-text">Eindeutiger Name für den Job (z.B. "daily_shop_deduplication")</div>
+    </div>
+
+    <div class="form-group">
+      <label for="job_type">Job Type *</label>
+      <select id="job_type" name="job_type" required>
+        <option value="">-- Bitte wählen --</option>
+        {% for job_type in available_job_types %}
+        <option value="{{ job_type }}" {% if job and job.job_type="" ="job_type" %}selected{% endif %}>
+          {{ job_type | replace('_', ' ') | title }}
+        </option>
+        {% endfor %}
+      </select>
+      <div class="help-text">Art des Jobs der ausgeführt werden soll</div>
+    </div>
+
+    <div class="form-group">
+      <label for="cron_expression">Cron Expression *</label>
+      <input
+        type="text"
+        id="cron_expression"
+        name="cron_expression"
+        value="{% if job %}{{ job.cron_expression }}{% else %}0 2 * * *{% endif %}"
+        required
+        placeholder="0 2 * * *"
+      />
+      <div class="help-text">
+        Zeitplan im Cron-Format (z.B. "0 2 * * *" für täglich um 2:00 Uhr)
+        <br />
+        <a href="https://crontab.guru/" target="_blank">Cron Expression Generator →</a>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>
+        <input type="checkbox" id="enabled" name="enabled" {% if not job or job.enabled %}checked{% endif %} />
+        Job aktiviert
+      </label>
+      <div class="help-text">Job wird nur ausgeführt wenn aktiviert</div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">{% if job %}💾 Speichern{% else %}➕ Erstellen{% endif %}</button>
+      <a href="{{ url_for('admin_scheduled_jobs') }}" class="btn btn-secondary"> ❌ Abbrechen </a>
+    </div>
+  </form>
+
+  {% if job %}
+  <div style="margin-top: 40px; padding: 20px; background-color: #f8f9fa; border-radius: 4px">
+    <h3>📊 Job Informationen</h3>
+    <p><strong>Erstellt am:</strong> {{ job.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+    <p><strong>Letztes Update:</strong> {{ job.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+    {% if job.last_run_at %}
+    <p><strong>Letzter Lauf:</strong> {{ job.last_run_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+    <p><strong>Status:</strong> {{ job.last_run_status or 'N/A' }}</p>
+    {% if job.last_run_message %}
+    <p><strong>Nachricht:</strong> {{ job.last_run_message }}</p>
+    {% endif %} {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

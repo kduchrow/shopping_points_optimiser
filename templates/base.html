@@ -4,10 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}Shopping Points Optimiser{% endblock %}</title>
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/main.css') }}"
-    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
     {% block extra_css %}{% endblock %}
   </head>
   <body>
@@ -18,8 +15,7 @@
         <a class="nav-link" href="/profile">👤 {{ current_user.username }}</a>
         {% if current_user.role == 'admin' %}
         <a class="nav-link" href="/admin">⚙️ Admin</a>
-        {% endif %} {% if current_user.role in ['user', 'contributor', 'admin']
-        %}
+        {% endif %} {% if current_user.role in ['user', 'contributor', 'admin'] %}
         <a class="nav-link" href="/proposals">📝 Beiträge</a>
         {% endif %}
         <a class="nav-link" href="/">🏠 Home</a>
@@ -30,8 +26,8 @@
         <a class="nav-link" href="/register">📝 Registrieren</a>
         {% endif %}
       </nav>
-      {% endblock %} {% block flashes %} {% with messages =
-      get_flashed_messages(with_categories=true) %} {% if messages %}
+      {% endblock %} {% block flashes %} {% with messages = get_flashed_messages(with_categories=true) %} {% if messages
+      %}
       <div class="flash-messages">
         {% for category, message in messages %}
         <div class="alert alert-{{ category }}">{{ message }}</div>
@@ -43,9 +39,7 @@
 
       <footer class="site-footer">
         <span>Version {{ app_version }}</span>
-        <a href="{{ github_repo_url }}" target="_blank" rel="noopener"
-          >GitHub Projekt</a
-        >
+        <a href="{{ github_repo_url }}" target="_blank" rel="noopener">GitHub Projekt</a>
       </footer>
     </div>
     {% block scripts %}{% endblock %}

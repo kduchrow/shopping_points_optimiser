@@ -1,9 +1,5 @@
-{% extends "base.html" %} {% block title %}Ergebnisse - Shopping Points
-Optimiser{% endblock %} {% block extra_css %}
-<link
-  rel="stylesheet"
-  href="{{ url_for('static', filename='css/result.css') }}"
-/>
+{% extends "base.html" %} {% block title %}Ergebnisse - Shopping Points Optimiser{% endblock %} {% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/result.css') }}" />
 {% endblock %} {% block nav %}
 <nav class="top-nav">
   <a class="nav-link" href="/">🏠 Startseite</a>
@@ -29,12 +25,11 @@ Optimiser{% endblock %} {% block extra_css %}
       <div class="coupon-card">
         <h4>{{ coupon.name }}</h4>
         <div class="coupon-type">
-          {% if coupon.coupon_type == 'multiplier' %} 🔢 {{ coupon.value }}x
-          Multiplikator {% else %} 💰 {{ coupon.value }}% Rabatt {% endif %}
+          {% if coupon.coupon_type == 'multiplier' %} 🔢 {{ coupon.value }}x Multiplikator {% else %} 💰 {{ coupon.value
+          }}% Rabatt {% endif %}
         </div>
         <div class="coupon-value">
-          {% if coupon.coupon_type == 'multiplier' %} ×{{ coupon.value }} {%
-          else %} -{{ coupon.value }}% {% endif %}
+          {% if coupon.coupon_type == 'multiplier' %} ×{{ coupon.value }} {% else %} -{{ coupon.value }}% {% endif %}
         </div>
         <p class="text-small text-gray mt-8 mb-0">{{ coupon.description }}</p>
         <div class="coupon-shop">
@@ -47,24 +42,18 @@ Optimiser{% endblock %} {% block extra_css %}
       {% endfor %}
     </div>
     {% if active_coupons|length > 3 %}
-    <p class="text-small text-gray-light mt-8 text-center">
-      ← Scroll für mehr Coupons →
-    </p>
+    <p class="text-small text-gray-light mt-8 text-center">← Scroll für mehr Coupons →</p>
     {% endif %}
   </div>
 
   <div class="warning">
-    <strong>⚠️ Hinweis:</strong> Für diesen Shop sind Sonderaktionen verfügbar.
-    Die Berechnungen berücksichtigen diese automatisch.
+    <strong>⚠️ Hinweis:</strong> Für diesen Shop sind Sonderaktionen verfügbar. Die Berechnungen berücksichtigen diese
+    automatisch.
   </div>
 
   <div class="mode-toggle">
-    <button class="mode-btn active" onclick="sortResults('base', event)">
-      📊 Nach Basiswert
-    </button>
-    <button class="mode-btn" onclick="sortResults('coupon', event)">
-      🎉 Mit Sonderaktionen
-    </button>
+    <button class="mode-btn active" onclick="sortResults('base', event)">📊 Nach Basiswert</button>
+    <button class="mode-btn" onclick="sortResults('coupon', event)">🎉 Mit Sonderaktionen</button>
   </div>
   {% endif %}
 
@@ -77,18 +66,15 @@ Optimiser{% endblock %} {% block extra_css %}
     >
       <div class="flex-1">
         <div class="program-name">{{ r.program }}</div>
-        <div class="program-details">
-          Basiswert: {{ r.points }} Punkte → €{{ r.euros }}
-        </div>
+        <div class="program-details">Basiswert: {{ r.points }} Punkte → €{{ r.euros }}</div>
 
         {% if r.coupon_info %}
         <div class="coupon-info">
           <strong>🎉 Mit Sonderaktion:</strong>
           <span class="coupon-value">€{{ r.coupon_info.euros }}</span>
           ({{ r.coupon_info.points }} Punkte) {% if r.coupon_info.multipliers %}
-          <br />{{ r.coupon_info.multipliers|join(', ') }} {% endif %} {% if
-          r.coupon_info.discounts %} <br />{{ r.coupon_info.discounts|join(', ')
-          }} {% endif %} {% if r.coupon_info.unknown_combinability %} <br /><em
+          <br />{{ r.coupon_info.multipliers|join(', ') }} {% endif %} {% if r.coupon_info.discounts %} <br />{{
+          r.coupon_info.discounts|join(', ') }} {% endif %} {% if r.coupon_info.unknown_combinability %} <br /><em
             style="color: #ff6600"
             >⚠ Kombinierbarkeit unbekannt - Beide Werte angezeigt</em
           >
@@ -96,9 +82,7 @@ Optimiser{% endblock %} {% block extra_css %}
         </div>
         {% endif %}
       </div>
-      <div class="program-value" id="value-{{ r.program|replace(' ', '-') }}">
-        €{{ r.euros }}
-      </div>
+      <div class="program-value" id="value-{{ r.program|replace(' ', '-') }}">€{{ r.euros }}</div>
     </li>
     {% endfor %}
   </ul>
@@ -118,8 +102,7 @@ Optimiser{% endblock %} {% block extra_css %}
   {% elif mode == 'contract' %}
   <h2>✍️ Vertragsabschluss Bonuspunkte</h2>
   <div class="info-box">
-    Bei Abschluss eines Vertrages mit <strong>{{ shop.name }}</strong> erhältst
-    du folgende Bonuspunkte pro Programm:
+    Bei Abschluss eines Vertrages mit <strong>{{ shop.name }}</strong> erhältst du folgende Bonuspunkte pro Programm:
   </div>
   <ul class="results-list">
     {% for r in results %}
@@ -130,18 +113,14 @@ Optimiser{% endblock %} {% block extra_css %}
   </ul>
   <div class="info-box mt-20">
     ℹ️ Die genauen Werte und Vergütungen findest du in der
-    <a href="/admin" class="text-decoration-underline"
-      ><strong>Admin-Seite</strong></a
-    >
+    <a href="/admin" class="text-decoration-underline"><strong>Admin-Seite</strong></a>
     unter "Shops & Raten".
   </div>
   {% endif %}
 
   <div class="links-stack justify-center mt-30">
     <a href="/" class="btn btn-inline btn-secondary">← Zurück zur Startseite</a>
-    <a href="/shop/{{ shop.id }}/suggest" class="btn btn-inline"
-      >✏️ Vorschlag einreichen</a
-    >
+    <a href="/shop/{{ shop.id }}/suggest" class="btn btn-inline">✏️ Vorschlag einreichen</a>
   </div>
 </div>
 {% endblock %} {% block modals %}
@@ -150,21 +129,14 @@ Optimiser{% endblock %} {% block extra_css %}
   <div class="modal-content">
     <span class="close" onclick="closeProposalModal()">&times;</span>
     <h2>🤖 Scraper-Vorschlag</h2>
-    <p>
-      Für den Shop <strong id="modalShopName"></strong> wurde automatisch ein
-      Vorschlag erstellt:
-    </p>
+    <p>Für den Shop <strong id="modalShopName"></strong> wurde automatisch ein Vorschlag erstellt:</p>
     <p id="modalReason"></p>
     <p>
       <a id="modalSourceLink" href="#" target="_blank">📄 Quelle anzeigen</a>
     </p>
     <div class="modal-buttons">
-      <button id="reviewBtn" class="modal-btn primary">
-        ✏️ Vorschlag reviewen
-      </button>
-      <button onclick="closeProposalModal()" class="modal-btn secondary">
-        ✕ Schließen
-      </button>
+      <button id="reviewBtn" class="modal-btn primary">✏️ Vorschlag reviewen</button>
+      <button onclick="closeProposalModal()" class="modal-btn secondary">✕ Schließen</button>
     </div>
   </div>
 </div>

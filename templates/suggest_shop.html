@@ -1,5 +1,4 @@
-{% extends "base.html" %} {% block title %}Shop Vorschlag - Shopping Points
-Optimiser{% endblock %} {% block nav %}
+{% extends "base.html" %} {% block title %}Shop Vorschlag - Shopping Points Optimiser{% endblock %} {% block nav %}
 <nav class="top-nav">
   <a class="nav-link" href="/">🏠 Startseite</a>
 </nav>
@@ -8,11 +7,8 @@ Optimiser{% endblock %} {% block nav %}
   <h1>Vorschläge für {{ shop.name }}</h1>
 
   {% if main %}
-  <p class="text-muted text-xs mb-15">
-    Canonical: <strong>{{ main.canonical_name }}</strong> ({{ main.status }})
-  </p>
-  {% endif %} {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
+  <p class="text-muted text-xs mb-15">Canonical: <strong>{{ main.canonical_name }}</strong> ({{ main.status }})</p>
+  {% endif %} {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}
   <div class="flash-messages">
     {% for category, message in messages %}
     <div class="alert alert-{{ category }}">{{ message }}</div>
@@ -57,10 +53,7 @@ Optimiser{% endblock %} {% block nav %}
 
       <div class="form-group">
         <label>Begründung</label>
-        <textarea
-          name="reason"
-          placeholder="Warum sollte das geändert werden?"
-        ></textarea>
+        <textarea name="reason" placeholder="Warum sollte das geändert werden?"></textarea>
       </div>
 
       <button class="btn" type="submit">Vorschlag einreichen</button>
@@ -84,15 +77,10 @@ Optimiser{% endblock %} {% block nav %}
 
       <div class="form-group">
         <label>Begründung</label>
-        <textarea
-          name="merge_reason"
-          placeholder="Warum sollten diese Shops zusammengehören?"
-        ></textarea>
+        <textarea name="merge_reason" placeholder="Warum sollten diese Shops zusammengehören?"></textarea>
       </div>
 
-      <button class="btn btn-warning" type="submit">
-        Merge-Vorschlag einreichen
-      </button>
+      <button class="btn btn-warning" type="submit">Merge-Vorschlag einreichen</button>
     </form>
   </div>
 </div>

@@ -7,3 +7,4 @@ playwright
 alembic
 psycopg2-binary
 gunicorn>=20.0.0
+APScheduler>=3.10.0

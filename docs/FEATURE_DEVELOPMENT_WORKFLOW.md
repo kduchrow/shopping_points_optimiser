@@ -190,19 +190,74 @@ python -m alembic upgrade head
 **Important: For local development, ensure `.env` has `FLASK_ENV=development`**
 This automatically installs dev dependencies (pytest, coverage, etc.) in the Docker container.
 
+#### Quick Test & Rebuild (Recommended)
+
+Use the provided scripts to rebuild, restart, and test:
+
+**PowerShell (Windows):**
+
+```powershell
+# Full rebuild and restart
+.\scripts\test-rebuild.ps1
+
+# Skip build if no dependencies changed
+.\scripts\test-rebuild.ps1 -SkipBuild
+
+# Clean start (removes volumes, fresh database)
+.\scripts\test-rebuild.ps1 -CleanStart
+
+# Show more log lines
+.\scripts\test-rebuild.ps1 -LogLines 100
+```
+
+**Bash (Linux/Mac):**
+
+```bash
+# Full rebuild and restart
+./scripts/test-rebuild.sh
+
+# Skip build if no dependencies changed
+./scripts/test-rebuild.sh --skip-build
+
+# Clean start (removes volumes, fresh database)
+./scripts/test-rebuild.sh --clean
+
+# Show more log lines
+./scripts/test-rebuild.sh --log-lines 100
+```
+
+#### Manual Test Steps
+
+If you need more control:
+
 ```bash
 # Set development mode in .env
 FLASK_ENV=development
 
 # Rebuild container to install dev dependencies
 docker-compose build shopping-points
-docker-compose up -d
 
+# Restart container
+docker-compose restart shopping-points
+
+# Wait for initialization
+Start-Sleep -Seconds 15  # PowerShell
+# or
+sleep 15  # Bash
+
+# Check logs for errors
+docker-compose logs shopping-points --tail=40
+```
+
+#### Running Tests
+#### Running Tests
+
+```bash
 # Run all tests
 pytest
 
 # In Docker container
-docker-compose exec shopping-points python -m pytest
+docker-compose exec -T shopping-points python -m pytest -q
 
 # Run with coverage
 pytest --cov=spo --cov-report=html

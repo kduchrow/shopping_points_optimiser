@@ -21,6 +21,7 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
     from job_queue import job_queue
     from spo.models import User
     from spo.routes.admin import register_admin
+    from spo.routes.admin.scheduler import register_admin_scheduler
     from spo.routes.auth import register_auth
     from spo.routes.notifications import register_notifications
     from spo.routes.proposals import register_proposals
@@ -56,11 +57,23 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
     register_public(app)
     register_proposals(app)
     register_admin(app)
+    register_admin_scheduler(app)
     register_notifications(app)
+
+    # Register job types (always, even if scheduler isn't started)
+    from spo.services.dedup import run_deduplication
+    from spo.services.scheduler import init_scheduler, register_job_type
+    from spo.services.scrapers import scrape_example, scrape_miles_and_more, scrape_payback
+
+    register_job_type("deduplication", run_deduplication)
+    register_job_type("scrape_payback", scrape_payback)
+    register_job_type("scrape_miles_and_more", scrape_miles_and_more)
+    register_job_type("scrape_example", scrape_example)
 
     if start_jobs and os.environ.get("DISABLE_JOB_QUEUE", "false").lower() != "true":
         job_queue.set_app(app)
         job_queue.start()
+        init_scheduler(app)
 
     return app
 

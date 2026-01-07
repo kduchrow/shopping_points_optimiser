@@ -1,5 +1,4 @@
-{% extends "base.html" %} {% block title %}Neuer Beitrag - Shopping Points
-Optimiser{% endblock %} {% block nav %}
+{% extends "base.html" %} {% block title %}Neuer Beitrag - Shopping Points Optimiser{% endblock %} {% block nav %}
 <nav class="top-nav">
   <a class="nav-link" href="/proposals">📝 Beiträge</a>
   <a class="nav-link" href="/">🏠 Startseite</a>
@@ -9,12 +8,11 @@ Optimiser{% endblock %} {% block nav %}
   <h1>➕ Neuen Beitrag erstellen</h1>
 
   <div class="info-box">
-    ℹ️ Ihre Änderungsvorschläge werden von der Community geprüft. Bei 3+ Upvotes
-    wird Ihr Vorschlag automatisch übernommen.
+    ℹ️ Ihre Änderungsvorschläge werden von der Community geprüft. Bei 3+ Upvotes wird Ihr Vorschlag automatisch
+    übernommen.
   </div>
 
-  {% with messages = get_flashed_messages(with_categories=true) %} {% if
-  messages %}
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}
   <div class="flash-messages">
     {% for category, message in messages %}
     <div class="alert alert-{{ category }}">{{ message }}</div>
@@ -27,68 +25,27 @@ Optimiser{% endblock %} {% block nav %}
       <label>Art des Beitrags:</label>
       <div class="type-selector">
         <div class="type-option">
-          <input
-            type="radio"
-            id="type-rate"
-            name="proposal_type"
-            value="rate_change"
-            checked
-            onchange="updateForm()"
-          />
-          <label for="type-rate"
-            >📊 Rate ändern (Points/EUR oder Cashback%)</label
-          >
+          <input type="radio" id="type-rate" name="proposal_type" value="rate_change" checked onchange="updateForm()" />
+          <label for="type-rate">📊 Rate ändern (Points/EUR oder Cashback%)</label>
         </div>
         <div class="type-option">
-          <input
-            type="radio"
-            id="type-shop"
-            name="proposal_type"
-            value="shop_add"
-            onchange="updateForm()"
-          />
+          <input type="radio" id="type-shop" name="proposal_type" value="shop_add" onchange="updateForm()" />
           <label for="type-shop">🏪 Neuen Shop hinzufügen</label>
         </div>
         <div class="type-option">
-          <input
-            type="radio"
-            id="type-program"
-            name="proposal_type"
-            value="program_add"
-            onchange="updateForm()"
-          />
+          <input type="radio" id="type-program" name="proposal_type" value="program_add" onchange="updateForm()" />
           <label for="type-program">🎁 Neues Bonusprogramm hinzufügen</label>
         </div>
         <div class="type-option">
-          <input
-            type="radio"
-            id="type-coupon"
-            name="proposal_type"
-            value="coupon_add"
-            onchange="updateForm()"
-          />
+          <input type="radio" id="type-coupon" name="proposal_type" value="coupon_add" onchange="updateForm()" />
           <label for="type-coupon">🎉 Sonderaktion/Coupon hinzufügen</label>
         </div>
         <div class="type-option">
-          <input
-            type="radio"
-            id="type-metadata"
-            name="proposal_type"
-            value="metadata_edit"
-            onchange="updateForm()"
-          />
-          <label for="type-metadata"
-            >✏️ Shop-Metadaten ändern (Name/Logo/Website)</label
-          >
+          <input type="radio" id="type-metadata" name="proposal_type" value="metadata_edit" onchange="updateForm()" />
+          <label for="type-metadata">✏️ Shop-Metadaten ändern (Name/Logo/Website)</label>
         </div>
         <div class="type-option">
-          <input
-            type="radio"
-            id="type-merge"
-            name="proposal_type"
-            value="merge_request"
-            onchange="updateForm()"
-          />
+          <input type="radio" id="type-merge" name="proposal_type" value="merge_request" onchange="updateForm()" />
           <label for="type-merge">🔀 Shops zusammenführen</label>
         </div>
       </div>
@@ -120,26 +77,12 @@ Optimiser{% endblock %} {% block nav %}
 
       <div class="form-group">
         <label for="points-per-eur">Neue Points/EUR:</label>
-        <input
-          type="number"
-          id="points-per-eur"
-          name="points_per_eur"
-          step="0.01"
-          min="0"
-          placeholder="z.B. 1.0"
-        />
+        <input type="number" id="points-per-eur" name="points_per_eur" step="0.01" min="0" placeholder="z.B. 1.0" />
       </div>
 
       <div class="form-group">
         <label for="cashback-pct">Neuer Cashback %:</label>
-        <input
-          type="number"
-          id="cashback-pct"
-          name="cashback_pct"
-          step="0.01"
-          min="0"
-          placeholder="z.B. 2.5"
-        />
+        <input type="number" id="cashback-pct" name="cashback_pct" step="0.01" min="0" placeholder="z.B. 2.5" />
       </div>
     </div>
 
@@ -149,12 +92,7 @@ Optimiser{% endblock %} {% block nav %}
 
       <div class="form-group">
         <label for="shop-name">Shop-Name:</label>
-        <input
-          type="text"
-          id="shop-name"
-          name="shop_name"
-          placeholder="z.B. MediaMarkt"
-        />
+        <input type="text" id="shop-name" name="shop_name" placeholder="z.B. MediaMarkt" />
       </div>
     </div>
 
@@ -164,24 +102,12 @@ Optimiser{% endblock %} {% block nav %}
 
       <div class="form-group">
         <label for="program-name">Programmname:</label>
-        <input
-          type="text"
-          id="program-name"
-          name="program_name"
-          placeholder="z.B. IKEA Family"
-        />
+        <input type="text" id="program-name" name="program_name" placeholder="z.B. IKEA Family" />
       </div>
 
       <div class="form-group">
         <label for="point-value">Punktwert in EUR:</label>
-        <input
-          type="number"
-          id="point-value"
-          name="point_value_eur"
-          step="0.001"
-          min="0"
-          placeholder="z.B. 0.01"
-        />
+        <input type="number" id="point-value" name="point_value_eur" step="0.001" min="0" placeholder="z.B. 0.01" />
       </div>
     </div>
 
@@ -220,9 +146,7 @@ Optimiser{% endblock %} {% block nav %}
       </div>
 
       <div class="form-group">
-        <label for="coupon-shop"
-          >Shop (optional - leer lassen für alle Shops):</label
-        >
+        <label for="coupon-shop">Shop (optional - leer lassen für alle Shops):</label>
         <select id="coupon-shop" name="coupon_shop_id">
           <option value="">-- Alle Shops --</option>
           {% for shop in shops %}
@@ -232,9 +156,7 @@ Optimiser{% endblock %} {% block nav %}
       </div>
 
       <div class="form-group">
-        <label for="coupon-program"
-          >Bonusprogramm (optional - leer lassen für alle Programme):</label
-        >
+        <label for="coupon-program">Bonusprogramm (optional - leer lassen für alle Programme):</label>
         <select id="coupon-program" name="coupon_program_id">
           <option value="">-- Alle Programme --</option>
           {% for program in programs %}
@@ -247,31 +169,15 @@ Optimiser{% endblock %} {% block nav %}
         <label>Kombinierbar mit anderen Aktionen?</label>
         <div class="type-selector">
           <div class="type-option">
-            <input
-              type="radio"
-              id="comb-yes"
-              name="coupon_combinable"
-              value="yes"
-            />
+            <input type="radio" id="comb-yes" name="coupon_combinable" value="yes" />
             <label for="comb-yes">✓ Ja</label>
           </div>
           <div class="type-option">
-            <input
-              type="radio"
-              id="comb-no"
-              name="coupon_combinable"
-              value="no"
-            />
+            <input type="radio" id="comb-no" name="coupon_combinable" value="no" />
             <label for="comb-no">✗ Nein</label>
           </div>
           <div class="type-option">
-            <input
-              type="radio"
-              id="comb-unknown"
-              name="coupon_combinable"
-              value="unknown"
-              checked
-            />
+            <input type="radio" id="comb-unknown" name="coupon_combinable" value="unknown" checked />
             <label for="comb-unknown">❓ Unbekannt</label>
           </div>
         </div>
@@ -299,32 +205,17 @@ Optimiser{% endblock %} {% block nav %}
 
       <div class="form-group">
         <label for="metadata-name">Neuer Name (optional):</label>
-        <input
-          type="text"
-          id="metadata-name"
-          name="metadata_name"
-          placeholder="z.B. richtiger Markenname"
-        />
+        <input type="text" id="metadata-name" name="metadata_name" placeholder="z.B. richtiger Markenname" />
       </div>
 
       <div class="form-group">
         <label for="metadata-website">Website (optional):</label>
-        <input
-          type="url"
-          id="metadata-website"
-          name="metadata_website"
-          placeholder="https://..."
-        />
+        <input type="url" id="metadata-website" name="metadata_website" placeholder="https://..." />
       </div>
 
       <div class="form-group">
         <label for="metadata-logo">Logo-URL (optional):</label>
-        <input
-          type="url"
-          id="metadata-logo"
-          name="metadata_logo"
-          placeholder="https://.../logo.png"
-        />
+        <input type="url" id="metadata-logo" name="metadata_logo" placeholder="https://.../logo.png" />
       </div>
     </div>
 
@@ -332,8 +223,7 @@ Optimiser{% endblock %} {% block nav %}
     <div id="merge-request-fields" class="conditional-fields">
       <h3>Shops zusammenführen</h3>
       <div class="info-box">
-        Wähle zwei Shops, die eigentlich zusammengehören. Beide müssen bereits
-        mit einem Hauptshop verknüpft sein.
+        Wähle zwei Shops, die eigentlich zusammengehören. Beide müssen bereits mit einem Hauptshop verknüpft sein.
       </div>
 
       <div class="form-group">
@@ -360,21 +250,12 @@ Optimiser{% endblock %} {% block nav %}
     <!-- Common Fields -->
     <div class="form-group">
       <label for="reason">Begründung (optional):</label>
-      <textarea
-        id="reason"
-        name="reason"
-        placeholder="Warum sollte diese Änderung vorgenommen werden?"
-      ></textarea>
+      <textarea id="reason" name="reason" placeholder="Warum sollte diese Änderung vorgenommen werden?"></textarea>
     </div>
 
     <div class="form-group">
       <label for="source-url">Quelle/Link (optional):</label>
-      <input
-        type="url"
-        id="source-url"
-        name="source_url"
-        placeholder="https://..."
-      />
+      <input type="url" id="source-url" name="source_url" placeholder="https://..." />
     </div>
 
     <button type="submit">✓ Vorschlag einreichen</button>
@@ -383,9 +264,7 @@ Optimiser{% endblock %} {% block nav %}
 {% endblock %} {% block scripts %}
 <script>
   function updateForm() {
-    const type = document.querySelector(
-      'input[name="proposal_type"]:checked',
-    ).value;
+    const type = document.querySelector('input[name="proposal_type"]:checked').value;
 
     document.getElementById("rate-change-fields").classList.remove("active");
     document.getElementById("shop-add-fields").classList.remove("active");

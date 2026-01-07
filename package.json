@@ -1,6 +1,6 @@
 {
   "name": "shopping-points-optimiser",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Shopping Points Optimiser - Frontend Dependencies",
   "private": true,
   "dependencies": {

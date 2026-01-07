@@ -223,3 +223,20 @@ class Notification(db.Model):
     is_read: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     user = db.relationship("User", backref="notifications")
+
+
+class ScheduledJob(db.Model):
+    """Stores configuration for scheduled/cron jobs."""
+
+    __tablename__ = "scheduled_jobs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    job_name: Mapped[str] = mapped_column(unique=True, index=True)
+    job_type: Mapped[str]  # e.g., 'deduplication', 'cleanup', etc.
+    cron_expression: Mapped[str]  # e.g., '0 2 * * *' for daily at 2am
+    enabled: Mapped[bool] = mapped_column(default=False)
+    last_run_at: Mapped[datetime | None] = mapped_column(default=None)
+    last_run_status: Mapped[str | None] = mapped_column(default=None)  # 'success', 'failed'
+    last_run_message: Mapped[str | None] = mapped_column(default=None)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
+    created_by_user_id: Mapped[int | None] = mapped_column(db.ForeignKey("users.id"), default=None)
