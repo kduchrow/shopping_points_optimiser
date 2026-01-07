@@ -45,8 +45,6 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - DATABASE_URL=postgresql+psycopg2://spo:spo@db:5432/spo
       - "TEST_DATABASE_URL=postgresql+psycopg2://spo:spo@db:5432/spo_test"
-      - TEST_ADMIN_USERNAME=${TEST_ADMIN_USERNAME}
-      - TEST_ADMIN_PASSWORD=${TEST_ADMIN_PASSWORD}
       - DEBUG=False
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - GITHUB_REPO_URL=${GITHUB_REPO_URL:-https://github.com/kduchrow/shopping_points_optimiser}

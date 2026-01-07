@@ -29,6 +29,10 @@ services:
       - FLASK_ENV=development
       - DEBUG=True
       - FLASK_DEBUG=1
+      # Test credentials (from .env)
+      - TEST_ADMIN_USERNAME=${TEST_ADMIN_USERNAME}
+      - TEST_ADMIN_PASSWORD=${TEST_ADMIN_PASSWORD}
+      - FLASK_DEBUG=1
 
     # Optional: Add port for debugging
     # ports:
