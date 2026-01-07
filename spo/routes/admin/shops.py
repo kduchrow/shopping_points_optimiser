@@ -2,13 +2,14 @@
 
 from datetime import UTC, datetime
 
-from flask import jsonify, request
+from flask import flash, jsonify, redirect, request, url_for
 from flask_login import current_user, login_required
 
 from spo.extensions import db
 from spo.models import (
     BonusProgram,
     RateComment,
+    ScrapeLog,
     Shop,
     ShopMain,
     ShopMergeProposal,
@@ -337,5 +338,66 @@ def register_admin_shops(app):
         db.session.delete(proposal)
         db.session.commit()
         return jsonify({"success": True})
+
+    @app.route("/admin/clear_shops", methods=["POST"])
+    @login_required
+    def admin_clear_shops():
+        if current_user.role != "admin":
+            if request.headers.get("Accept") == "application/json":
+                return jsonify({"error": "Unauthorized"}), 403
+            flash("Sie haben keine Berechtigung für diese Aktion.", "error")
+            return redirect(url_for("admin"))
+
+        try:
+            # Count what will be deleted
+            shop_main_count = ShopMain.query.count()
+            shop_count = Shop.query.count()
+            variant_count = ShopVariant.query.count()
+            rate_count = ShopProgramRate.query.count()
+            merge_proposal_count = ShopMergeProposal.query.count()
+            metadata_proposal_count = ShopMetadataProposal.query.count()
+
+            # Delete in correct order to avoid FK constraint violations
+            # 1. Delete ShopMergeProposal (references ShopVariant)
+            ShopMergeProposal.query.delete()
+
+            # 2. Delete ShopMetadataProposal (references ShopMain)
+            ShopMetadataProposal.query.delete()
+
+            # 3. Delete ShopProgramRate (references Shop)
+            ShopProgramRate.query.delete()
+
+            # 4. Delete Shop entries (references ShopMain)
+            Shop.query.delete()
+
+            # 5. Delete ShopVariant (references ShopMain)
+            ShopVariant.query.delete()
+
+            # 6. Delete ShopMain
+            ShopMain.query.delete()
+
+            db.session.commit()
+
+            db.session.add(
+                ScrapeLog(
+                    message=f"Admin cleared {shop_main_count} ShopMains, {shop_count} Shops, {variant_count} variants, {rate_count} rates, {merge_proposal_count} merge proposals, {metadata_proposal_count} metadata proposals"
+                )
+            )
+            db.session.commit()
+
+            if request.headers.get("Accept") == "application/json":
+                return jsonify({"success": True, "deleted": shop_main_count})
+
+            flash(
+                f"✅ {shop_main_count} ShopMains, {shop_count} Shops, {variant_count} Varianten gelöscht.",
+                "success",
+            )
+            return redirect(url_for("admin"))
+        except Exception as e:
+            db.session.rollback()
+            if request.headers.get("Accept") == "application/json":
+                return jsonify({"error": str(e)}), 500
+            flash(f"❌ Fehler beim Löschen: {str(e)}", "error")
+            return redirect(url_for("admin"))
 
     return app

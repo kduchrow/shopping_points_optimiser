@@ -101,15 +101,21 @@ def get_or_create_shop_main(shop_name: str, source: str, source_id: str = None) 
 
 
 def merge_shops(main_from_id: str, main_to_id: str, user_id: int):
-    """Merge one shop into another and re-point variants."""
+    """Merge one shop into another and re-point variants and Shop entries."""
+    from spo.models import Shop
+
     from_shop = ShopMain.query.get(main_from_id)
     to_shop = ShopMain.query.get(main_to_id)
 
     if not from_shop or not to_shop:
         raise ValueError("One or both shops not found")
 
+    # Move all ShopVariants to the target ShopMain
     for variant in from_shop.variants:
         variant.shop_main_id = to_shop.id
+
+    # Move all Shop entries to the target ShopMain
+    Shop.query.filter_by(shop_main_id=main_from_id).update({"shop_main_id": main_to_id})
 
     from_shop.status = "merged"
     from_shop.merged_into_id = main_to_id
