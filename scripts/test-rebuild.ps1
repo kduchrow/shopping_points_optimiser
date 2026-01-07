@@ -37,7 +37,8 @@ Write-Host "[START] Starting containers..." -ForegroundColor Cyan
 if ($CleanStart) {
     docker-compose up -d
 } else {
-    docker-compose restart shopping-points
+    # Force recreate to pick up new image
+    docker-compose up -d --force-recreate shopping-points
 }
 
 if ($LASTEXITCODE -ne 0) {

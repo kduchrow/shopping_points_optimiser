@@ -434,31 +434,36 @@ def register_admin(app):
     @login_required
     def admin_clear_shops():
         if current_user.role != "admin":
+            if request.headers.get("Accept") == "application/json":
+                return jsonify({"error": "Unauthorized"}), 403
             flash("Sie haben keine Berechtigung für diese Aktion.", "error")
-            return jsonify({"error": "Unauthorized"}), 403
+            return redirect(url_for("admin"))
 
         try:
             # Count how many shops will be deleted
             shop_count = Shop.query.count()
             rate_count = ShopProgramRate.query.count()
 
+            # Delete ShopProgramRate records first (FK constraint)
+            ShopProgramRate.query.delete()
+
             # Delete all shops
             Shop.query.delete()
             db.session.commit()
 
-            flash(
-                f"✅ {shop_count} Shops gelöscht. ({rate_count} Raten wurden archiviert)", "success"
-            )
             db.session.add(ScrapeLog(message=f"Admin cleared {shop_count} shops"))
             db.session.commit()
 
             if request.headers.get("Accept") == "application/json":
                 return jsonify({"success": True, "deleted": shop_count})
-            return redirect("/admin")
+
+            flash(f"✅ {shop_count} Shops gelöscht. ({rate_count} Raten wurden gelöscht)", "success")
+            return redirect(url_for("admin"))
         except Exception as e:
-            flash(f"❌ Fehler beim Löschen: {str(e)}", "error")
+            db.session.rollback()
             if request.headers.get("Accept") == "application/json":
                 return jsonify({"error": str(e)}), 500
-            return redirect("/admin")
+            flash(f"❌ Fehler beim Löschen: {str(e)}", "error")
+            return redirect(url_for("admin"))
 
     return app
