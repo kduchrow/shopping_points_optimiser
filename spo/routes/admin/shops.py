@@ -8,6 +8,8 @@ from flask_login import current_user, login_required
 from spo.extensions import db
 from spo.models import (
     BonusProgram,
+    Coupon,
+    Proposal,
     RateComment,
     ScrapeLog,
     Shop,
@@ -364,15 +366,16 @@ def register_admin_shops(app):
             # 2. Delete ShopMetadataProposal (references both Shop and ShopMain)
             ShopMetadataProposal.query.delete()
 
-            # 3. Delete Coupon (references Shop)
-            from spo.models import Coupon
+            # 3. Delete Proposal (references Shop) - THIS WAS MISSING!
+            Proposal.query.delete()
 
+            # 4. Delete Coupon (references Shop)
             Coupon.query.delete()
 
-            # 4. Delete ShopProgramRate (references Shop)
+            # 5. Delete ShopProgramRate (references Shop)
             ShopProgramRate.query.delete()
 
-            # 5. Delete Shop entries (references ShopMain)
+            # 6. Delete Shop entries (references ShopMain)
             Shop.query.delete()
 
             # 6. Delete ShopVariant (references ShopMain)
