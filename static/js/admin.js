@@ -240,6 +240,7 @@ function loadRatesForReview() {
 function wireScraperForms() {
   const milesForm = document.getElementById("miles-and-more-form");
   const paybackForm = document.getElementById("payback-form");
+  const topcashbackForm = document.getElementById("topcashback-form");
 
   if (milesForm) {
     milesForm.addEventListener("submit", (e) => {
@@ -268,6 +269,21 @@ function wireScraperForms() {
           if (data.job_id) startJobMonitoring(data.job_id);
         })
         .catch((err) => alert("Error starting Payback scraper: " + err));
+    });
+  }
+
+  if (topcashbackForm) {
+    topcashbackForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      fetch("/admin/run_topcashback", {
+        method: "POST",
+        headers: { Accept: "application/json" },
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.job_id) startJobMonitoring(data.job_id);
+        })
+        .catch((err) => alert("Error starting TopCashback scraper: " + err));
     });
   }
 }

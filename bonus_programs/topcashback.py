@@ -34,6 +34,10 @@ def scrape_and_register(job=None):
         job.add_message(
             f"TopCashback scraper started. Target: {debug.get('partners_found', 0)} shops"
         )
+        if debug.get("error"):
+            job.add_message(f"❌ Fehler beim Abruf: {debug['error']}")
+        if (debug.get("partners_found") or 0) == 0:
+            job.add_message("⚠️ Keine Partner gefunden. Struktur der Seite prüfen.")
 
     added = 0
     errors = []
@@ -49,10 +53,10 @@ def scrape_and_register(job=None):
                 job.add_message(f"⚠️ {error_msg}")
 
     if job:
-        job.add_message(
-            f"TopCashback scraping complete: {added} shops added/updated, {len(errors)} errors"
-        )
+        job.add_message(f"✅ Abschluss: {added} Shops registriert, Fehler: {len(errors)}")
+        if debug.get("categories_traversed"):
+            job.add_message(f"Info: {debug['categories_traversed']} Kategorien durchsucht")
         if debug.get("error"):
-            job.add_message(f"Debug info: {debug.get('error')}")
+            job.add_message(f"Debug: {debug['error']}")
 
     return added
