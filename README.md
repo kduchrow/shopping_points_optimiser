@@ -397,16 +397,167 @@ MIT License - See LICENSE file
 
 ## 🎯 Roadmap
 
+### ✅ Completed
+
 - [x] PostgreSQL database with Alembic migrations
 - [x] CI/CD pipeline with GitHub Actions
 - [x] Pre-commit hooks for code quality
 - [x] Version management and changelog
+- [x] Docker-based development and deployment
+- [x] Shop deduplication with fuzzy matching
+- [x] Merge proposals and community approval workflow
+- [x] Admin rescore functionality for shop variants
+- [x] Container-only test execution
+
+### 🔄 In Progress
+
 - [ ] Email notifications
 - [ ] Advanced analytics dashboard
-- [ ] Mobile responsive UI improvements
-- [ ] API rate limiting
-- [ ] Multi-language support
+
+### 📋 Feature Backlog
+
+#### 🤖 Scrapers & Integrations (High Priority)
+
+**Cashback-Plattformen (🔴 CRITICAL):**
+
+- [ ] **Shoop Scraper** (M) - Deutsche Cashback-Plattform, hohe Partnerverfügbarkeit
+- [ ] **TopCashback Scraper** (M) - Europäische Plattform mit vielen Shops
+- [ ] **iGraal Scraper** (M) - Französische Alternative, deutsche Nutzer
+- [ ] **Cashback-Vergleich pro Shop** (L) - Eine Shop-Seite zeigt alle Cashback-Wege
+- [ ] **Automatischer Cashback-Rate-Update** (S) - Tägliche/wöchentliche Syncs
+
+**Shop-Eigene Bonusprogramme (🔴 HIGH):**
+
+- [ ] REWE Bonus Scraper (M)
+- [ ] MediaMarkt Club Scraper (M)
+- [ ] IKEA Family Scraper (M)
+- [ ] DeutschlandCard Integration (M)
+- [ ] Webmiles Integration (M)
+
+#### 🎟️ Coupon-Features (High Priority)
+
+- [ ] **Coupon Up/Downvoting** - Community kann Coupons bewerten
+- [ ] Coupon-Ablaufdatum automatisch tracken
+- [ ] Automatische Deaktivierung abgelaufener Coupons
+- [ ] Coupon-Kategorien (Prozent, Festbetrag, Gratis-Versand)
+- [ ] User-Kommentare zu Coupons
+- [ ] "Coupon erfolgreich genutzt" Feedback-System
+
+#### 📊 Daten-Qualität & Analytics
+
+**Rate Management:**
+
+- [ ] Rate-History: Verlauf von Bonus-Änderungen über Zeit
+- [ ] Benachrichtigungen bei Rate-Änderungen für Favoriten-Shops
+- [ ] Trend-Analysen: Welche Shops verbessern/verschlechtern sich
+- [ ] Saisonale Analysen (z.B. Black Friday Bonus-Spitzen)
+- [ ] Best-Rate-Alert: Benachrichtigung bei besonders guten Rates
+
+**Shop-Verwaltung:**
+
+- [ ] Automatische Shop-URL-Verifizierung
+- [ ] Shop-Logo automatisch von Clearbit/Brandfetch holen
+- [ ] Duplicate-Shop-Detection verbessern (z.B. amazon.de vs amazon.com)
+- [ ] Shop-Kategorien (Fashion, Elektronik, Lebensmittel, etc.)
+
+#### 🎨 User Experience
+
+**Navigation & Filter:**
+
+- [ ] Erweiterte Filter auf Index-Seite (Kategorie, Min-Rate, etc.)
+- [ ] Sortierung: Beste Rate, Neueste, Alphabetisch
+- [ ] Volltextsuche über Shop-Namen
+- [ ] Favoriten-Shops speichern und highlighten
+- [ ] Kürzlich angesehen / Verlauf
+
+**Personalisierung:**
+
+- [ ] Personalisierte Empfehlungen basierend auf genutzten Programmen
+- [ ] "Meine Programme" Profile (Nutzer wählt aktive Programme aus)
+- [ ] Benachrichtigungen für neue Coupons bei Favoriten
+- [ ] Dark Mode
+
+**Export & Sharing:**
+
+- [ ] CSV-Export von Ergebnissen
+- [ ] PDF-Report Generator
+- [ ] Teilen-Funktion für Shops (Social Share Links)
+- [ ] QR-Code für Shop-URLs
+
+#### 🌐 Community & Social
+
+- [ ] Shop-Bewertungen (5-Sterne-System) neben Rates
+- [ ] User-Reputation-System (Punkte für erfolgreiche Proposals)
+- [ ] Badges für aktive Contributors
+- [ ] Top-Contributors Leaderboard
+- [ ] Newsletter für neue Rates/Coupons (opt-in)
+- [ ] User-Profil: Persönliche Einsparungen tracking
+
+#### 📱 Mobile & Accessibility
+
+- [ ] Progressive Web App (PWA) Support
+- [ ] Browser-Extension (Chrome/Firefox) für schnellen Zugriff
+- [ ] Mobile-optimierte UI
+- [ ] Barrierefreiheit (WCAG 2.1 AA)
+
+#### 🔧 Technical Improvements
+
+**API & Integration:**
+
+- [ ] GraphQL API zusätzlich zu REST
+- [ ] Webhook-System für externe Integrationen
+- [ ] Rate-Limiting für API
+- [ ] API-Dokumentation mit OpenAPI/Swagger
+
+**Performance:**
+
 - [ ] Redis caching layer
+- [ ] Database query optimization
+- [ ] CDN für statische Assets
+- [ ] Lazy-loading für Shop-Listen
+
+**Internationalization:**
+
+- [ ] Multi-Language Support (EN, FR)
+- [ ] Währungs-Konvertierung (EUR, CHF, USD)
+- [ ] Lokalisierte Shop-Datenbanken
+
+**Testing & Quality:**
+
+- [ ] E2E-Tests mit Playwright
+- [ ] Load testing
+- [ ] Mutation testing
+- [ ] Automated accessibility testing
+
+#### 🔐 Security & Compliance
+
+- [ ] 2FA (Two-Factor Authentication)
+- [ ] GDPR compliance tools (Datenexport, Löschung)
+- [ ] Security audit log
+- [ ] Content Security Policy (CSP)
+
+#### 📈 Business Features
+
+- [ ] Affiliate-Link-Integration (z.B. AWIN)
+- [ ] Partner-Shops hervorheben
+- [ ] Sponsored Coupons
+- [ ] Admin-Dashboard mit KPIs (User-Growth, Active Shops, etc.)
+
+---
+
+**Prioritäten:**
+
+- 🔴 CRITICAL: Cashback Scrapers (Shoop, TopCashback, iGraal) + Cashback-Vergleich
+- 🔴 High: Shop-eigene Bonusprogramme, Coupon-Voting, Rate-History
+- 🟡 Medium: Favoriten, Filter, Dark Mode, Personalisierte Empfehlungen
+- 🟢 Low: GraphQL, Badges, Affiliate-Links, Multi-Language
+
+**Geschätzte Entwicklungszeit pro Feature:**
+
+- S (Small): 1-3 Tage
+- M (Medium): 1-2 Wochen
+- L (Large): 3-4 Wochen
+- XL (Extra Large): 1-2 Monate
 
 ## 📋 Versioning
 
