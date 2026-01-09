@@ -109,6 +109,7 @@ def register_public(app):
                     "category": category_name,
                     "sub_category": getattr(rate, "sub_category", None),
                     "points": round(base_points, 2),
+                    "cashback": round(base_cashback, 2),
                     "euros": round(base_euros, 2),
                     "coupon_info": coupon_info,
                 }
