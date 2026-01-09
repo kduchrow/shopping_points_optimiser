@@ -34,31 +34,7 @@ def upgrade():
 
     # Migrate legacy free-text `category` values into shop_categories and set category_id
     conn = op.get_bind()
-    res = conn.execute(
-        sa.text(
-            "SELECT DISTINCT category FROM shop_program_rates WHERE category IS NOT NULL AND category <> ''"
-        )
-    )
-    categories = [row[0] for row in res]
-    for name in categories:
-        # Insert or ignore existing
-        insert_sql = sa.text(
-            "INSERT INTO shop_categories (name) VALUES (:name) ON CONFLICT (name) DO NOTHING RETURNING id"
-        )
-        r = conn.execute(insert_sql, {"name": name})
-        row = r.fetchone()
-        if row and row[0]:
-            cid = row[0]
-        else:
-            sel = conn.execute(
-                sa.text("SELECT id FROM shop_categories WHERE name = :name"), {"name": name}
-            ).fetchone()
-            cid = sel[0] if sel else None
-        if cid:
-            conn.execute(
-                sa.text("UPDATE shop_program_rates SET category_id = :cid WHERE category = :name"),
-                {"cid": cid, "name": name},
-            )
+    # (No longer needed: legacy category migration logic removed)
 
     # Drop legacy column if it exists
     insp = sa.inspect(conn)
