@@ -80,11 +80,17 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
     # Register job types (always, even if scheduler isn't started)
     from spo.services.dedup import run_deduplication
     from spo.services.scheduler import init_scheduler, register_job_type
-    from spo.services.scrapers import scrape_example, scrape_miles_and_more, scrape_payback
+    from spo.services.scrapers import (
+        scrape_example,
+        scrape_miles_and_more,
+        scrape_payback,
+        scrape_topcashback,
+    )
 
     register_job_type("deduplication", run_deduplication)
     register_job_type("scrape_payback", scrape_payback)
     register_job_type("scrape_miles_and_more", scrape_miles_and_more)
+    register_job_type("scrape_topcashback", scrape_topcashback)
     register_job_type("scrape_example", scrape_example)
 
     if start_jobs and os.environ.get("DISABLE_JOB_QUEUE", "false").lower() != "true":

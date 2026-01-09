@@ -9,7 +9,6 @@ from spo.models import (
     ShopMain,
     ShopMetadataProposal,
     ShopProgramRate,
-    utcnow,
 )
 from spo.utils import ensure_variant_for_shop
 
@@ -17,75 +16,66 @@ from spo.utils import ensure_variant_for_shop
 def register_public(app):
     @app.route("/", methods=["GET"])
     def index():
-        # Get all ShopMain entries to avoid showing duplicate shops
-        # Use ShopMain as the source of truth, then find the associated Shop entry
+        # Show shop selection page with all active shops and support flags
         shop_mains = (
             ShopMain.query.filter_by(status="active").order_by(ShopMain.canonical_name).all()
         )
         shops_data = []
-
         for shop_main in shop_mains:
-            # Collect all Shop entries under this ShopMain
-            shops = Shop.query.filter_by(shop_main_id=shop_main.id).all()
-            if not shops:
-                continue  # Skip if no Shop is linked yet
-
-            # Compute support flags across all sibling shops
-            shop_ids = [s.id for s in shops]
-            rates = ShopProgramRate.query.filter(
-                ShopProgramRate.shop_id.in_(shop_ids), ShopProgramRate.valid_to.is_(None)
+            # Aggregate support flags across all Shops for this ShopMain
+            sibling_shops = Shop.query.filter_by(shop_main_id=shop_main.id).all()
+            if not sibling_shops:
+                continue
+            all_rates = ShopProgramRate.query.filter(
+                ShopProgramRate.shop_id.in_([s.id for s in sibling_shops]),
+                ShopProgramRate.valid_to.is_(None),
             ).all()
-            supports_shopping_voucher = any(r.points_per_eur > 0 for r in rates)
-            supports_contract = True
-
+            supports_shopping = any(
+                (r.points_per_eur or 0) > 0 or (r.cashback_pct or 0) > 0 for r in all_rates
+            )
+            supports_voucher = any((r.points_per_eur or 0) > 0 for r in all_rates)
+            supports_contract = any(
+                (r.points_per_eur or 0) == 0 and (r.cashback_pct or 0) == 0 for r in all_rates
+            )
+            # Use the first Shop for id (legacy: one-to-many)
+            shop = sibling_shops[0]
             shops_data.append(
                 {
-                    # Use the first Shop.id for backwards compatibility with evaluate route
-                    "id": shops[0].id,
-                    "name": shop_main.canonical_name,  # Use canonical name from ShopMain
-                    "supports_shopping": supports_shopping_voucher,
-                    "supports_voucher": supports_shopping_voucher,
+                    "id": shop.id,
+                    "name": shop_main.canonical_name,
+                    "supports_shopping": supports_shopping,
+                    "supports_voucher": supports_voucher,
                     "supports_contract": supports_contract,
                 }
             )
-
         return render_template("index.html", shops_data=shops_data)
 
     @app.route("/evaluate", methods=["POST"])
     def evaluate():
-        mode = request.form.get("mode")
-        shop_id = int(request.form.get("shop"))
-        shop = db.session.get(Shop, shop_id)
-
+        # Handle calculation logic for selected shop
+        shop_id = request.form.get("shop", type=int)
+        amount = request.form.get("amount", type=float, default=100.0)
+        mode = request.form.get("mode", default="shopping")
+        shop = Shop.query.get(shop_id) if shop_id else None
+        shop_coupons = []
+        if shop:
+            shop_coupons = Coupon.query.filter_by(shop_id=shop.id).all()
+        if not shop:
+            return redirect(url_for("index"))
         shop_ids = [shop.id]
-        if shop and shop.shop_main_id:
-            siblings = Shop.query.filter_by(shop_main_id=shop.shop_main_id).all()
-            shop_ids = [s.id for s in siblings]
-
-        now = utcnow()
-        shop_coupons = Coupon.query.filter(
-            db.or_(Coupon.shop_id.in_(shop_ids), Coupon.shop_id.is_(None)),
-            Coupon.status == "active",
-            Coupon.valid_from <= now,
-            Coupon.valid_to >= now,
+        rates = ShopProgramRate.query.filter(
+            ShopProgramRate.shop_id.in_(shop_ids), ShopProgramRate.valid_to.is_(None)
         ).all()
-
+        has_coupons = bool(shop_coupons)
         if mode == "shopping":
-            amount = float(request.form.get("amount") or 0)
-            results = []
-            rates = ShopProgramRate.query.filter(
-                ShopProgramRate.shop_id.in_(shop_ids),
-                ShopProgramRate.valid_to.is_(None),
-            ).all()
-            has_coupons = bool(shop_coupons)
+            program_map = {}
             for rate in rates:
                 program = db.session.get(BonusProgram, rate.program_id)
-                # Base values without coupons
+                if not program:
+                    continue
                 base_points = amount * rate.points_per_eur
                 base_cashback = amount * (rate.cashback_pct / 100.0)
                 base_euros = base_points * program.point_value_eur + base_cashback
-
-                # Apply best available coupon for this program (if any)
                 program_coupons = [c for c in shop_coupons if c.program_id in (None, program.id)]
                 best_coupon = max(
                     (c.value for c in program_coupons if c.coupon_type == "multiplier"), default=1
@@ -96,7 +86,6 @@ def register_public(app):
                 coupon_points = base_points * best_coupon
                 coupon_cashback = base_cashback + (amount * (best_discount / 100.0))
                 coupon_euros = coupon_points * program.point_value_eur + coupon_cashback
-
                 coupon_info = None
                 if best_coupon != 1 or best_discount != 0:
                     coupon_info = {
@@ -106,34 +95,46 @@ def register_public(app):
                         "discounts": [f"-{best_discount}%"] if best_discount != 0 else [],
                         "unknown_combinability": False,
                     }
-                results.append(
-                    {
-                        "program": program.name,
-                        "points": round(base_points, 2),
-                        "euros": round(base_euros, 2),
-                        "coupon_info": coupon_info,
-                    }
+                category_name = None
+                if hasattr(rate, "category_obj") and rate.category_obj is not None:
+                    try:
+                        category_name = rate.category_obj.name
+                    except Exception:
+                        category_name = None
+                prog = program_map.setdefault(
+                    program.name, {"program": program.name, "best_value": 0.0, "categories": []}
                 )
-            results.sort(
-                key=lambda r: r["coupon_info"]["euros"] if r.get("coupon_info") else r["euros"],
-                reverse=True,
+                entry = {
+                    "rate_id": rate.id,
+                    "category": category_name,
+                    "sub_category": getattr(rate, "sub_category", None),
+                    "points": round(base_points, 2),
+                    "euros": round(base_euros, 2),
+                    "coupon_info": coupon_info,
+                }
+                prog["categories"].append(entry)
+                value_for_sort = coupon_info["euros"] if coupon_info else entry["euros"]
+                if value_for_sort > prog["best_value"]:
+                    prog["best_value"] = value_for_sort
+            programs_list = sorted(
+                program_map.values(), key=lambda p: p["best_value"], reverse=True
             )
             return render_template(
                 "result.html",
                 mode="shopping",
                 shop=shop,
                 amount=amount,
-                results=results,
+                grouped_results=programs_list,
                 has_coupons=has_coupons,
                 active_coupons=shop_coupons,
             )
-
-        if mode == "voucher":
+        elif mode == "voucher":
             voucher = float(request.form.get("voucher") or 0)
             results = []
-            rates = ShopProgramRate.query.filter_by(shop_id=shop.id, valid_to=None).all()
             for rate in rates:
                 program = db.session.get(BonusProgram, rate.program_id)
+                if not program or program.point_value_eur is None:
+                    continue
                 req_points = (
                     voucher / program.point_value_eur
                     if program.point_value_eur > 0
@@ -144,7 +145,7 @@ def register_public(app):
                 )
                 results.append(
                     {
-                        "program": program.name,
+                        "program": program.name if program else "?",
                         "spend": round(spend, 2),
                         "req_points": round(req_points, 2),
                     }
@@ -153,18 +154,19 @@ def register_public(app):
             return render_template(
                 "result.html", mode="voucher", shop=shop, voucher=voucher, results=results
             )
-
-        results = []
-        rates = ShopProgramRate.query.filter_by(shop_id=shop.id, valid_to=None).all()
-        for rate in rates:
-            program = db.session.get(BonusProgram, rate.program_id)
-            results.append(
-                {
-                    "program": program.name,
-                    "note": "Vertragsabschluss - siehe Admin für genaue Angaben",
-                }
-            )
-        return render_template("result.html", mode="contract", shop=shop, results=results)
+        elif mode == "contract":
+            results = []
+            for rate in rates:
+                program = db.session.get(BonusProgram, rate.program_id)
+                if not program:
+                    continue
+                results.append(
+                    {
+                        "program": program.name if program else "?",
+                        "note": "Vertragsabschluss - siehe Admin für genaue Angaben",
+                    }
+                )
+            return render_template("result.html", mode="contract", shop=shop, results=results)
 
     @app.route("/shop/<int:shop_id>/suggest", methods=["GET", "POST"])
     @login_required
@@ -183,15 +185,14 @@ def register_public(app):
                 if not any([proposed_name, proposed_website, proposed_logo]):
                     flash("Bitte mindestens ein Feld ausfüllen (Name, Website oder Logo).", "error")
                 else:
-                    proposal = ShopMetadataProposal(
-                        shop_main_id=shop.shop_main_id,
-                        proposed_name=proposed_name,
-                        proposed_website=proposed_website,
-                        proposed_logo_url=proposed_logo,
-                        reason=reason,
-                        proposed_by_user_id=current_user.id,
-                        status="PENDING",
-                    )
+                    proposal = ShopMetadataProposal()
+                    proposal.shop_main_id = shop.shop_main_id
+                    proposal.proposed_name = proposed_name
+                    proposal.proposed_website = proposed_website
+                    proposal.proposed_logo_url = proposed_logo
+                    proposal.reason = reason
+                    proposal.proposed_by_user_id = current_user.id
+                    proposal.status = "PENDING"
                     db.session.add(proposal)
                     db.session.commit()
                     message = "Dein Metadaten-Vorschlag wurde eingereicht."
@@ -212,13 +213,12 @@ def register_public(app):
 
                         variant_a = ensure_variant_for_shop(shop)
                         variant_b = ensure_variant_for_shop(target_shop)
-                        proposal = ShopMergeProposal(
-                            variant_a_id=variant_a.id,
-                            variant_b_id=variant_b.id,
-                            proposed_by_user_id=current_user.id,
-                            reason=merge_reason,
-                            status="PENDING",
-                        )
+                        proposal = ShopMergeProposal()
+                        proposal.variant_a_id = variant_a.id
+                        proposal.variant_b_id = variant_b.id
+                        proposal.proposed_by_user_id = current_user.id
+                        proposal.reason = merge_reason
+                        proposal.status = "PENDING"
                         db.session.add(proposal)
                         db.session.commit()
                         message = "Dein Merge-Vorschlag wurde eingereicht."

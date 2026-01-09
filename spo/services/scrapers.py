@@ -71,3 +71,21 @@ def scrape_miles_and_more(job):
         db.session.commit()
         job.set_progress(100, 100)
         return {"partners_added": added}
+
+
+def scrape_topcashback(job):
+    with current_app.app_context():
+        import bonus_programs.topcashback as tc
+
+        job.add_message("Starte TopCashback-Scraper...")
+        job.set_progress(10, 100)
+        db.session.add(ScrapeLog(message="TopCashback scraper started"))
+        db.session.commit()
+        job.add_message("Scrape partner data...")
+        job.set_progress(30, 100)
+        added = tc.scrape_and_register(job)
+        job.add_message(f"Fertig: {added} Partner registriert")
+        db.session.add(ScrapeLog(message=f"TopCashback scraper finished, {added} partners"))
+        db.session.commit()
+        job.set_progress(100, 100)
+        return {"partners_added": added}

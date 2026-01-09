@@ -32,6 +32,40 @@ from spo.services.notifications import (
 
 
 def register_admin_shops(app):
+    @app.route("/admin/clear_shops_for_program", methods=["POST"])
+    @login_required
+    def clear_shops_for_program():
+        if current_user.role != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+        data = request.get_json(silent=True) or {}
+        program_name = data.get("program")
+        if not program_name:
+            return jsonify({"error": "No program specified"}), 400
+        program = BonusProgram.query.filter_by(name=program_name).first()
+        if not program:
+            return jsonify({"error": f"Bonusprogramm '{program_name}' nicht gefunden"}), 404
+
+        # Find all ShopProgramRates for this program
+        rates = ShopProgramRate.query.filter_by(program_id=program.id).all()
+        shop_ids = set(rate.shop_id for rate in rates)
+        # Delete rates
+        for rate in rates:
+            db.session.delete(rate)
+        db.session.commit()
+
+        # Optionally, delete shops that now have no rates left
+        deleted_shops = 0
+        for shop_id in shop_ids:
+            remaining = ShopProgramRate.query.filter_by(shop_id=shop_id).count()
+            if remaining == 0:
+                shop = Shop.query.get(shop_id)
+                if shop:
+                    db.session.delete(shop)
+                    deleted_shops += 1
+        db.session.commit()
+
+        return jsonify({"success": True, "deleted": deleted_shops})
+
     @app.route("/admin/shops_overview", methods=["GET"])
     @login_required
     def admin_shops_overview():
@@ -39,6 +73,7 @@ def register_admin_shops(app):
             return jsonify({"error": "Unauthorized"}), 403
 
         query = request.args.get("q", "").strip().lower()
+        program_filter = request.args.get("program", "").strip()
         mains_query = db.session.query(ShopMain).order_by(ShopMain.canonical_name).limit(300)
         mains = mains_query.all()
 
@@ -63,14 +98,40 @@ def register_admin_shops(app):
                 rates = ShopProgramRate.query.filter_by(shop_id=shop.id, valid_to=None).all()
                 for rate in rates:
                     program = BonusProgram.query.get(rate.program_id)
-                    rates_data.append(
-                        {
-                            "shop_name": shop.name,
-                            "program": program.name if program else "unknown",
-                            "points_per_eur": rate.points_per_eur,
-                            "cashback_pct": rate.cashback_pct,
-                        }
-                    )
+                    if program_filter and (not program or program.name != program_filter):
+                        continue
+                    # Resolve normalized category name if available
+                    category_name = None
+                    if hasattr(rate, "category_obj") and rate.category_obj is not None:
+                        try:
+                            category_name = rate.category_obj.name
+                        except Exception:
+                            category_name = None
+
+                    rate_obj = {
+                        "rate_id": rate.id,
+                        "shop_name": shop.name,
+                        "program": program.name if program else "unknown",
+                        "points_per_eur": rate.points_per_eur,
+                        "cashback_pct": rate.cashback_pct,
+                        "category": category_name,
+                        "valid_from": (
+                            rate.valid_from.isoformat()
+                            if getattr(rate, "valid_from", None)
+                            else None
+                        ),
+                        "valid_to": (
+                            rate.valid_to.isoformat() if getattr(rate, "valid_to", None) else None
+                        ),
+                    }
+                    # Optionally include sub_category if present (for future-proofing)
+                    if hasattr(rate, "sub_category") and getattr(rate, "sub_category", None):
+                        rate_obj["sub_category"] = getattr(rate, "sub_category")
+                    rates_data.append(rate_obj)
+
+            # Only include shops with rates for the selected program (if filter is set)
+            if program_filter and not rates_data:
+                continue
 
             result.append(
                 {
@@ -270,6 +331,52 @@ def register_admin_shops(app):
         notify_merge_rejected(proposal, reason)
 
         return jsonify({"success": True})
+
+    @app.route("/admin/shops/<shop_main_id>/details", methods=["GET"])
+    @login_required
+    def admin_shop_details(shop_main_id):
+        if current_user.role != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+
+        main = ShopMain.query.get_or_404(shop_main_id)
+        linked_shops = Shop.query.filter_by(shop_main_id=main.id).all()
+
+        shops = []
+        for shop in linked_shops:
+            rates = (
+                ShopProgramRate.query.filter_by(shop_id=shop.id)
+                .order_by(ShopProgramRate.program_id)
+                .all()
+            )
+            rate_list = []
+            for rate in rates:
+                program = BonusProgram.query.get(rate.program_id)
+                category_name = None
+                if hasattr(rate, "category_obj") and rate.category_obj is not None:
+                    category_name = rate.category_obj.name
+                rate_list.append(
+                    {
+                        "rate_id": rate.id,
+                        "program": program.name if program else "unknown",
+                        "points_per_eur": rate.points_per_eur,
+                        "cashback_pct": rate.cashback_pct,
+                        "category": category_name,
+                        "valid_from": (
+                            rate.valid_from.isoformat()
+                            if getattr(rate, "valid_from", None)
+                            else None
+                        ),
+                        "valid_to": (
+                            rate.valid_to.isoformat() if getattr(rate, "valid_to", None) else None
+                        ),
+                    }
+                )
+
+            shops.append({"shop_id": shop.id, "name": shop.name, "rates": rate_list})
+
+        return jsonify(
+            {"shop_main_id": main.id, "canonical_name": main.canonical_name, "shops": shops}
+        )
 
     @app.route("/admin/variants/rescore", methods=["POST"])
     @login_required

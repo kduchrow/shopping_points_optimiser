@@ -64,6 +64,7 @@ class ShopProgramRate(db.Model):
     program_id: Mapped[int] = mapped_column(db.ForeignKey("bonus_programs.id"))
     points_per_eur: Mapped[float] = mapped_column(default=0.0)
     cashback_pct: Mapped[float] = mapped_column(default=0.0)
+    category: Mapped[str | None] = mapped_column(default=None)
     valid_from: Mapped[datetime] = mapped_column(default=utcnow)
     valid_to: Mapped[datetime | None] = mapped_column(default=None)
 

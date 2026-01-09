@@ -108,11 +108,11 @@ jobs:
       - name: Check container health
         run: |
           docker compose ps
-          docker compose logs shopping-points --tail=80 || true
+          docker compose logs app --tail=80 || true
 
       - name: Run full test suite in container
         run: |
-          docker compose exec -T shopping-points python -m pytest tests/ -v --cov=spo --cov-report=xml
+          docker compose exec -T app python -m pytest tests/ -v --cov=spo --cov-report=xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
@@ -128,7 +128,7 @@ jobs:
       - name: Copy coverage.xml from container
         if: always()
         run: |
-          docker compose cp shopping-points:/app/coverage.xml ./coverage.xml || true
+          docker compose cp app:/app/coverage.xml ./coverage.xml || true
 
       - name: Cleanup
         if: always()
@@ -254,7 +254,7 @@ jobs:
       - name: Check container health
         run: |
           docker compose ps
-          docker compose logs shopping-points --tail=50
+          docker compose logs app --tail=50
 
       - name: Verify database tables exist
         run: |
@@ -271,14 +271,14 @@ jobs:
           echo "HTTP Response Code: $response"
           if [ "$response" != "200" ]; then
             echo "ERROR: App returned status $response instead of 200"
-            docker compose logs shopping-points --tail=100
+            docker compose logs app --tail=100
             exit 1
           fi
           echo "SUCCESS: App is responding correctly"
 
       - name: Run smoke tests in container
         run: |
-          docker compose exec -T shopping-points python -m pytest tests/test_smoke.py -v
+          docker compose exec -T app python -m pytest tests/test_smoke.py -v
 
       - name: Cleanup
         if: always()

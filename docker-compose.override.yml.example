@@ -2,10 +2,10 @@
 # Copy this file to docker-compose.override.yml and customize as needed
 # docker-compose.override.yml is automatically merged with docker-compose.yml
 
-version: "3.8"
+name: shopping-points-optimiser
 
 services:
-  shopping-points:
+  app:
     # Mount source code for live reload (no rebuild needed for code changes)
     volumes:
       # Application code
@@ -22,7 +22,7 @@ services:
       - ./pyrightconfig.json:/app/pyrightconfig.json
 
       # Keep logs volume
-      - shopping-logs:/app/logs
+      - spo-logs:/app/logs
 
     # Development environment variables
     environment:

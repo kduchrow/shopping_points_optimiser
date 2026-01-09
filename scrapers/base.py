@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from spo.extensions import db  # noqa: E402
-from spo.models import Shop, ShopProgramRate, utcnow  # noqa: E402
+from spo.models import Shop, ShopCategory, ShopProgramRate, utcnow  # noqa: E402
 from spo.services.bonus_programs import ensure_program  # noqa: E402
 from spo.services.dedup import get_or_create_shop_main  # noqa: E402
 
@@ -46,9 +46,20 @@ class BaseScraper(ABC):
         for r in data.get("rates", []):
             prog = ensure_program(r["program"], point_value_eur=r.get("point_value_eur", 0.0))
 
-            # Get currently active rate (no valid_to set)
+            # Resolve category name into normalized category_id (nullable)
+            category_name = r.get("category")
+            category_id = None
+            if category_name:
+                cat = ShopCategory.query.filter_by(name=category_name).first()
+                if not cat:
+                    cat = ShopCategory(name=category_name)
+                    db.session.add(cat)
+                    db.session.commit()
+                category_id = cat.id
+
+            # Get currently active rate (no valid_to set) for this shop, program, and category_id
             existing = ShopProgramRate.query.filter_by(
-                shop_id=shop.id, program_id=prog.id, valid_to=None
+                shop_id=shop.id, program_id=prog.id, category_id=category_id, valid_to=None
             ).first()
 
             new_points = r.get("points_per_eur", 0.0)
@@ -61,6 +72,7 @@ class BaseScraper(ABC):
                     program_id=prog.id,
                     points_per_eur=new_points,
                     cashback_pct=new_cashback,
+                    category_id=category_id,
                     valid_from=now,
                     valid_to=None,
                 )
@@ -78,6 +90,7 @@ class BaseScraper(ABC):
                         program_id=prog.id,
                         points_per_eur=new_points,
                         cashback_pct=new_cashback,
+                        category_id=category_id,
                         valid_from=now,
                         valid_to=None,
                     )

@@ -10,7 +10,7 @@ from .proposals import (
     ShopMergeProposal,
     ShopMetadataProposal,
 )
-from .shops import Shop, ShopMain, ShopProgramRate, ShopVariant
+from .shops import Shop, ShopCategory, ShopMain, ShopProgramRate, ShopVariant
 
 __all__ = [
     "utcnow",
@@ -21,6 +21,7 @@ __all__ = [
     "ShopMain",
     "ShopProgramRate",
     "ShopVariant",
+    "ShopCategory",
     "Coupon",
     "Notification",
     "ScheduledJob",

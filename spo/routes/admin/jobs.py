@@ -6,10 +6,23 @@ from flask_login import current_user, login_required
 from job_queue import job_queue
 from spo.models import BonusProgram, ScrapeLog, Shop
 from spo.services.dedup import run_deduplication
-from spo.services.scrapers import scrape_example, scrape_miles_and_more, scrape_payback
+from spo.services.scrapers import (
+    scrape_example,
+    scrape_miles_and_more,
+    scrape_payback,
+    scrape_topcashback,
+)
 
 
 def register_admin_jobs(app):
+    @app.route("/admin/bonus_programs", methods=["GET"])
+    @login_required
+    def admin_bonus_programs():
+        if current_user.role != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+        programs = BonusProgram.query.order_by(BonusProgram.name.asc()).all()
+        return jsonify({"programs": [{"name": p.name} for p in programs]})
+
     def _run_scraper_job(scraper_func, success_message):
         job_id = job_queue.enqueue(scraper_func)
         if request.headers.get("Accept") == "application/json":
@@ -38,6 +51,14 @@ def register_admin_jobs(app):
             flash("Sie haben keine Berechtigung für diese Aktion.", "error")
             return jsonify({"error": "Unauthorized"}), 403
         return _run_scraper_job(scrape_payback, "Payback-Scraper gestartet. Job ID: {}...")
+
+    @app.route("/admin/run_topcashback", methods=["POST"])
+    @login_required
+    def admin_run_topcashback():
+        if current_user.role != "admin":
+            flash("Sie haben keine Berechtigung für diese Aktion.", "error")
+            return jsonify({"error": "Unauthorized"}), 403
+        return _run_scraper_job(scrape_topcashback, "TopCashback-Scraper gestartet. Job ID: {}...")
 
     @app.route("/admin/run_miles_and_more", methods=["POST"])
     @login_required

@@ -47,6 +47,10 @@
         <form id="payback-form" style="display: inline">
           <button type="submit" class="btn btn-warning">💳 Run Payback Scraper</button>
         </form>
+
+        <form id="topcashback-form" style="display: inline">
+          <button type="submit" class="btn btn-warning">🏷️ Run TopCashback Scraper</button>
+        </form>
       </div>
     </div>
 
@@ -54,12 +58,20 @@
     <div id="tab-shops" class="tab-content">
       <div class="admin-card">
         <h3>Shop Übersicht</h3>
-        <input
-          id="shop-search"
-          type="text"
-          placeholder="Suche nach Shop..."
-          style="width: 100%; padding: 10px; margin-bottom: 10px; border: 2px solid var(--border); border-radius: 10px"
-        />
+        <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
+          <input
+            id="shop-search"
+            type="text"
+            placeholder="Suche nach Shop..."
+            style="flex: 2; padding: 10px; border: 2px solid var(--border); border-radius: 10px"
+          />
+          <select id="bonus-program-filter" style="flex: 1; padding: 10px; border: 2px solid var(--border); border-radius: 10px">
+            <option value="">Alle Bonusprogramme</option>
+          </select>
+          <button id="delete-program-shops" class="btn btn-danger" style="flex: 1; min-width: 180px;" disabled title="Wähle ein Bonusprogramm zum Löschen">
+            🗑️ Alle Shops für Programm löschen
+          </button>
+        </div>
         <div id="shop-list"></div>
         <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border)" />
         <div style="padding-top: 15px">

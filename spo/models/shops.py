@@ -45,5 +45,16 @@ class ShopProgramRate(db.Model):
     program_id = db.Column(db.Integer, db.ForeignKey("bonus_programs.id"), nullable=False)
     points_per_eur = db.Column(db.Float, default=0.0)
     cashback_pct = db.Column(db.Float, default=0.0)
+    # Normalized category reference (nullable)
+    category_id = db.Column(db.Integer, db.ForeignKey("shop_categories.id"), nullable=True)
+    category_obj = db.relationship("ShopCategory", backref="rates")
     valid_from = db.Column(db.DateTime, default=utcnow, nullable=False)
     valid_to = db.Column(db.DateTime, nullable=True)
+
+
+class ShopCategory(db.Model):
+    __tablename__ = "shop_categories"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False, unique=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey("shop_categories.id"), nullable=True)
+    parent = db.relationship("ShopCategory", remote_side=[id], backref="children")

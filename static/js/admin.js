@@ -14,6 +14,75 @@ function switchTab(tabName, evt) {
   if (tabName === "shops") loadShops();
 }
 
+// Shop details modal helpers
+function _ensureShopDetailsModal() {
+  if (document.getElementById("shop-details-modal")) return;
+  const modal = document.createElement("div");
+  modal.id = "shop-details-modal";
+  modal.style.display = "none";
+  modal.style.position = "fixed";
+  modal.style.left = "0";
+  modal.style.top = "0";
+  modal.style.width = "100%";
+  modal.style.height = "100%";
+  modal.style.background = "rgba(0,0,0,0.5)";
+  modal.style.zIndex = "9999";
+  modal.innerHTML = `
+    <div id="shop-details-box" style="background:#fff; max-width:900px; margin:40px auto; padding:20px; border-radius:8px; overflow:auto; max-height:80%; position:relative;">
+      <button style="position:absolute; right:12px; top:12px;" onclick="closeShopDetails()">✖</button>
+      <h3 id="shop-details-title">Shop Details</h3>
+      <div id="shop-details-content"></div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+function openShopDetails(mainId) {
+  _ensureShopDetailsModal();
+  const modal = document.getElementById("shop-details-modal");
+  const content = document.getElementById("shop-details-content");
+  const title = document.getElementById("shop-details-title");
+  if (!modal || !content) return;
+  modal.style.display = "block";
+  content.innerHTML = "<div>Loading...</div>";
+  fetch(`/admin/shops/${mainId}/details`)
+    .then((r) => r.json())
+    .then((data) => {
+      title.textContent = data.canonical_name || `Shop ${mainId}`;
+      if (!data.shops || data.shops.length === 0) {
+        content.innerHTML = "<div>No linked shops or rates found.</div>";
+        return;
+      }
+      const html = data.shops
+        .map((s) => {
+          const rates = s.rates
+            .map((rt) => {
+              const cat = rt.category ? `<strong>[${rt.category}]</strong> ` : "";
+              const valid = rt.valid_from ? `${rt.valid_from}${rt.valid_to ? " → " + rt.valid_to : ""}` : "";
+              return `<div style="padding:6px 0; border-bottom:1px solid #f0f0f0;">${cat}${rt.program}: ${
+                rt.points_per_eur
+              } P/EUR${
+                rt.cashback_pct ? `, ${rt.cashback_pct}% CB` : ""
+              }<div style="font-size:12px;color:#666">${valid}</div></div>`;
+            })
+            .join("");
+          return `<div style="margin-bottom:12px;"><h4 style="margin:6px 0;">${s.name}</h4>${
+            rates || "<div>No rates</div>"
+          }</div>`;
+        })
+        .join("");
+      content.innerHTML = html;
+    })
+    .catch((err) => {
+      content.innerHTML = `<div style="color:red">Error: ${err}</div>`;
+    });
+}
+
+function closeShopDetails() {
+  const modal = document.getElementById("shop-details-modal");
+  if (modal) modal.style.display = "none";
+}
+
 function fetchNotifications() {
   return fetch("/api/notifications").then((r) => r.json());
 }
@@ -240,6 +309,7 @@ function loadRatesForReview() {
 function wireScraperForms() {
   const milesForm = document.getElementById("miles-and-more-form");
   const paybackForm = document.getElementById("payback-form");
+  const topcashbackForm = document.getElementById("topcashback-form");
 
   if (milesForm) {
     milesForm.addEventListener("submit", (e) => {
@@ -268,6 +338,21 @@ function wireScraperForms() {
           if (data.job_id) startJobMonitoring(data.job_id);
         })
         .catch((err) => alert("Error starting Payback scraper: " + err));
+    });
+  }
+
+  if (topcashbackForm) {
+    topcashbackForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      fetch("/admin/run_topcashback", {
+        method: "POST",
+        headers: { Accept: "application/json" },
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.job_id) startJobMonitoring(data.job_id);
+        })
+        .catch((err) => alert("Error starting TopCashback scraper: " + err));
     });
   }
 }
@@ -335,12 +420,21 @@ function renderShopList(data) {
         .map((v) => `${v.source}: ${v.name} (conf ${Math.round(v.confidence)}%)`)
         .join("<br>");
       const rates = shop.rates
-        .map((r) => `${r.program}: ${r.points_per_eur} P/EUR${r.cashback_pct ? `, ${r.cashback_pct}% CB` : ""}`)
+        .map((r) => {
+          let cat = r.category ? `<span style='color:#888'>[${r.category}]</span> ` : "";
+          let subcat = r.sub_category ? ` (${r.sub_category})` : "";
+          return `${cat}${r.program}: ${r.points_per_eur} P/EUR${
+            r.cashback_pct ? `, ${r.cashback_pct}% CB` : ""
+          }${subcat}`;
+        })
         .join("<br>");
       return `
         <div style="border-bottom:1px solid #eee; padding:10px 0;">
           <div style="font-weight:600;">${shop.name}</div>
           <div style="color:#666;">${shop.status}${shop.website ? " • " + shop.website : ""}</div>
+          <div style="margin-top:6px;"><button class="btn btn-inline" onclick="openShopDetails('${
+            shop.id
+          }')">🔎 Details</button></div>
           <div style="margin-top:6px;"><strong>Varianten:</strong><br>${variants || "—"}</div>
           <div style="margin-top:6px;"><strong>Raten:</strong><br>${rates || "—"}</div>
         </div>
@@ -352,19 +446,29 @@ function renderShopList(data) {
 
 function loadShops() {
   const searchInput = document.getElementById("shop-search");
+  const programSelect = document.getElementById("bonus-program-filter");
   const q = searchInput?.value || "";
-  fetch(`/admin/shops_overview?q=${encodeURIComponent(q)}`)
+  const program = programSelect?.value || "";
+  const url = `/admin/shops_overview?q=${encodeURIComponent(q)}${
+    program ? `&program=${encodeURIComponent(program)}` : ""
+  }`;
+  fetch(url)
     .then((r) => r.json())
     .then((data) => renderShopList(data));
 }
 
 function wireShopSearch() {
   const input = document.getElementById("shop-search");
-  if (!input) return;
-  input.addEventListener("input", () => {
-    clearTimeout(window._shopSearchTimer);
-    window._shopSearchTimer = setTimeout(loadShops, 250);
-  });
+  if (input) {
+    input.addEventListener("input", () => {
+      clearTimeout(window._shopSearchTimer);
+      window._shopSearchTimer = setTimeout(loadShops, 250);
+    });
+  }
+  const programSelect = document.getElementById("bonus-program-filter");
+  if (programSelect) {
+    programSelect.addEventListener("change", loadShops);
+  }
 }
 
 function initAdminPage() {
@@ -372,6 +476,56 @@ function initAdminPage() {
   setInterval(updateNotificationBadge, 30000);
   wireScraperForms();
   wireShopSearch();
+  fetch("/admin/bonus_programs")
+    .then((r) => r.json())
+    .then((data) => {
+      const select = document.getElementById("bonus-program-filter");
+      const delBtn = document.getElementById("delete-program-shops");
+      if (!select || !data.programs) return;
+      data.programs.forEach((p) => {
+        const opt = document.createElement("option");
+        opt.value = p.name;
+        opt.textContent = p.name;
+        select.appendChild(opt);
+      });
+      // Enable/disable delete button based on selection
+      if (delBtn && select) {
+        select.addEventListener("change", () => {
+          delBtn.disabled = !select.value;
+          delBtn.title = select.value
+            ? `Alle Shops für ${select.value} löschen`
+            : "Wähle ein Bonusprogramm zum Löschen";
+        });
+        delBtn.disabled = !select.value;
+        delBtn.title = select.value ? `Alle Shops für ${select.value} löschen` : "Wähle ein Bonusprogramm zum Löschen";
+        delBtn.addEventListener("click", () => {
+          if (!select.value) return;
+          if (
+            !confirm(
+              `⚠️ Sicher? Dies löscht ALLE Shops für das Bonusprogramm '${select.value}'!\n\nDiese Aktion kann nicht rückgängig gemacht werden.`,
+            )
+          )
+            return;
+          fetch(`/admin/clear_shops_for_program`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({ program: select.value }),
+          })
+            .then((r) => r.json())
+            .then((data) => {
+              if (data.success) {
+                alert(`✅ ${data.deleted} Shops für '${select.value}' gelöscht!`);
+                loadShops();
+              } else {
+                alert("❌ Fehler: " + (data.error || "Unbekannter Fehler"));
+              }
+            })
+            .catch((err) => {
+              alert("❌ Fehler beim Löschen: " + err);
+            });
+        });
+      }
+    });
 }
 
 function clearAllShops() {
