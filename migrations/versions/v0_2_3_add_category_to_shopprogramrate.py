@@ -64,10 +64,10 @@ def upgrade():
                 )
 
         # Drop legacy column if it exists
-        try:
+        insp = sa.inspect(conn)
+        columns = [col["name"] for col in insp.get_columns("shop_program_rates")]
+        if "category" in columns:
             op.drop_column("shop_program_rates", "category")
-        except Exception:
-            pass
     except Exception:
         # If legacy column doesn't exist or migration fails, continue without blocking upgrade
         pass
