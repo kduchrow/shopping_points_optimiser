@@ -15,6 +15,14 @@ from spo.services.scrapers import (
 
 
 def register_admin_jobs(app):
+    @app.route("/admin/bonus_programs", methods=["GET"])
+    @login_required
+    def admin_bonus_programs():
+        if current_user.role != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+        programs = BonusProgram.query.order_by(BonusProgram.name.asc()).all()
+        return jsonify({"programs": [{"name": p.name} for p in programs]})
+
     def _run_scraper_job(scraper_func, success_message):
         job_id = job_queue.enqueue(scraper_func)
         if request.headers.get("Accept") == "application/json":

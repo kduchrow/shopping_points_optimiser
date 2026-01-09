@@ -28,16 +28,10 @@ def scrape_and_register(job=None):
     ensure_program("TopCashback", point_value_eur=0.01)
 
     scraper = TopCashbackScraper()
-    results, debug = scraper.fetch()
+    results = scraper.fetch()
 
     if job:
-        job.add_message(
-            f"TopCashback scraper started. Target: {debug.get('partners_found', 0)} shops"
-        )
-        if debug.get("error"):
-            job.add_message(f"❌ Fehler beim Abruf: {debug['error']}")
-        if (debug.get("partners_found") or 0) == 0:
-            job.add_message("⚠️ Keine Partner gefunden. Struktur der Seite prüfen.")
+        job.add_message("TopCashback scraper started.")
 
     added = 0
     errors = []
@@ -54,9 +48,5 @@ def scrape_and_register(job=None):
 
     if job:
         job.add_message(f"✅ Abschluss: {added} Shops registriert, Fehler: {len(errors)}")
-        if debug.get("categories_traversed"):
-            job.add_message(f"Info: {debug['categories_traversed']} Kategorien durchsucht")
-        if debug.get("error"):
-            job.add_message(f"Debug: {debug['error']}")
 
     return added

@@ -1,10 +1,9 @@
 ---
-version: "3.8"
-
+name: shopping-points-optimiser
 services:
   db:
     image: postgres:16-alpine
-    container_name: shopping-points-db
+    container_name: db
     restart: unless-stopped
     ports:
       - "5432:5432"
@@ -21,19 +20,19 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./init-test-db.sh:/docker-entrypoint-initdb.d/init-test-db.sh
     networks:
-      - shopping-network
+      - spo-network
 
-  shopping-points:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         FLASK_ENV: ${FLASK_ENV:-production}
-        APP_VERSION: ${APP_VERSION:-0.2.1}
+        APP_VERSION: ${APP_VERSION:-0.2.3}
         BUILD_DATE: ${BUILD_DATE:-unknown}
         VCS_REF: ${VCS_REF:-unknown}
-    image: shopping-points-optimiser:${APP_VERSION:-0.2.1}
-    container_name: shopping-points-optimiser
+    image: shopping-points-optimiser:${APP_VERSION:-0.2.3}
+    container_name: app
     restart: unless-stopped
     depends_on:
       db:
@@ -49,9 +48,9 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - GITHUB_REPO_URL=${GITHUB_REPO_URL:-https://github.com/kduchrow/shopping_points_optimiser}
     volumes:
-      - shopping-logs:/app/logs
+      - spo-logs:/app/logs
     networks:
-      - shopping-network
+      - spo-network
     # Für UNRAID: AppData Mount (optional, für zusätzliche Daten)
     # - /mnt/user/appdata/shopping-points:/app/appdata
 
@@ -65,9 +64,9 @@ services:
 volumes:
   pgdata:
     driver: local
-  shopping-logs:
+  spo-logs:
     driver: local
 
 networks:
-  shopping-network:
+  spo-network:
     driver: bridge

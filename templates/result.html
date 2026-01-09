@@ -11,9 +11,9 @@
   <div class="info-box">
     <p>🏪 <strong>Shop:</strong> {{ shop.name }}</p>
     {% if mode == 'shopping' %}
-    <p>💵 <strong>Einkaufsbetrag:</strong> €{{ amount }}</p>
+    <p>💵 <strong>Einkaufsbetrag:</strong> {{ amount }}€</p>
     {% elif mode == 'voucher' %}
-    <p>🎁 <strong>Gewünschter Gutschein:</strong> €{{ voucher }}</p>
+    <p>🎁 <strong>Gewünschter Gutschein:</strong> {{ voucher }}€</p>
     {% endif %}
   </div>
 
@@ -59,32 +59,60 @@
 
   <h2>🏆 Beste Programme (geschätzter Gegenwert in €)</h2>
   <ul class="results-list" id="results-list">
-    {% for r in results %}
-    <li
-      data-base-value="{{ r.euros }}"
-      data-coupon-value="{% if r.coupon_info %}{{ r.coupon_info.euros }}{% else %}{{ r.euros }}{% endif %}"
-    >
-      <div class="flex-1">
-        <div class="program-name">{{ r.program }}</div>
-        <div class="program-details">Basiswert: {{ r.points }} Punkte → €{{ r.euros }}</div>
+    {% if grouped_results is defined %}
+      {% for prog in grouped_results %}
+        <li>
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; width: 100%;">
+            <div style="flex: 1 1 auto;">
+              <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+                <div class="program-name">{{ prog.program }}</div>
+                <div class="program-value" style="margin-left: 12px; white-space: nowrap; font-size: 1.15em; font-weight: 600;">{{ prog.best_value }}€</div>
+              </div>
+              <div class="program-details">
+                {% if prog.categories|length > 1 %}
+                  Beste Kategorie: {{ prog.best_value }}€
+                {% else %}
+                  Basiswert: {{ prog.categories[0].euros }}€
+                {% endif %}
+              </div>
+              <div style="margin-top:8px;">
+                <strong>Kategorien:</strong>
+                <ul style="margin:6px 0 0 12px; padding:0; list-style: none;">
+                  {% for c in prog.categories %}
+                    <li style="padding:4px 0; border-bottom:1px solid #f3f4f6;">
+                      <div style="font-weight:600; padding-left: 4px;">{{ c.category or c.sub_category or 'Allgemein' }}</div>
+                      <div style="font-size:13px; color:#555">{{ c.points }} Punkte → {{ c.euros }}€{% if c.coupon_info %} (Aktion: {{ c.coupon_info.euros }}€){% endif %}</div>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </li>
+      {% endfor %}
+    {% else %}
+      {% for r in results %}
+      <li
+        data-base-value="{{ r.euros }}"
+        data-coupon-value="{% if r.coupon_info %}{{ r.coupon_info.euros }}{% else %}{{ r.euros }}{% endif %}"
+      >
+        <div class="flex-1">
+          <div class="program-name">{{ r.program }}</div>
+          <div class="program-details">Basiswert: {{ r.points }} Punkte → {{ r.euros }}€</div>
 
-        {% if r.coupon_info %}
-        <div class="coupon-info">
-          <strong>🎉 Mit Sonderaktion:</strong>
-          <span class="coupon-value">€{{ r.coupon_info.euros }}</span>
-          ({{ r.coupon_info.points }} Punkte) {% if r.coupon_info.multipliers %}
-          <br />{{ r.coupon_info.multipliers|join(', ') }} {% endif %} {% if r.coupon_info.discounts %} <br />{{
-          r.coupon_info.discounts|join(', ') }} {% endif %} {% if r.coupon_info.unknown_combinability %} <br /><em
-            style="color: #ff6600"
-            >⚠ Kombinierbarkeit unbekannt - Beide Werte angezeigt</em
-          >
+          {% if r.coupon_info %}
+          <div class="coupon-info">
+            <strong>🎉 Mit Sonderaktion:</strong>
+            <span class="coupon-value">{{ r.coupon_info.euros }}€</span>
+            ({{ r.coupon_info.points }} Punkte) {% if r.coupon_info.multipliers %}
+            <br />{{ r.coupon_info.multipliers|join(', ') }} {% endif %} {% if r.coupon_info.discounts %} <br />{{ r.coupon_info.discounts|join(', ') }} {% endif %} {% if r.coupon_info.unknown_combinability %} <br /><em style="color: #ff6600">⚠ Kombinierbarkeit unbekannt - Beide Werte angezeigt</em> {% endif %}
+          </div>
           {% endif %}
         </div>
-        {% endif %}
-      </div>
-      <div class="program-value" id="value-{{ r.program|replace(' ', '-') }}">€{{ r.euros }}</div>
-    </li>
-    {% endfor %}
+        <div class="program-value" id="value-{{ r.program|replace(' ', '-') }}">{{ r.euros }}€</div>
+      </li>
+      {% endfor %}
+    {% endif %}
   </ul>
   {% elif mode == 'voucher' %}
   <h2>🎯 Benötigter Umsatz nach Programm</h2>
@@ -95,7 +123,7 @@
         <div class="program-name">{{ r.program }}</div>
         <div class="program-details">{{ r.req_points }} Punkte benötigt</div>
       </div>
-      <div class="program-value">€{{ r.spend }}</div>
+      <div class="program-value">{{ r.spend }}€</div>
     </li>
     {% endfor %}
   </ul>
