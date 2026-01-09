@@ -82,7 +82,7 @@
                     <li style="padding:4px 0; border-bottom:1px solid #f3f4f6;">
                       <div style="font-weight:600; padding-left: 4px;">{{ c.category or c.sub_category or 'Allgemein' }}</div>
                       <div style="font-size:13px; color:#555">
-                        {% if prog.program == 'TopCashback' and c.cashback_pct is defined %}
+                        {% if c.cashback_pct is defined and c.cashback_pct|float > 0 %}
                           {{ c.cashback_pct }}% Cashback → {{ c.euros }}€
                         {% else %}
                           {{ c.points }} Punkte → {{ c.euros }}€
