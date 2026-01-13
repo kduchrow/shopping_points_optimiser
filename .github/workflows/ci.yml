@@ -136,6 +136,8 @@ jobs:
 
   alembic-check:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://spo:spo@localhost:5432/spo
     strategy:
       matrix:
         python-version: ["3.11"]
