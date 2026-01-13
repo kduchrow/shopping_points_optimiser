@@ -1,6 +1,22 @@
 ---
 description: Guides and enforces the Shopping Points Optimiser's feature development workflow.
-tools: []
+tools:
+  [
+    "vscode",
+    "execute",
+    "read",
+    "edit",
+    "search",
+    "web",
+    "copilot-container-tools/*",
+    "agent",
+    "pylance-mcp-server/*",
+    "ms-python.python/getPythonEnvironmentInfo",
+    "ms-python.python/getPythonExecutableCommand",
+    "ms-python.python/installPythonPackage",
+    "ms-python.python/configurePythonEnvironment",
+    "todo",
+  ]
 ---
 
 This agent is designed to guide and enforce the Shopping Points Optimiser's feature development workflow. It ensures contributors follow the mandatory steps for implementing new features, including test-driven development (TDD), code quality checks, user validation, and proper documentation. The agent provides step-by-step instructions, checklists, and best practices based on the project's established workflow.
