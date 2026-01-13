@@ -23,343 +23,205 @@ depends_on = None
 
 
 def upgrade() -> None:
-    """Idempotent upgrade - works on fresh and existing production databases."""
-
-    connection = op.get_bind()
-
-    def execute_safe(sql: str, desc: str = ""):
-        """Execute SQL - don't fail if already exists."""
-        try:
-            connection.execute(sa.text(sql))
-            if desc:
-                print(f"✓ {desc}")
-        except Exception as e:
-            if "already exists" in str(e).lower() or "duplicate" in str(e).lower():
-                if desc:
-                    print(f"⊘ {desc} (already exists)")
-            else:
-                print(f"⚠ {desc}: {e}")
-
-    print("\n" + "=" * 80)
-    print("v0_2_0: Creating Application Schema (Idempotent - Safe for Production)")
-    print("=" * 80 + "\n")
-
-    # Tables in order of dependency
-
-    execute_safe(
-        """
-        CREATE TABLE IF NOT EXISTS bonus_programs (
-            id SERIAL PRIMARY KEY,
-            name VARCHAR NOT NULL UNIQUE,
-            point_value_eur FLOAT DEFAULT 0
-        );
-    """,
+    op.create_table(
         "bonus_programs",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("name", sa.String, nullable=False, unique=True),
+        sa.Column("description", sa.String),
+        sa.Column("point_value_eur", sa.Float),
+        sa.Column("created_at", sa.TIMESTAMP, nullable=False),
     )
 
-    execute_safe(
-        """
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            username VARCHAR NOT NULL UNIQUE,
-            email VARCHAR NOT NULL UNIQUE,
-            password_hash VARCHAR NOT NULL,
-            role VARCHAR NOT NULL DEFAULT 'viewer',
-            status VARCHAR NOT NULL DEFAULT 'active',
-            created_at TIMESTAMP NOT NULL
-        );
-    """,
+    op.create_table(
         "users",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("username", sa.String, nullable=False, unique=True),
+        sa.Column("email", sa.String, nullable=False, unique=True),
+        sa.Column("password_hash", sa.String, nullable=False),
+        sa.Column("role", sa.String, nullable=False, server_default="viewer"),
+        sa.Column("status", sa.String, nullable=False, server_default="active"),
+        sa.Column("created_at", sa.TIMESTAMP, nullable=False),
     )
 
-    execute_safe(
-        """
-        CREATE TABLE IF NOT EXISTS shop_main (
-            id VARCHAR(36) PRIMARY KEY,
-            canonical_name VARCHAR NOT NULL,
-            canonical_name_lower VARCHAR NOT NULL,
-            website VARCHAR,
-            logo_url VARCHAR,
-            status VARCHAR NOT NULL DEFAULT 'active',
-            merged_into_id VARCHAR(36) REFERENCES shop_main(id),
-            created_at TIMESTAMP NOT NULL,
-            updated_at TIMESTAMP NOT NULL,
-            updated_by_user_id INTEGER REFERENCES users(id)
-        );
-    """,
+    op.create_table(
         "shop_main",
+        sa.Column("id", sa.String(36), primary_key=True),
+        sa.Column("canonical_name", sa.String, nullable=False),
+        sa.Column("canonical_name_lower", sa.String, nullable=False),
+        sa.Column("website", sa.String),
+        sa.Column("logo_url", sa.String),
+        sa.Column("status", sa.String, nullable=False, server_default="active"),
+        sa.Column("merged_into_id", sa.String(36), sa.ForeignKey("shop_main.id")),
+        sa.Column("created_at", sa.TIMESTAMP, nullable=False),
+        sa.Column("updated_at", sa.TIMESTAMP, nullable=False),
+        sa.Column("updated_by_user_id", sa.Integer, sa.ForeignKey("users.id")),
     )
 
-    execute_safe(
-        """
-        CREATE INDEX IF NOT EXISTS ix_shop_main_canonical_name
-        ON shop_main(canonical_name);
-    """,
-        "ix_shop_main_canonical_name",
-    )
-
-    execute_safe(
-        """
-        CREATE INDEX IF NOT EXISTS ix_shop_main_canonical_name_lower
-        ON shop_main(canonical_name_lower);
-    """,
-        "ix_shop_main_canonical_name_lower",
-    )
-
-    execute_safe(
-        """
-        CREATE TABLE IF NOT EXISTS scrape_logs (
-            id SERIAL PRIMARY KEY,
-            timestamp TIMESTAMP NOT NULL,
-            message VARCHAR NOT NULL
-        );
-    """,
+    # --- Remaining tables refactored to use op.create_table ---
+    op.create_table(
         "scrape_logs",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("timestamp", sa.TIMESTAMP, nullable=False),
+        sa.Column("message", sa.String, nullable=False),
     )
 
-    execute_safe(
-        """
-        CREATE TABLE IF NOT EXISTS shops (
-            id SERIAL PRIMARY KEY,
-            name VARCHAR NOT NULL,
-            shop_main_id VARCHAR(36) REFERENCES shop_main(id),
-            created_at TIMESTAMP NOT NULL
-        );
-    """,
+    op.create_table(
         "shops",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("name", sa.String, nullable=False),
+        sa.Column("shop_main_id", sa.String(36), sa.ForeignKey("shop_main.id")),
+        sa.Column("created_at", sa.TIMESTAMP, nullable=False),
     )
 
-    execute_safe(
-        """
-        CREATE TABLE IF NOT EXISTS shop_variants (
-            id SERIAL PRIMARY KEY,
-            shop_main_id VARCHAR(36) NOT NULL REFERENCES shop_main(id),
-            source VARCHAR NOT NULL,
-            source_name VARCHAR NOT NULL,
-            source_id VARCHAR,
-            confidence_score FLOAT DEFAULT 100,
-            created_at TIMESTAMP NOT NULL,
-            UNIQUE(source, source_id)
-        );
-    """,
+    op.create_table(
         "shop_variants",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("shop_main_id", sa.String(36), sa.ForeignKey("shop_main.id"), nullable=False),
+        sa.Column("source", sa.String, nullable=False),
+        sa.Column("source_name", sa.String, nullable=False),
+        sa.Column("source_id", sa.String),
+        sa.Column("confidence_score", sa.Float, server_default="100"),
+        sa.Column("created_at", sa.TIMESTAMP, nullable=False),
+        sa.UniqueConstraint("source", "source_id"),
     )
 
-    execute_safe(
-        """
-        CREATE TABLE IF NOT EXISTS shop_program_rates (
-            id SERIAL PRIMARY KEY,
-            shop_id INTEGER NOT NULL REFERENCES shops(id),
-            program_id INTEGER NOT NULL REFERENCES bonus_programs(id),
-            points_per_eur FLOAT DEFAULT 0,
-            cashback_pct FLOAT DEFAULT 0,
-            valid_from TIMESTAMP NOT NULL,
-            valid_to TIMESTAMP
-        );
-    """,
+    op.create_table(
         "shop_program_rates",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("shop_id", sa.Integer, sa.ForeignKey("shops.id"), nullable=False),
+        sa.Column("program_id", sa.Integer, sa.ForeignKey("bonus_programs.id"), nullable=False),
+        sa.Column("points_per_eur", sa.Float, server_default="0"),
+        sa.Column("cashback_pct", sa.Float, server_default="0"),
+        sa.Column("valid_from", sa.TIMESTAMP, nullable=False),
+        sa.Column("valid_to", sa.TIMESTAMP),
     )
 
-    execute_safe(
-        """
-        CREATE TABLE IF NOT EXISTS coupons (
-            id SERIAL PRIMARY KEY,
-            coupon_type VARCHAR NOT NULL,
-            name VARCHAR NOT NULL,
-            description VARCHAR,
-            shop_id INTEGER REFERENCES shops(id),
-            program_id INTEGER REFERENCES bonus_programs(id),
-            value FLOAT NOT NULL,
-            combinable BOOLEAN,
-            valid_from TIMESTAMP NOT NULL,
-            valid_to TIMESTAMP NOT NULL,
-            status VARCHAR NOT NULL DEFAULT 'active',
-            source_url VARCHAR,
-            created_at TIMESTAMP NOT NULL
-        );
-    """,
+    op.create_table(
         "coupons",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("coupon_type", sa.String, nullable=False),
+        sa.Column("name", sa.String, nullable=False),
+        sa.Column("description", sa.String),
+        sa.Column("shop_id", sa.Integer, sa.ForeignKey("shops.id")),
+        sa.Column("program_id", sa.Integer, sa.ForeignKey("bonus_programs.id")),
+        sa.Column("value", sa.Float, nullable=False),
+        sa.Column("combinable", sa.Boolean),
+        sa.Column("valid_from", sa.TIMESTAMP, nullable=False),
+        sa.Column("valid_to", sa.TIMESTAMP, nullable=False),
+        sa.Column("status", sa.String, nullable=False, server_default="active"),
+        sa.Column("source_url", sa.String),
+        sa.Column("created_at", sa.TIMESTAMP, nullable=False),
     )
 
-    execute_safe(
-        """
-        CREATE TABLE IF NOT EXISTS contributor_requests (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER NOT NULL REFERENCES users(id),
-            created_at TIMESTAMP NOT NULL,
-            status VARCHAR NOT NULL DEFAULT 'pending',
-            decision_by_admin_id INTEGER REFERENCES users(id),
-            decision_at TIMESTAMP
-        );
-    """,
+    op.create_table(
         "contributor_requests",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("created_at", sa.TIMESTAMP, nullable=False),
+        sa.Column("status", sa.String, nullable=False, server_default="pending"),
+        sa.Column("decision_by_admin_id", sa.Integer, sa.ForeignKey("users.id")),
+        sa.Column("decision_at", sa.TIMESTAMP),
     )
 
-    execute_safe(
-        """
-        CREATE TABLE IF NOT EXISTS proposals (
-            id SERIAL PRIMARY KEY,
-            proposal_type VARCHAR NOT NULL,
-            status VARCHAR NOT NULL DEFAULT 'pending',
-            source VARCHAR NOT NULL DEFAULT 'user',
-            user_id INTEGER NOT NULL REFERENCES users(id),
-            created_at TIMESTAMP NOT NULL,
-            shop_id INTEGER REFERENCES shops(id),
-            program_id INTEGER REFERENCES bonus_programs(id),
-            proposed_points_per_eur FLOAT,
-            proposed_cashback_pct FLOAT,
-            proposed_name VARCHAR,
-            proposed_point_value_eur FLOAT,
-            proposed_coupon_type VARCHAR,
-            proposed_coupon_value FLOAT,
-            proposed_coupon_description VARCHAR,
-            proposed_coupon_combinable BOOLEAN,
-            proposed_coupon_valid_to TIMESTAMP,
-            reason VARCHAR,
-            source_url VARCHAR,
-            approved_at TIMESTAMP,
-            approved_by_system BOOLEAN DEFAULT FALSE
-        );
-    """,
+    op.create_table(
         "proposals",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("proposal_type", sa.String, nullable=False),
+        sa.Column("status", sa.String, nullable=False, server_default="pending"),
+        sa.Column("source", sa.String, nullable=False, server_default="user"),
+        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("created_at", sa.TIMESTAMP, nullable=False),
+        sa.Column("shop_id", sa.Integer, sa.ForeignKey("shops.id")),
+        sa.Column("program_id", sa.Integer, sa.ForeignKey("bonus_programs.id")),
+        sa.Column("proposed_points_per_eur", sa.Float),
+        sa.Column("proposed_cashback_pct", sa.Float),
+        sa.Column("proposed_name", sa.String),
+        sa.Column("proposed_point_value_eur", sa.Float),
+        sa.Column("proposed_coupon_type", sa.String),
+        sa.Column("proposed_coupon_value", sa.Float),
+        sa.Column("proposed_coupon_description", sa.String),
+        sa.Column("proposed_coupon_combinable", sa.Boolean),
+        sa.Column("proposed_coupon_valid_to", sa.TIMESTAMP),
+        sa.Column("reason", sa.String),
+        sa.Column("source_url", sa.String),
+        sa.Column("approved_at", sa.TIMESTAMP),
+        sa.Column("approved_by_system", sa.Boolean, server_default=sa.text("FALSE")),
     )
 
-    execute_safe(
-        """
-        CREATE TABLE IF NOT EXISTS notifications (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER NOT NULL REFERENCES users(id),
-            notification_type VARCHAR NOT NULL,
-            title VARCHAR NOT NULL,
-            message VARCHAR NOT NULL,
-            link_type VARCHAR,
-            link_id INTEGER,
-            is_read BOOLEAN NOT NULL DEFAULT FALSE,
-            created_at TIMESTAMP NOT NULL
-        );
-    """,
+    op.create_table(
         "notifications",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("notification_type", sa.String, nullable=False),
+        sa.Column("title", sa.String, nullable=False),
+        sa.Column("message", sa.String, nullable=False),
+        sa.Column("link_type", sa.String),
+        sa.Column("link_id", sa.Integer),
+        sa.Column("is_read", sa.Boolean, nullable=False, server_default=sa.text("FALSE")),
+        sa.Column("created_at", sa.TIMESTAMP, nullable=False),
     )
 
-    execute_safe(
-        """
-        CREATE TABLE IF NOT EXISTS proposal_votes (
-            id SERIAL PRIMARY KEY,
-            proposal_id INTEGER NOT NULL REFERENCES proposals(id),
-            voter_id INTEGER NOT NULL REFERENCES users(id),
-            vote INTEGER NOT NULL,
-            vote_weight INTEGER NOT NULL DEFAULT 1,
-            created_at TIMESTAMP NOT NULL,
-            UNIQUE(proposal_id, voter_id)
-        );
-    """,
+    op.create_table(
         "proposal_votes",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("proposal_id", sa.Integer, sa.ForeignKey("proposals.id"), nullable=False),
+        sa.Column("voter_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("vote", sa.Integer, nullable=False),
+        sa.Column("vote_weight", sa.Integer, nullable=False, server_default="1"),
+        sa.Column("created_at", sa.TIMESTAMP, nullable=False),
+        sa.UniqueConstraint("proposal_id", "voter_id"),
     )
 
-    execute_safe(
-        """
-        CREATE TABLE IF NOT EXISTS shop_merge_proposals (
-            id SERIAL PRIMARY KEY,
-            variant_a_id INTEGER NOT NULL REFERENCES shop_variants(id),
-            variant_b_id INTEGER NOT NULL REFERENCES shop_variants(id),
-            proposed_by_user_id INTEGER NOT NULL REFERENCES users(id),
-            status VARCHAR NOT NULL DEFAULT 'PENDING',
-            reason VARCHAR,
-            created_at TIMESTAMP NOT NULL,
-            decided_at TIMESTAMP,
-            decided_by_user_id INTEGER REFERENCES users(id),
-            decided_reason VARCHAR
-        );
-    """,
+    op.create_table(
         "shop_merge_proposals",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("variant_a_id", sa.Integer, sa.ForeignKey("shop_variants.id"), nullable=False),
+        sa.Column("variant_b_id", sa.Integer, sa.ForeignKey("shop_variants.id"), nullable=False),
+        sa.Column("proposed_by_user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("status", sa.String, nullable=False, server_default="PENDING"),
+        sa.Column("reason", sa.String),
+        sa.Column("created_at", sa.TIMESTAMP, nullable=False),
+        sa.Column("decided_at", sa.TIMESTAMP),
+        sa.Column("decided_by_user_id", sa.Integer, sa.ForeignKey("users.id")),
+        sa.Column("decided_reason", sa.String),
     )
 
-    execute_safe(
-        """
-        CREATE TABLE IF NOT EXISTS shop_metadata_proposals (
-            id SERIAL PRIMARY KEY,
-            shop_main_id VARCHAR(36) NOT NULL REFERENCES shop_main(id),
-            proposed_name VARCHAR,
-            proposed_website VARCHAR,
-            proposed_logo_url VARCHAR,
-            reason VARCHAR,
-            proposed_by_user_id INTEGER NOT NULL REFERENCES users(id),
-            status VARCHAR NOT NULL DEFAULT 'PENDING',
-            created_at TIMESTAMP NOT NULL,
-            decided_at TIMESTAMP,
-            decided_by_user_id INTEGER REFERENCES users(id),
-            decided_reason VARCHAR
-        );
-    """,
+    op.create_table(
         "shop_metadata_proposals",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("shop_main_id", sa.String(36), sa.ForeignKey("shop_main.id"), nullable=False),
+        sa.Column("proposed_name", sa.String),
+        sa.Column("proposed_website", sa.String),
+        sa.Column("proposed_logo_url", sa.String),
+        sa.Column("reason", sa.String),
+        sa.Column("proposed_by_user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("status", sa.String, nullable=False, server_default="PENDING"),
+        sa.Column("created_at", sa.TIMESTAMP, nullable=False),
+        sa.Column("decided_at", sa.TIMESTAMP),
+        sa.Column("decided_by_user_id", sa.Integer, sa.ForeignKey("users.id")),
+        sa.Column("decided_reason", sa.String),
     )
 
-    execute_safe(
-        """
-        CREATE TABLE IF NOT EXISTS rate_comments (
-            id SERIAL PRIMARY KEY,
-            rate_id INTEGER NOT NULL REFERENCES shop_program_rates(id),
-            reviewer_id INTEGER NOT NULL REFERENCES users(id),
-            comment_type VARCHAR NOT NULL,
-            comment_text VARCHAR NOT NULL,
-            created_at TIMESTAMP NOT NULL
-        );
-    """,
+    op.create_table(
         "rate_comments",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("rate_id", sa.Integer, sa.ForeignKey("shop_program_rates.id"), nullable=False),
+        sa.Column("reviewer_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("comment_type", sa.String, nullable=False),
+        sa.Column("comment_text", sa.String, nullable=False),
+        sa.Column("created_at", sa.TIMESTAMP, nullable=False),
     )
 
-    execute_safe(
-        """
-        CREATE TABLE IF NOT EXISTS proposal_audit_trails (
-            id SERIAL PRIMARY KEY,
-            proposal_id INTEGER NOT NULL REFERENCES proposals(id),
-            action VARCHAR NOT NULL,
-            actor_id INTEGER REFERENCES users(id),
-            created_at TIMESTAMP NOT NULL,
-            details VARCHAR
-        );
-    """,
+    op.create_table(
         "proposal_audit_trails",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("proposal_id", sa.Integer, sa.ForeignKey("proposals.id"), nullable=False),
+        sa.Column("action", sa.String, nullable=False),
+        sa.Column("actor_id", sa.Integer, sa.ForeignKey("users.id")),
+        sa.Column("created_at", sa.TIMESTAMP, nullable=False),
+        sa.Column("details", sa.String),
     )
 
-    print("\n" + "=" * 80)
-    print("✓ Schema migration complete - all 17 tables ready")
-    print("  Existing data has been preserved")
-    print("=" * 80 + "\n")
-
-
-def downgrade() -> None:
-    """Drop all tables - DESTRUCTIVE!"""
-    connection = op.get_bind()
-
-    print("\n" + "=" * 80)
-    print("⚠️  WARNING: Downgrade will DELETE all application data!")
-    print("=" * 80 + "\n")
-
-    tables = [
-        "proposal_audit_trails",
-        "rate_comments",
-        "shop_metadata_proposals",
-        "shop_merge_proposals",
-        "proposal_votes",
-        "notifications",
-        "proposals",
-        "contributor_requests",
-        "coupons",
-        "shop_program_rates",
-        "shop_variants",
-        "shops",
-        "scrape_logs",
-        "shop_main",
-        "users",
-        "bonus_programs",
-    ]
-
-    for table in tables:
-        try:
-            connection.execute(sa.text(f"DROP TABLE IF EXISTS {table} CASCADE;"))
-            print(f"✓ Dropped {table}")
-        except Exception as e:
-            print(f"⚠ Failed to drop {table}: {e}")
-
-    print("\n✓ Downgrade complete\n")
+    # --- Indexes ---
+    op.create_index("ix_shop_main_canonical_name", "shop_main", ["canonical_name"])
+    op.create_index("ix_shop_main_canonical_name_lower", "shop_main", ["canonical_name_lower"])

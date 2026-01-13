@@ -20,30 +20,42 @@
   {% if mode == 'shopping' %} {% if has_coupons %}
   <div class="coupons-section">
     <h3>🎉 Verfügbare Sonderaktionen für diesen Shop</h3>
-    <div class="coupons-list">
-      {% for coupon in active_coupons %}
-      <div class="coupon-card">
-        <h4>{{ coupon.name }}</h4>
-        <div class="coupon-type">
-          {% if coupon.coupon_type == 'multiplier' %} 🔢 {{ coupon.value }}x Multiplikator {% else %} 💰 {{ coupon.value
-          }}% Rabatt {% endif %}
+    <form id="coupon-selection-form" method="post" action="/evaluate">
+        <input type="hidden" name="shop" value="{{ shop.id }}" />
+        <input type="hidden" name="amount" value="{{ amount }}" />
+        <input type="hidden" name="mode" value="shopping" />
+      <div class="coupons-list" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 8px;">
+        {% for coupon in active_coupons %}
+        <div class="coupon-card" style="background: #f8fafc; border: 1px solid #e0e7ef; border-radius: 14px; padding: 18px 20px 32px 20px; min-width: 260px; max-width: 340px; box-shadow: 0 2px 8px #e0e7ef33; display: flex; flex-direction: column; align-items: flex-start; position: relative;">
+          <div style="width:100%; display:flex; flex-direction:column;">
+            <span style="font-weight:600; font-size:1.13em; color:#222;">{{ coupon.name }}</span>
+            <span style="display:block; font-size:1em; color:#444; margin-top:4px;">
+              {% if coupon.coupon_type == 'multiplier' %}🔢 <b>{{ coupon.value|int if coupon.value == coupon.value|int else coupon.value }}x</b> Multiplikator{% else %}💰 <b>{{ coupon.value|int if coupon.value == coupon.value|int else coupon.value }}%</b> Rabatt{% endif %}
+            </span>
+            <span style="font-size:0.95em; color:#666; margin-top:4px;">{{ coupon.description }}</span>
+            <div style="font-size:0.93em; color:#888; margin-top:8px; margin-bottom:10px;">
+              {% if coupon.shop and coupon.shop.name %}
+                📍 {{ coupon.shop.name }}
+              {% endif %}
+              <br />
+              {% if coupon.program and coupon.program.name %}
+                <span style="margin-left:8px;">Programm: {{ coupon.program.name }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div style="width:100%; display:flex; justify-content:center; align-items:center; margin-top:auto;">
+            <label for="coupon-{{ coupon.id }}" style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:1em;">
+              <span style="font-size:0.97em; color:#555;">Aktivieren</span>
+              <input type="checkbox" name="coupon_ids" value="{{ coupon.id }}" class="coupon-tickbox styled-tickbox" id="coupon-{{ coupon.id }}" {% if coupon.selected %}checked{% endif %} style="accent-color:#3b82f6; width:22px; height:22px; border-radius:12px; box-shadow:0 1px 4px #3b82f633;">
+            </label>
+          </div>
         </div>
-        <div class="coupon-value">
-          {% if coupon.coupon_type == 'multiplier' %} ×{{ coupon.value }} {% else %} -{{ coupon.value }}% {% endif %}
-        </div>
-        <p class="text-small text-gray mt-8 mb-0">{{ coupon.description }}</p>
-        <div class="coupon-shop">
-          <strong>📍 {{ coupon.shop.name }}</strong>
-        </div>
-        {% if coupon.program %}
-        <div class="coupon-program">Programm: {{ coupon.program.name }}</div>
-        {% endif %}
+        {% endfor %}
       </div>
-      {% endfor %}
-    </div>
-    {% if active_coupons|length > 3 %}
-    <p class="text-small text-gray-light mt-8 text-center">← Scroll für mehr Coupons →</p>
-    {% endif %}
+      {% if active_coupons|length > 3 %}
+      <p class="text-small text-gray-light mt-8 text-center">← Scroll für mehr Coupons →</p>
+      {% endif %}
+    </form>
   </div>
 
   <div class="warning">
@@ -51,9 +63,11 @@
     automatisch.
   </div>
 
-  <div class="mode-toggle">
-    <button class="mode-btn active" onclick="sortResults('base', event)">📊 Nach Basiswert</button>
-    <button class="mode-btn" onclick="sortResults('coupon', event)">🎉 Mit Sonderaktionen</button>
+  <div class="mode-toggle" style="display: flex; align-items: center; gap: 16px;">
+    <div>
+      <button class="mode-btn active" onclick="sortResults('base', event)">📊 Nach Basiswert</button>
+      <button class="mode-btn" onclick="sortResults('coupon', event)">🎉 Mit Sonderaktionen</button>
+    </div>
   </div>
   {% endif %}
 
@@ -61,12 +75,12 @@
   <ul class="results-list" id="results-list">
     {% if grouped_results is defined %}
       {% for prog in grouped_results %}
-        <li>
+        <li data-base-value="{{ prog.categories[0].euros }}" data-coupon-value="{% set best_coupon = (prog.categories | selectattr('coupon_info', 'defined') | selectattr('coupon_info.euros', 'defined') | map(attribute='coupon_info') | list) %}{% if best_coupon and best_coupon[0] %}{{ best_coupon[0].euros }}{% else %}{{ prog.categories[0].euros }}{% endif %}">
           <div style="display: flex; align-items: flex-start; justify-content: space-between; width: 100%;">
             <div style="flex: 1 1 auto;">
               <div style="display: flex; align-items: flex-start; justify-content: space-between;">
                 <div class="program-name">{{ prog.program }}</div>
-                <div class="program-value" style="margin-left: 12px; white-space: nowrap; font-size: 1.15em; font-weight: 600;">{{ prog.best_value }}€</div>
+                <div class="program-value" style="margin-left: 12px; white-space: nowrap; font-size: 1.15em; font-weight: 600;">{{ prog.best_value }}€ ( {{ amount - prog.best_value }}€ ) </div>
               </div>
               <div class="program-details">
                 {% if prog.categories|length > 1 %}

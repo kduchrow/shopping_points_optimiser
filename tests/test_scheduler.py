@@ -1,5 +1,6 @@
 """Tests for scheduler functionality."""
 
+from spo.extensions import db
 from spo.models import ScheduledJob
 from spo.services.scheduler import JOB_REGISTRY, register_job_type
 
@@ -59,7 +60,7 @@ def test_admin_create_scheduled_job_route(app, client, session):
 
         admin = User()
         admin.username = "admin_test"
-        admin.email = "admin@test.com"
+        admin.email = "admin_test_scheduler@test.com"
         admin.role = "admin"
         admin.set_password("password")
         session.add(admin)
@@ -118,10 +119,10 @@ def test_admin_toggle_scheduled_job(app, client, session):
         response = client.post(f"/admin/scheduled_jobs/{job_id}/toggle", follow_redirects=True)
 
         assert response.status_code == 200
-        job = ScheduledJob.query.get(job_id)
+        job = db.session.get(ScheduledJob, job_id)
         assert job.enabled is False
 
         # Toggle again
         client.post(f"/admin/scheduled_jobs/{job_id}/toggle", follow_redirects=True)
-        job = ScheduledJob.query.get(job_id)
+        job = db.session.get(ScheduledJob, job_id)
         assert job.enabled is True

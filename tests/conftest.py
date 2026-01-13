@@ -1,85 +1,191 @@
 import os
-
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-
-# CRITICAL: ALWAYS override DATABASE_URL with TEST_DATABASE_URL for tests
-# This ensures that when spo.extensions.db is initialized, it uses the test database
-if "TEST_DATABASE_URL" in os.environ:
-    os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
+import subprocess
+import sys
 
 import pytest
 
 from spo import create_app
 from spo.extensions import db as _db
+from spo.models import (
+    BonusProgram,
+    RateComment,
+    Shop,
+    ShopMain,
+    ShopMergeProposal,
+    ShopProgramRate,
+    ShopVariant,
+    User,
+)
 
 
-def ensure_test_database_exists():
-    """Create test database if it doesn't exist."""
-    # Parse TEST_DATABASE_URL to extract connection parameters
-    test_db_url = os.environ.get("TEST_DATABASE_URL", "")
-    if not test_db_url or "postgresql" not in test_db_url:
-        # Not using PostgreSQL for tests, skip
-        return
-
-    # Extract connection params from URL like:
-    # postgresql+psycopg2://user:password@host:port/dbname
-    try:
-        from urllib.parse import urlparse
-
-        parsed = urlparse(test_db_url)
-        host = parsed.hostname or "db"
-        port = parsed.port or 5432
-        user = parsed.username or "spo"
-        password = parsed.password or "spo"
-        dbname = parsed.path.lstrip("/") or "spo_test"
-
-        # Connect to default 'postgres' database to create test database
-        conn = psycopg2.connect(
-            host=host, port=port, user=user, password=password, database="postgres"
-        )
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        cursor = conn.cursor()
-
-        # Check if test database exists
-        cursor.execute(
-            "SELECT 1 FROM pg_database WHERE datname = %s",
-            (dbname,),
-        )
-        exists = cursor.fetchone()
-
-        if not exists:
-            print(f"Creating test database: {dbname}")
-            cursor.execute(f'CREATE DATABASE "{dbname}"')
-            print(f"✅ Test database '{dbname}' created successfully")
-        else:
-            print(f"✅ Test database '{dbname}' already exists")
-
-        cursor.close()
-        conn.close()
-
-    except Exception as e:
-        print(f"⚠️  Warning: Could not ensure test database exists: {e}")
-        print("Tests may fail if database doesn't exist")
-
-
-# Ensure test database exists before any tests run
-ensure_test_database_exists()
-
-
+# --- LOGGED IN ADMIN FIXTURE FOR ADMIN ROUTE TESTS ---
 @pytest.fixture(scope="function")
-def app():
-    # DATABASE_URL should already point to test DB from module-level setup above
-    app = create_app(start_jobs=False, run_seed=False)
-    app.config.update(
-        TESTING=True,
+def logged_in_admin(client, admin_user):
+    """
+    Logs in the admin user and returns the test client with an authenticated session.
+    """
+    response = client.post(
+        "/login",
+        data={"username": admin_user.username, "password": admin_user._test_password},
+        follow_redirects=True,
     )
+    assert response.status_code == 200
+    return client
+
+
+print("[DEBUG] conftest.py loaded and executing in test environment.")
+
+
+# --- FUNCTION-SCOPED DB CLEANUP FIXTURE ---
+@pytest.fixture(autouse=True, scope="function")
+def clean_db_per_test(app):
+    """
+    Drop and recreate all tables before each test to ensure a clean DB state.
+    """
+    with app.app_context():
+        _db.drop_all()
+        _db.create_all()
+        _db.session.commit()
+
+
+# --- SESSION-SCOPED DB CLEANUP AND MIGRATION FIXTURE ---
+@pytest.fixture(scope="session", autouse=True)
+def clean_and_migrate_test_db():
+    """
+    Drop all tables, recreate schema, and apply Alembic migrations before any tests run.
+    Ensures a clean test DB for every test session.
+    """
+    app = create_app(run_seed=False)
+    with app.app_context():
+        print("[DEBUG] Dropping all tables in test DB...")
+        _db.drop_all()
+        _db.session.commit()
+        print("[DEBUG] Creating all tables in test DB...")
+        _db.create_all()
+        _db.session.commit()
+        print("[DEBUG] Applying Alembic migrations...")
+        # Run Alembic upgrade head using subprocess to ensure migrations are applied
+        # Find project root (where alembic.ini is located)
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        alembic_ini = os.path.join(project_root, "alembic.ini")
+        result = subprocess.run(
+            [sys.executable, "-m", "alembic", "-c", alembic_ini, "upgrade", "head"],
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+        )
+        print("[DEBUG] Alembic output:", result.stdout)
+        if result.returncode != 0:
+            print("[ERROR] Alembic migration failed:", result.stderr)
+            raise RuntimeError("Alembic migration failed")
+        print("[DEBUG] Test DB is clean and migrated.")
+
+
+@pytest.fixture(scope="session")
+def app():
+    app = create_app(run_seed=False)
+    return app
+
+
+# Utility fixture to create a test shop and program for protected and evaluation tests
+@pytest.fixture(scope="function")
+def test_resources(app, db):
+    print("DEBUG: ShopMain:", ShopMain, ShopMain.__module__)
+    print("DEBUG: Shop:", Shop, Shop.__module__)
+    print("DEBUG: BonusProgram:", BonusProgram, BonusProgram.__module__)
+    import uuid
 
     with app.app_context():
-        _db.create_all()
-        yield app
-        _db.session.remove()
-        _db.drop_all()
+        unique_id = str(uuid.uuid4())[:8]
+        # Create ShopMain
+        shop_main = ShopMain(
+            canonical_name=f"Test Shop Main {unique_id}",
+            canonical_name_lower=f"test shop main {unique_id}",
+            website=f"https://testshop{unique_id}.com",
+            status="active",
+        )
+        # assign id separately to avoid passing unsupported __init__ parameter
+        shop_main.id = str(uuid.uuid4())
+        print("ShopMain:", type(shop_main), repr(shop_main))
+        db.session.add(shop_main)
+        db.session.commit()
+
+        # Create Shop
+        shop = Shop(name=f"Test Shop {unique_id}", shop_main_id=shop_main.id)
+        print("Shop:", type(shop), repr(shop))
+        db.session.add(shop)
+        db.session.commit()
+
+        # Create BonusProgram
+        from datetime import datetime
+
+        program = BonusProgram(name=f"Test Program {unique_id}", point_value_eur=0.01)
+        program.created_at = datetime.utcnow()
+        print("BonusProgram:", type(program), repr(program))
+        db.session.add(program)
+        db.session.commit()
+
+        # Create ShopProgramRate
+        rate = ShopProgramRate(
+            shop_id=shop.id, program_id=program.id, points_per_eur=1.0, cashback_pct=0.0
+        )
+        db.session.add(rate)
+        db.session.commit()
+
+        # Create a test admin user (for RateComment, ShopMergeProposal, etc.)
+        admin_user = User.query.filter_by(username="test_admin").first()
+        if not admin_user:
+            admin_user = User(username="test_admin", email="admin@test.com", role="admin")
+            admin_user.set_password("test_password")
+            db.session.add(admin_user)
+            db.session.commit()
+
+        # Create ShopVariant for merge proposals
+        variant_a = ShopVariant(
+            shop_main_id=shop_main.id, source="test_source_a", source_name="Test Variant A"
+        )
+        db.session.add(variant_a)
+        db.session.commit()
+        variant_b = ShopVariant(
+            shop_main_id=shop_main.id, source="test_source_b", source_name="Test Variant B"
+        )
+        db.session.add(variant_b)
+        db.session.commit()
+
+        # Create ShopMergeProposal
+        merge_proposal = ShopMergeProposal(
+            variant_a_id=variant_a.id,
+            variant_b_id=variant_b.id,
+            proposed_by_user_id=admin_user.id,
+            reason="Test merge",
+            status="PENDING",
+        )
+        db.session.add(merge_proposal)
+        db.session.commit()
+
+        # Create RateComment
+        rate_comment = RateComment(
+            rate_id=rate.id,
+            reviewer_id=admin_user.id,
+            comment_type="FEEDBACK",
+            comment_text="Test comment",
+        )
+        db.session.add(rate_comment)
+        db.session.commit()
+
+        # Create metadata proposal dummy (if your model exists, add here)
+        # ...
+
+        yield {
+            "shop": shop,
+            "program": program,
+            "rate": rate,
+            "merge_proposal": merge_proposal,
+            "variant_a": variant_a,
+            "variant_b": variant_b,
+            "rate_comment": rate_comment,
+            "admin_user": admin_user,
+        }
 
 
 @pytest.fixture(scope="function")
@@ -103,8 +209,6 @@ def db(app):
 @pytest.fixture(scope="function")
 def admin_user(app, db):
     """Create an admin user for tests using credentials from environment."""
-    from spo.models import User
-
     with app.app_context():
         # Get test credentials from environment variables (required - no defaults)
         test_admin_username = os.environ.get("TEST_ADMIN_USERNAME")
@@ -116,13 +220,15 @@ def admin_user(app, db):
                 "Add them to your .env file."
             )
 
-        admin = User()
-        admin.username = test_admin_username
-        admin.email = "admin@test.com"
-        admin.role = "admin"
-        admin.set_password(test_admin_password)
-        db.session.add(admin)
-        db.session.commit()
+        admin = User.query.filter_by(username=test_admin_username).first()
+        if not admin:
+            admin = User()
+            admin.username = test_admin_username
+            admin.email = "admin@test.com"
+            admin.role = "admin"
+            admin.set_password(test_admin_password)
+            db.session.add(admin)
+            db.session.commit()
 
         # Store the plain password as an attribute for use in tests
         # (This is safe since it's only used in tests and the object is not persisted with this)

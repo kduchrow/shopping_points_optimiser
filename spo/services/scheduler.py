@@ -58,7 +58,7 @@ class SimpleJob:
         self.messages.append(message)
         logger.info(f"Job {self.run_id}: {message}")
         # Update the run's message field with accumulated messages
-        run = ScheduledJobRun.query.get(self.run_id)
+        run = db.session.get(ScheduledJobRun, self.run_id)
         if run:
             run.message = " | ".join(self.messages)
             db.session.commit()
@@ -89,7 +89,7 @@ def _execute_scheduled_job(scheduled_job_id: int):
     app = create_app(start_jobs=False)
 
     with app.app_context():
-        scheduled_job = ScheduledJob.query.get(scheduled_job_id)
+        scheduled_job = db.session.get(ScheduledJob, scheduled_job_id)
         if not scheduled_job or not scheduled_job.enabled:
             logger.warning(f"Scheduled job {scheduled_job_id} not found or disabled")
             return
@@ -191,7 +191,7 @@ def reload_scheduled_job(scheduled_job_id: int, app=None):
         app = create_app(start_jobs=False)
 
     with app.app_context():
-        scheduled_job = ScheduledJob.query.get(scheduled_job_id)
+        scheduled_job = db.session.get(ScheduledJob, scheduled_job_id)
         if not scheduled_job:
             logger.error(f"Scheduled job {scheduled_job_id} not found")
             return False
@@ -251,8 +251,8 @@ def _run_scheduled_job(job, scheduled_job_id: int, run_id: int, job_func):
     app = create_app(start_jobs=False, run_seed=False)
 
     with app.app_context():
-        scheduled_job = ScheduledJob.query.get(scheduled_job_id)
-        run = ScheduledJobRun.query.get(run_id)
+        scheduled_job = db.session.get(ScheduledJob, scheduled_job_id)
+        run = db.session.get(ScheduledJobRun, run_id)
 
         if not scheduled_job or not run:
             logger.error(
@@ -338,7 +338,7 @@ def trigger_job_now(scheduled_job_id: int, ignore_enabled: bool = True, app=None
         app = create_app(start_jobs=False)
 
     with app.app_context():
-        job = ScheduledJob.query.get(scheduled_job_id)
+        job = db.session.get(ScheduledJob, scheduled_job_id)
         if not job:
             return False, f"Job {scheduled_job_id} not found"
 

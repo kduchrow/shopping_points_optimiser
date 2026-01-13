@@ -13,7 +13,10 @@ def test_coupon_creation_and_display(app):
         # Ensure Payback program exists
         payback = BonusProgram.query.filter_by(name="Payback").first()
         if not payback:
+            from datetime import datetime
+
             payback = BonusProgram(name="Payback", point_value_eur=0.005)
+            payback.created_at = datetime.utcnow()
             db.session.add(payback)
             db.session.commit()
 
@@ -97,7 +100,10 @@ def test_coupon_display_in_evaluate_route(app, client):
         # Setup: Create Payback, Amazon, rate, and 20x coupon
         payback = BonusProgram.query.filter_by(name="Payback").first()
         if not payback:
+            from datetime import datetime
+
             payback = BonusProgram(name="Payback", point_value_eur=0.005)
+            payback.created_at = datetime.utcnow()
             db.session.add(payback)
             db.session.commit()
 

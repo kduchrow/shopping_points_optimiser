@@ -28,7 +28,7 @@ COPY requirements.txt .
 RUN pip install --user --no-cache-dir -r requirements.txt
 
 # Only copy and install dev requirements if FLASK_ENV=development
-ARG FLASK_ENV=production
+
 COPY requirements-dev.txt .
 RUN if [ "$FLASK_ENV" = "development" ]; then \
     if [ -f requirements-dev.txt ]; then \

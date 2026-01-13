@@ -40,7 +40,9 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
 
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        from spo.extensions import db
+
+        return db.session.get(User, int(user_id))
 
     # Clean up stale job runs on startup
     with app.app_context():
@@ -66,9 +68,9 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
             "github_repo_url": app.config.get("GITHUB_REPO_URL", DEFAULT_GITHUB_URL),
         }
 
-    if run_seed:
-        with app.app_context():
-            seed_initial_data()
+    # if run_seed:
+    #     with app.app_context():
+    #         seed_initial_data()
 
     register_auth(app)
     register_public(app)

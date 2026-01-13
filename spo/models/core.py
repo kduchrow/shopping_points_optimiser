@@ -11,6 +11,7 @@ class BonusProgram(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, unique=True, nullable=False)
     point_value_eur = db.Column(db.Float, default=0.0)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
 
 
 class User(db.Model, UserMixin):

@@ -16,13 +16,30 @@ config = context.config
 if config.config_file_name:
     fileConfig(config.config_file_name)
 
-app = create_app(start_jobs=False, run_seed=False)
 
+# --- Robust Alembic DB URL selection for test and dev ---
+import os  # noqa: E402
+
+test_db_url = os.environ.get("TEST_DATABASE_URL")
+if test_db_url:
+    # Always prefer TEST_DATABASE_URL for test runs
+    os.environ["DATABASE_URL"] = test_db_url
+    os.environ["SQLALCHEMY_DATABASE_URI"] = test_db_url
+    config.set_main_option("sqlalchemy.url", test_db_url)
+else:
+    # Fallback to DATABASE_URL or app config
+    db_url = os.environ.get("DATABASE_URL")
+    if db_url:
+        os.environ["SQLALCHEMY_DATABASE_URI"] = db_url
+        config.set_main_option("sqlalchemy.url", db_url)
+
+app = create_app(start_jobs=False, run_seed=False)
 with app.app_context():
-    # Ensure models are imported so metadata is populated
     from spo import models  # noqa: F401
 
-    config.set_main_option("sqlalchemy.url", app.config["SQLALCHEMY_DATABASE_URI"])
+    # If not already set, set Alembic DB URL from app config
+    if not config.get_main_option("sqlalchemy.url"):
+        config.set_main_option("sqlalchemy.url", app.config["SQLALCHEMY_DATABASE_URI"])
     target_metadata = db.metadata
 
 
