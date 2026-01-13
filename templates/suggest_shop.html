@@ -55,6 +55,64 @@
   </div>
 
   <div class="card">
+    <h2>Rate vorschlagen</h2>
+    <form method="post">
+      <input type="hidden" name="action" value="rate" />
+
+
+      <div class="form-group">
+        <label>Bonusprogramm</label>
+        <select name="program_id" required>
+          <option value="">-- Programm wählen --</option>
+          {% for program in programs %}
+          <option value="{{ program.id }}">{{ program.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="rate-type">Rate-Typ:</label>
+        <select id="rate-type-select" name="rate_type" onchange="updateRateTypeFields()">
+          <option value="cashback" selected>Cashback</option>
+          <option value="points">Punkte</option>
+        </select>
+      </div>
+
+      <div class="form-group" id="cashback-field">
+        <label for="cashback-pct">Cashback %:</label>
+        <input type="number" id="cashback-pct" name="cashback_pct" step="0.01" min="0" placeholder="z.B. 2.5" />
+      </div>
+      <div class="form-group" id="points-field" style="display:none;">
+        <label for="points-per-eur">Points/EUR:</label>
+        <input type="number" id="points-per-eur" name="points_per_eur" step="0.01" min="0" placeholder="z.B. 1.0" />
+      </div>
+{% block scripts %}
+<script>
+  function updateRateTypeFields() {
+    var type = document.getElementById('rate-type-select').value;
+    if (type === 'cashback') {
+      document.getElementById('cashback-field').style.display = '';
+      document.getElementById('points-field').style.display = 'none';
+      document.getElementById('points-per-eur').value = '';
+    } else {
+      document.getElementById('cashback-field').style.display = 'none';
+      document.getElementById('points-field').style.display = '';
+      document.getElementById('cashback-pct').value = '';
+    }
+  }
+</script>
+{% endblock %}
+
+      <div class="form-group">
+        <label>Begründung</label>
+        <textarea name="reason" placeholder="Warum sollte diese Rate gelten?"></textarea>
+      </div>
+
+      <button class="btn btn-success" type="submit">Rate-Vorschlag einreichen</button>
+    </form>
+  </div>
+
+  <div class="card">
     <h2>Merge anfragen</h2>
     <form method="post">
       <input type="hidden" name="action" value="merge" />

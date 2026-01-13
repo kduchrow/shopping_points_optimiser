@@ -14,7 +14,8 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from spo.extensions import db  # noqa: E402
-from spo.models import BonusProgram, Proposal, Shop, ShopProgramRate, User  # noqa: E402
+from spo.models import Proposal, Shop, ShopProgramRate, User  # noqa: E402
+from spo.services.bonus_programs import ensure_program  # noqa: E402
 from spo.services.dedup import get_or_create_shop_main  # noqa: E402
 
 
@@ -49,17 +50,14 @@ class MilesAndMoreScraper:
         Returns: (shops_added, shops_updated, errors)
         """
         try:
-            from playwright.sync_api import sync_playwright
+            from playwright.sync_api import sync_playwright  # noqa: E402
         except ImportError:
             print("[!] Playwright not installed. Install with: pip install playwright")
             return 0, 0, []
 
         print("\n[*] Starting Miles & More scraper...")
 
-        program = BonusProgram.query.filter_by(name=self.program_name).first()
-        if not program:
-            print(f"[!] {self.program_name} program not found in database")
-            return 0, 0, [f"{self.program_name} program not found"]
+        program = ensure_program(self.program_name, 0.01)
 
         shops_added = 0
         shops_updated = 0

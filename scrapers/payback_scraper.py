@@ -1,6 +1,6 @@
 import re
 
-import requests
+import requests  # type: ignore[import]
 from bs4 import BeautifulSoup
 
 from .base import BaseScraper

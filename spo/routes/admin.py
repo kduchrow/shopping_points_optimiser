@@ -57,7 +57,7 @@ def register_admin(app):
             for shop in linked_shops:
                 rates = ShopProgramRate.query.filter_by(shop_id=shop.id, valid_to=None).all()
                 for rate in rates:
-                    program = BonusProgram.query.get(rate.program_id)
+                    program = db.session.get(BonusProgram, rate.program_id)
                     rates_data.append(
                         {
                             "shop_name": shop.name,
@@ -255,16 +255,16 @@ def register_admin(app):
                         "id": proposal.id,
                         "variant_a": {
                             "id": proposal.variant_a_id,
-                            "name": ShopVariant.query.get(proposal.variant_a_id).source_name,
-                            "source": ShopVariant.query.get(proposal.variant_a_id).source,
+                            "name": db.session.get(ShopVariant, proposal.variant_a_id).source_name,
+                            "source": db.session.get(ShopVariant, proposal.variant_a_id).source,
                         },
                         "variant_b": {
                             "id": proposal.variant_b_id,
-                            "name": ShopVariant.query.get(proposal.variant_b_id).source_name,
-                            "source": ShopVariant.query.get(proposal.variant_b_id).source,
+                            "name": db.session.get(ShopVariant, proposal.variant_b_id).source_name,
+                            "source": db.session.get(ShopVariant, proposal.variant_b_id).source,
                         },
                         "reason": proposal.reason,
-                        "proposed_by": User.query.get(proposal.proposed_by_user_id).username,
+                        "proposed_by": db.session.get(User, proposal.proposed_by_user_id).username,
                         "created_at": proposal.created_at.isoformat(),
                     }
                     for proposal in proposals
@@ -308,8 +308,8 @@ def register_admin(app):
         if proposal.status != "PENDING":
             return jsonify({"error": "Proposal already decided"}), 400
 
-        variant_a = ShopVariant.query.get(proposal.variant_a_id)
-        variant_b = ShopVariant.query.get(proposal.variant_b_id)
+        variant_a = db.session.get(ShopVariant, proposal.variant_a_id)
+        variant_b = db.session.get(ShopVariant, proposal.variant_b_id)
 
         try:
             merge_shops(

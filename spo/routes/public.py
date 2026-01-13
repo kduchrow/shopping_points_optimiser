@@ -1,4 +1,4 @@
-from flask import flash, jsonify, redirect, render_template, request, url_for
+from flask import flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from spo.extensions import db
@@ -56,10 +56,15 @@ def register_public(app):
         shop_id = request.form.get("shop", type=int)
         amount = request.form.get("amount", type=float, default=100.0)
         mode = request.form.get("mode", default="shopping")
-        shop = Shop.query.get(shop_id) if shop_id else None
+        shop = db.session.get(Shop, shop_id) if shop_id else None
         shop_coupons = []
         if shop:
-            shop_coupons = Coupon.query.filter_by(shop_id=shop.id).all()
+            # Get coupons for this shop or global coupons (shop_id is NULL)
+            from sqlalchemy import or_
+
+            shop_coupons = Coupon.query.filter(
+                or_(Coupon.shop_id == shop.id, Coupon.shop_id.is_(None))
+            ).all()
         if not shop:
             return redirect(url_for("index"))
         shop_ids = [shop.id]
@@ -67,8 +72,47 @@ def register_public(app):
             ShopProgramRate.shop_id.in_(shop_ids), ShopProgramRate.valid_to.is_(None)
         ).all()
         has_coupons = bool(shop_coupons)
+        # Get selected coupon IDs from form (may be multiple)
+        selected_coupon_ids = request.form.getlist("coupon_ids")
+        selected_coupon_ids = set(int(cid) for cid in selected_coupon_ids if cid.isdigit())
+        # Only set default best coupon selection on initial page load (not AJAX)
+        if not selected_coupon_ids and request.headers.get("X-Requested-With") != "XMLHttpRequest":
+            # For each program, select the best coupon (prefer multiplier, then highest value),
+            # and also select the best global coupon (program_id is None) if available.
+            best_coupons = set()
+            # Find all program IDs in use
+            program_ids = set(c.program_id for c in shop_coupons if c.program_id is not None)
+            # For each program, pick best coupon
+            for pid in program_ids:
+                best = None
+                for c in shop_coupons:
+                    if c.program_id == pid:
+                        if not best:
+                            best = c
+                        elif c.coupon_type == "multiplier" and best.coupon_type != "multiplier":
+                            best = c
+                        elif c.coupon_type == best.coupon_type and c.value > best.value:
+                            best = c
+                if best:
+                    best_coupons.add(best.id)
+            # Also pick the best global coupon (program_id is None)
+            best_global = None
+            for c in shop_coupons:
+                if c.program_id is None:
+                    if not best_global:
+                        best_global = c
+                    elif c.coupon_type == "multiplier" and best_global.coupon_type != "multiplier":
+                        best_global = c
+                    elif c.coupon_type == best_global.coupon_type and c.value > best_global.value:
+                        best_global = c
+            if best_global:
+                best_coupons.add(best_global.id)
+            selected_coupon_ids = best_coupons
         if mode == "shopping":
             program_map = {}
+            # Mark selected coupons for template
+            for c in shop_coupons:
+                c.selected = c.id in selected_coupon_ids
             for rate in rates:
                 program = db.session.get(BonusProgram, rate.program_id)
                 if not program:
@@ -76,23 +120,35 @@ def register_public(app):
                 base_points = amount * rate.points_per_eur
                 base_cashback = amount * (rate.cashback_pct / 100.0)
                 base_euros = base_points * program.point_value_eur + base_cashback
-                program_coupons = [c for c in shop_coupons if c.program_id in (None, program.id)]
-                best_coupon = max(
-                    (c.value for c in program_coupons if c.coupon_type == "multiplier"), default=1
-                )
-                best_discount = max(
-                    (c.value for c in program_coupons if c.coupon_type == "discount"), default=0
-                )
-                coupon_points = base_points * best_coupon
-                coupon_cashback = base_cashback + (amount * (best_discount / 100.0))
+                # Only apply coupons that are global (program_id is None) or match the current program
+                program_coupons = [
+                    c
+                    for c in shop_coupons
+                    if (c.program_id is None or c.program_id == program.id)
+                    and c.id in selected_coupon_ids
+                ]
+                # Apply all selected coupons: multiply all multipliers, add all discounts
+                total_multiplier = 1.0
+                total_discount = 0.0
+                multipliers = []
+                discounts = []
+                for c in program_coupons:
+                    if c.coupon_type == "multiplier":
+                        total_multiplier *= c.value
+                        multipliers.append(f"{c.value}x")
+                    elif c.coupon_type == "discount":
+                        total_discount += c.value
+                        discounts.append(f"-{c.value}%")
+                coupon_points = base_points * total_multiplier
+                coupon_cashback = base_cashback + (amount * (total_discount / 100.0))
                 coupon_euros = coupon_points * program.point_value_eur + coupon_cashback
                 coupon_info = None
-                if best_coupon != 1 or best_discount != 0:
+                if total_multiplier != 1.0 or total_discount != 0.0:
                     coupon_info = {
                         "euros": round(coupon_euros, 2),
                         "points": round(coupon_points, 2),
-                        "multipliers": [f"{best_coupon}x"] if best_coupon != 1 else [],
-                        "discounts": [f"-{best_discount}%"] if best_discount != 0 else [],
+                        "multipliers": multipliers,
+                        "discounts": discounts,
                         "unknown_combinability": False,
                     }
                 category_name = None
@@ -120,6 +176,24 @@ def register_public(app):
             programs_list = sorted(
                 program_map.values(), key=lambda p: p["best_value"], reverse=True
             )
+            # If AJAX, return only the results list HTML
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                rendered = render_template(
+                    "result.html",
+                    mode="shopping",
+                    shop=shop,
+                    amount=amount,
+                    grouped_results=programs_list,
+                    has_coupons=has_coupons,
+                    active_coupons=shop_coupons,
+                    combine_coupons=False,
+                )
+                # Extract only the results-list HTML
+                from bs4 import BeautifulSoup
+
+                soup = BeautifulSoup(rendered, "html.parser")
+                results_list = soup.find(id="results-list")
+                return str(results_list)
             return render_template(
                 "result.html",
                 mode="shopping",
@@ -128,6 +202,7 @@ def register_public(app):
                 grouped_results=programs_list,
                 has_coupons=has_coupons,
                 active_coupons=shop_coupons,
+                combine_coupons=False,
             )
         elif mode == "voucher":
             voucher = float(request.form.get("voucher") or 0)
@@ -182,21 +257,60 @@ def register_public(app):
                 proposed_name = request.form.get("proposed_name") or None
                 proposed_website = request.form.get("proposed_website") or None
                 proposed_logo = request.form.get("proposed_logo") or None
+                proposal = ShopMetadataProposal()
+                proposal.shop_main_id = shop.shop_main_id
+                proposal.proposed_name = proposed_name
+                proposal.proposed_website = proposed_website
+                proposal.proposed_logo_url = proposed_logo
+                proposal.reason = request.form.get("reason") or None
+                proposal.proposed_by_user_id = current_user.id
+                proposal.status = "PENDING"
+                db.session.add(proposal)
+                db.session.commit()
+                message = "Dein Metadaten-Vorschlag wurde eingereicht."
+
+            if action == "rate":
+                program_id = request.form.get("program_id")
+                rate_type = request.form.get("rate_type", "cashback")
+                points_per_eur = request.form.get("points_per_eur")
+                cashback_pct = request.form.get("cashback_pct")
                 reason = request.form.get("reason") or None
-                if not any([proposed_name, proposed_website, proposed_logo]):
-                    flash("Bitte mindestens ein Feld ausfüllen (Name, Website oder Logo).", "error")
-                else:
-                    proposal = ShopMetadataProposal()
-                    proposal.shop_main_id = shop.shop_main_id
-                    proposal.proposed_name = proposed_name
-                    proposal.proposed_website = proposed_website
-                    proposal.proposed_logo_url = proposed_logo
-                    proposal.reason = reason
-                    proposal.proposed_by_user_id = current_user.id
-                    proposal.status = "PENDING"
-                    db.session.add(proposal)
-                    db.session.commit()
-                    message = "Dein Metadaten-Vorschlag wurde eingereicht."
+                if not program_id:
+                    flash("Bitte Programm wählen.", "error")
+                elif rate_type == "cashback":
+                    if not cashback_pct:
+                        flash("Bitte Cashback-Prozentsatz angeben.", "error")
+                    else:
+                        from spo.models import Proposal
+
+                        proposal = Proposal()
+                        proposal.proposal_type = "rate_change"
+                        proposal.user_id = current_user.id
+                        proposal.shop_id = shop.id
+                        proposal.program_id = int(program_id)
+                        proposal.proposed_cashback_pct = float(cashback_pct)
+                        proposal.proposed_points_per_eur = 0.0
+                        proposal.reason = reason
+                        db.session.add(proposal)
+                        db.session.commit()
+                        message = "Dein Rate-Vorschlag wurde eingereicht."
+                elif rate_type == "points":
+                    if not points_per_eur:
+                        flash("Bitte Points/EUR angeben.", "error")
+                    else:
+                        from spo.models import Proposal
+
+                        proposal = Proposal()
+                        proposal.proposal_type = "rate_change"
+                        proposal.user_id = current_user.id
+                        proposal.shop_id = shop.id
+                        proposal.program_id = int(program_id)
+                        proposal.proposed_points_per_eur = float(points_per_eur)
+                        proposal.proposed_cashback_pct = 0.0
+                        proposal.reason = reason
+                        db.session.add(proposal)
+                        db.session.commit()
+                        message = "Dein Rate-Vorschlag wurde eingereicht."
 
             if action == "merge":
                 merge_shop_id = request.form.get("merge_shop_id")
@@ -231,10 +345,13 @@ def register_public(app):
                 return redirect(url_for("suggest_shop", shop_id=shop_id))
 
         shops = Shop.query.order_by(Shop.name).all()
-        return render_template("suggest_shop.html", shop=shop, main=main, shops=shops)
+        programs = BonusProgram.query.order_by(BonusProgram.name).all()
+        return render_template(
+            "suggest_shop.html", shop=shop, main=main, shops=shops, programs=programs
+        )
 
     @app.route("/health", methods=["GET"])
     def health():
-        return jsonify({"status": "ok"})
+        return "OK"
 
     return app

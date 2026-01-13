@@ -41,9 +41,11 @@ def register_proposals(app):
                 ).first()
                 if user_vote_obj:
                     user_vote = user_vote_obj.vote
-            submitter = User.query.get(proposal.user_id)
-            shop = Shop.query.get(proposal.shop_id) if proposal.shop_id else None
-            program = BonusProgram.query.get(proposal.program_id) if proposal.program_id else None
+            submitter = db.session.get(User, proposal.user_id)
+            shop = db.session.get(Shop, proposal.shop_id) if proposal.shop_id else None
+            program = (
+                db.session.get(BonusProgram, proposal.program_id) if proposal.program_id else None
+            )
             proposals_data.append(
                 {
                     "proposal": proposal,
@@ -63,8 +65,8 @@ def register_proposals(app):
         )
         metadata_data = []
         for meta in metadata_proposals:
-            submitter = User.query.get(meta.proposed_by_user_id)
-            main = ShopMain.query.get(meta.shop_main_id) if meta.shop_main_id else None
+            submitter = db.session.get(User, meta.proposed_by_user_id)
+            main = db.session.get(ShopMain, meta.shop_main_id) if meta.shop_main_id else None
             metadata_data.append({"proposal": meta, "submitter": submitter, "main": main})
 
         merge_proposals = (
@@ -76,9 +78,9 @@ def register_proposals(app):
         from spo.models import ShopVariant  # late import to avoid cycles
 
         for merge in merge_proposals:
-            variant_a = ShopVariant.query.get(merge.variant_a_id)
-            variant_b = ShopVariant.query.get(merge.variant_b_id)
-            submitter = User.query.get(merge.proposed_by_user_id)
+            variant_a = db.session.get(ShopVariant, merge.variant_a_id)
+            variant_b = db.session.get(ShopVariant, merge.variant_b_id)
+            submitter = db.session.get(User, merge.proposed_by_user_id)
             merge_data.append(
                 {
                     "proposal": merge,
@@ -317,6 +319,7 @@ def register_proposals(app):
                 if proposal_type == "rate_change":
                     shop_id = request.form.get("shop_id")
                     program_id = request.form.get("program_id")
+                    rate_type = request.form.get("rate_type", "cashback")
                     points_per_eur = request.form.get("points_per_eur")
                     cashback_pct = request.form.get("cashback_pct")
                     if not shop_id or not program_id:
@@ -324,10 +327,18 @@ def register_proposals(app):
                         return redirect(url_for("create_proposal"))
                     proposal.shop_id = int(shop_id)
                     proposal.program_id = int(program_id)
-                    proposal.proposed_points_per_eur = (
-                        float(points_per_eur) if points_per_eur else 0.0
-                    )
-                    proposal.proposed_cashback_pct = float(cashback_pct) if cashback_pct else 0.0
+                    if rate_type == "cashback":
+                        if not cashback_pct:
+                            flash("Bitte Cashback-Prozentsatz angeben.", "error")
+                            return redirect(url_for("create_proposal"))
+                        proposal.proposed_cashback_pct = float(cashback_pct)
+                        proposal.proposed_points_per_eur = 0.0
+                    elif rate_type == "points":
+                        if not points_per_eur:
+                            flash("Bitte Points/EUR angeben.", "error")
+                            return redirect(url_for("create_proposal"))
+                        proposal.proposed_points_per_eur = float(points_per_eur)
+                        proposal.proposed_cashback_pct = 0.0
 
                 elif proposal_type == "shop_add":
                     shop_name = request.form.get("shop_name", "").strip()
@@ -338,12 +349,35 @@ def register_proposals(app):
 
                 elif proposal_type == "program_add":
                     program_name = request.form.get("program_name", "").strip()
-                    point_value = request.form.get("point_value_eur")
-                    if not program_name or not point_value:
-                        flash("Programmname und Punktwert sind erforderlich.", "error")
+                    program_type = request.form.get("program_type")
+                    conversion_type = request.form.get("conversion_type")
+                    points_per_eur = request.form.get("points_per_eur")
+                    eur_per_point = request.form.get("eur_per_point")
+                    normalized_point_value = None
+                    if not program_name or not program_type:
+                        flash("Programmname und Typ sind erforderlich.", "error")
                         return redirect(url_for("create_proposal"))
-                    proposal.proposed_name = program_name
-                    proposal.proposed_point_value_eur = float(point_value)
+                    if program_type == "points":
+                        if conversion_type == "points_per_eur" and points_per_eur:
+                            try:
+                                normalized_point_value = 1.0 / float(points_per_eur)
+                            except Exception:
+                                flash("Ungültiger Wert für Punkte pro Euro.", "error")
+                                return redirect(url_for("create_proposal"))
+                        elif conversion_type == "eur_per_point" and eur_per_point:
+                            try:
+                                normalized_point_value = float(eur_per_point)
+                            except Exception:
+                                flash("Ungültiger Wert für Euro pro Punkt.", "error")
+                                return redirect(url_for("create_proposal"))
+                        else:
+                            flash("Bitte die Umrechnung für das Punkteprogramm angeben.", "error")
+                            return redirect(url_for("create_proposal"))
+                        proposal.proposed_name = program_name
+                        proposal.proposed_point_value_eur = normalized_point_value
+                    elif program_type == "cashback":
+                        proposal.proposed_name = program_name
+                        proposal.proposed_point_value_eur = 0.0
 
                 elif proposal_type == "coupon_add":
                     coupon_type = request.form.get("coupon_type")
@@ -390,7 +424,7 @@ def register_proposals(app):
                 if not shop_id:
                     flash("Bitte einen Shop auswählen.", "error")
                     return redirect(url_for("create_proposal"))
-                shop = Shop.query.get(int(shop_id))
+                shop = db.session.get(Shop, int(shop_id))
                 if not shop or not shop.shop_main_id:
                     flash("Shop konnte nicht gefunden werden oder ist nicht verknüpft.", "error")
                     return redirect(url_for("create_proposal"))
@@ -420,8 +454,8 @@ def register_proposals(app):
                 if not source_shop_id or not target_shop_id:
                     flash("Bitte beide Shops für den Merge auswählen.", "error")
                     return redirect(url_for("create_proposal"))
-                source_shop = Shop.query.get(int(source_shop_id)) if source_shop_id else None
-                target_shop = Shop.query.get(int(target_shop_id)) if target_shop_id else None
+                source_shop = db.session.get(Shop, int(source_shop_id)) if source_shop_id else None
+                target_shop = db.session.get(Shop, int(target_shop_id)) if target_shop_id else None
                 if not source_shop or not target_shop:
                     flash("Shop-Auswahl ungültig.", "error")
                     return redirect(url_for("create_proposal"))

@@ -68,13 +68,20 @@
       </div>
 
       <div class="form-group">
-        <label for="points-per-eur">Neue Points/EUR:</label>
-        <input type="number" id="points-per-eur" name="points_per_eur" step="0.01" min="0" placeholder="z.B. 1.0" />
+        <label for="rate-type">Rate-Typ:</label>
+        <select id="rate-type-select" name="rate_type" onchange="updateRateTypeFields()">
+          <option value="cashback" selected>Cashback</option>
+          <option value="points">Punkte</option>
+        </select>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" id="cashback-field">
         <label for="cashback-pct">Neuer Cashback %:</label>
         <input type="number" id="cashback-pct" name="cashback_pct" step="0.01" min="0" placeholder="z.B. 2.5" />
+      </div>
+      <div class="form-group" id="points-field" style="display:none;">
+        <label for="points-per-eur">Neue Points/EUR:</label>
+        <input type="number" id="points-per-eur" name="points_per_eur" step="0.01" min="0" placeholder="z.B. 1.0" />
       </div>
     </div>
 
@@ -94,12 +101,35 @@
 
       <div class="form-group">
         <label for="program-name">Programmname:</label>
-        <input type="text" id="program-name" name="program_name" placeholder="z.B. IKEA Family" />
+        <input type="text" id="program-name" name="program_name" placeholder="z.B. Shoop" required />
       </div>
 
       <div class="form-group">
-        <label for="point-value">Punktwert in EUR:</label>
-        <input type="number" id="point-value" name="point_value_eur" step="0.001" min="0" placeholder="z.B. 0.01" />
+        <label for="program-type">Typ:</label>
+        <select name="program_type" id="program-type-select" required onchange="updateProgramTypeFields()">
+          <option value="">-- Typ wählen --</option>
+          <option value="points">Punkteprogramm</option>
+          <option value="cashback">Cashback</option>
+        </select>
+      </div>
+
+      <div id="points-fields" style="display:none;">
+        <div class="form-group">
+          <label>Wie wird der Wert berechnet?</label>
+          <select name="conversion_type" id="conversion-type-select" onchange="updateConversionFields()">
+            <option value="">-- Auswahl --</option>
+            <option value="points_per_eur">Wie viele Punkte gibt es pro Euro?</option>
+            <option value="eur_per_point">Wie viele Euro ist ein Punkt wert?</option>
+          </select>
+        </div>
+        <div class="form-group" id="points-per-eur-field" style="display:none;">
+          <label>Punkte pro Euro</label>
+          <input type="number" name="points_per_eur" step="0.01" min="0" placeholder="z.B. 1.0" />
+        </div>
+        <div class="form-group" id="eur-per-point-field" style="display:none;">
+          <label>Euro pro Punkt</label>
+          <input type="number" name="eur_per_point" step="0.0001" min="0" placeholder="z.B. 0.01" />
+        </div>
       </div>
     </div>
 
@@ -257,27 +287,67 @@
 <script>
   function updateForm() {
     const type = document.querySelector('input[name="proposal_type"]:checked').value;
-
-    document.getElementById("rate-change-fields").classList.remove("active");
-    document.getElementById("shop-add-fields").classList.remove("active");
-    document.getElementById("program-add-fields").classList.remove("active");
-    document.getElementById("coupon-add-fields").classList.remove("active");
-    document.getElementById("metadata-edit-fields").classList.remove("active");
-    document.getElementById("merge-request-fields").classList.remove("active");
-
-    if (type === "rate_change") {
-      document.getElementById("rate-change-fields").classList.add("active");
-    } else if (type === "shop_add") {
-      document.getElementById("shop-add-fields").classList.add("active");
-    } else if (type === "program_add") {
-      document.getElementById("program-add-fields").classList.add("active");
-    } else if (type === "coupon_add") {
-      document.getElementById("coupon-add-fields").classList.add("active");
-    } else if (type === "metadata_edit") {
-      document.getElementById("metadata-edit-fields").classList.add("active");
-    } else if (type === "merge_request") {
-      document.getElementById("merge-request-fields").classList.add("active");
+    const sections = [
+      "rate-change-fields",
+      "shop-add-fields",
+      "program-add-fields",
+      "coupon-add-fields",
+      "metadata-edit-fields",
+      "merge-request-fields"
+    ];
+    sections.forEach(function(id) {
+      const section = document.getElementById(id);
+      if (section) {
+        section.classList.remove("active");
+        // Disable all inputs in hidden sections
+        Array.from(section.querySelectorAll("input, select, textarea")).forEach(function(el) {
+          el.disabled = true;
+        });
+      }
+    });
+    let activeId = null;
+    if (type === "rate_change") activeId = "rate-change-fields";
+    else if (type === "shop_add") activeId = "shop-add-fields";
+    else if (type === "program_add") activeId = "program-add-fields";
+    else if (type === "coupon_add") activeId = "coupon-add-fields";
+    else if (type === "metadata_edit") activeId = "metadata-edit-fields";
+    else if (type === "merge_request") activeId = "merge-request-fields";
+    if (activeId) {
+      const activeSection = document.getElementById(activeId);
+      activeSection.classList.add("active");
+      // Enable all inputs in the active section
+      Array.from(activeSection.querySelectorAll("input, select, textarea")).forEach(function(el) {
+        el.disabled = false;
+      });
     }
+  }
+
+  // Ensure correct fields are enabled on page load
+  document.addEventListener("DOMContentLoaded", function() {
+    updateForm();
+  });
+
+  function updateRateTypeFields() {
+    var type = document.getElementById('rate-type-select').value;
+    if (type === 'cashback') {
+      document.getElementById('cashback-field').style.display = '';
+      document.getElementById('points-field').style.display = 'none';
+      document.getElementById('points-per-eur').value = '';
+    } else {
+      document.getElementById('cashback-field').style.display = 'none';
+      document.getElementById('points-field').style.display = '';
+      document.getElementById('cashback-pct').value = '';
+    }
+  }
+
+  function updateProgramTypeFields() {
+    var type = document.getElementById('program-type-select').value;
+    document.getElementById('points-fields').style.display = (type === 'points') ? '' : 'none';
+  }
+  function updateConversionFields() {
+    var conv = document.getElementById('conversion-type-select').value;
+    document.getElementById('points-per-eur-field').style.display = (conv === 'points_per_eur') ? '' : 'none';
+    document.getElementById('eur-per-point-field').style.display = (conv === 'eur_per_point') ? '' : 'none';
   }
 </script>
 {% endblock %}

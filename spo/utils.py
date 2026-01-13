@@ -1,8 +1,8 @@
 from spo.extensions import db
-from spo.models import ShopVariant
+from spo.models import Shop, ShopVariant
 
 
-def ensure_variant_for_shop(shop):
+def ensure_variant_for_shop(shop: Shop) -> ShopVariant:
     existing = ShopVariant.query.filter_by(
         shop_main_id=shop.shop_main_id, source="manual", source_name=shop.name
     ).first()

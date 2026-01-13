@@ -20,9 +20,13 @@ def _create_user(session, username="tester"):
 
 
 def test_dedup_merges_case_insensitive(app, session):
+    import uuid
+
     with app.app_context():
-        main1, created1, score1 = get_or_create_shop_main("Amazon", "source_a", "id-1")
-        main2, created2, score2 = get_or_create_shop_main("amazon", "source_b", "id-2")
+        unique_id1 = str(uuid.uuid4())
+        unique_id2 = str(uuid.uuid4())
+        main1, created1, score1 = get_or_create_shop_main("Amazon", "source_a", unique_id1)
+        main2, created2, score2 = get_or_create_shop_main("amazon", "source_b", unique_id2)
 
         assert created1 is True
         assert created2 is False
@@ -72,9 +76,14 @@ def test_ensure_program_creates_and_updates(app, session):
 
 
 def test_ensure_variant_for_shop_creates_once(app, session):
+    import uuid
+
     with app.app_context():
         main = ShopMain(
-            id="main-1", canonical_name="Demo", canonical_name_lower="demo", status="active"
+            id=str(uuid.uuid4()),
+            canonical_name="Demo",
+            canonical_name_lower="demo",
+            status="active",
         )
         db.session.add(main)
         db.session.flush()
@@ -94,22 +103,24 @@ def test_ensure_variant_for_shop_creates_once(app, session):
 
 def test_find_duplicate_shops(app, session):
     """Test finding duplicate shops based on similarity."""
+    import uuid
+
     with app.app_context():
         # Create duplicate shops manually (bypassing dedup logic)
         shop1 = ShopMain(
-            id="shop-1",
+            id=str(uuid.uuid4()),
             canonical_name="Amazon",
             canonical_name_lower="amazon",
             status="active",
         )
         shop2 = ShopMain(
-            id="shop-2",
+            id=str(uuid.uuid4()),
             canonical_name="amazon",
             canonical_name_lower="amazon",
             status="active",
         )
         shop3 = ShopMain(
-            id="shop-3",
+            id=str(uuid.uuid4()),
             canonical_name="Walmart",
             canonical_name_lower="walmart",
             status="active",
@@ -132,14 +143,16 @@ def test_run_deduplication(app, session):
         user = _create_user(session, "admin_user")
 
         # Create duplicate shops manually
+        import uuid
+
         shop1 = ShopMain(
-            id="shop-1",
+            id=str(uuid.uuid4()),
             canonical_name="Amazon",
             canonical_name_lower="amazon",
             status="active",
         )
         shop2 = ShopMain(
-            id="shop-2",
+            id=str(uuid.uuid4()),
             canonical_name="amazon",
             canonical_name_lower="amazon",
             status="active",

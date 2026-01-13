@@ -1,6 +1,6 @@
 """Test admin clear_shops endpoint with all FK constraints."""
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from spo.extensions import db
 from spo.models import (
@@ -52,7 +52,11 @@ def test_clear_shops_with_all_foreign_keys(client, admin_user):
     db.session.flush()  # Get shop.id
 
     # 4. Create BonusProgram
-    program = BonusProgram(name="Test Program", point_value_eur=0.01)
+    import uuid
+    from datetime import datetime
+
+    program = BonusProgram(name=f"Test Program {uuid.uuid4()}", point_value_eur=0.01)
+    program.created_at = datetime.utcnow()
     db.session.add(program)
     db.session.flush()
 
