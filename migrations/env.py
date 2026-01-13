@@ -18,20 +18,19 @@ if config.config_file_name:
 
 
 # --- Robust Alembic DB URL selection for test and dev ---
+
 import os  # noqa: E402
 
-test_db_url = os.environ.get("TEST_DATABASE_URL")
-if test_db_url:
-    # Always prefer TEST_DATABASE_URL for test runs
-    os.environ["DATABASE_URL"] = test_db_url
-    os.environ["SQLALCHEMY_DATABASE_URI"] = test_db_url
-    config.set_main_option("sqlalchemy.url", test_db_url)
-else:
-    # Fallback to DATABASE_URL or app config
-    db_url = os.environ.get("DATABASE_URL")
-    if db_url:
-        os.environ["SQLALCHEMY_DATABASE_URI"] = db_url
+# Robustly resolve %(DATABASE_URL)s in alembic.ini for CI and local
+db_url = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL")
+if db_url:
+    os.environ["SQLALCHEMY_DATABASE_URI"] = db_url
+    # If alembic.ini uses %(DATABASE_URL)s, substitute it manually
+    ini_url = config.get_main_option("sqlalchemy.url")
+    if ini_url and "%(" in ini_url and ")s" in ini_url:
         config.set_main_option("sqlalchemy.url", db_url)
+    else:
+        config.set_main_option("sqlalchemy.url", ini_url or db_url)
 
 app = create_app(start_jobs=False, run_seed=False)
 with app.app_context():
