@@ -12,9 +12,11 @@ DEFAULT_PROGRAMS = {
 
 def ensure_program(name: str, point_value_eur: float = 0.0) -> BonusProgram:
     """Ensure a BonusProgram exists and optionally refresh its point value."""
+    from spo.models.helpers import utcnow
+
     program = BonusProgram.query.filter_by(name=name).first()
     if not program:
-        program = BonusProgram(name=name, point_value_eur=point_value_eur)
+        program = BonusProgram(name=name, point_value_eur=point_value_eur, created_at=utcnow())
         db.session.add(program)
     elif point_value_eur is not None and program.point_value_eur != point_value_eur:
         program.point_value_eur = point_value_eur
