@@ -13,28 +13,31 @@ from spo.extensions import db  # noqa: E402
 
 config = context.config
 
-if config.config_file_name:
-    fileConfig(config.config_file_name)
-
-
-# --- Robust Alembic DB URL selection for test and dev ---
 
 import os  # noqa: E402
 
-# Robustly resolve %(DATABASE_URL)s in alembic.ini for CI and local
-db_url = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL")
-# Read the raw value from alembic.ini without interpolation
+# --- Robust Alembic DB URL selection for test and dev ---
+if config.config_file_name:
+    fileConfig(config.config_file_name)
+
+# Read raw value from alembic.ini without interpolation
 raw_ini_url = None
 if config.file_config.has_option("alembic", "sqlalchemy.url"):
     raw_ini_url = config.file_config.get("alembic", "sqlalchemy.url", raw=True)
 
-if db_url:
-    os.environ["SQLALCHEMY_DATABASE_URI"] = db_url
-    # If alembic.ini uses %(DATABASE_URL)s, substitute it manually
-    if raw_ini_url and "%(DATABASE_URL)s" in raw_ini_url:
+# Get DB URL from environment
+db_url = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL")
+
+# Substitute %(DATABASE_URL)s manually if present
+if raw_ini_url and "%(DATABASE_URL)s" in raw_ini_url:
+    if db_url:
         config.set_main_option("sqlalchemy.url", db_url)
     else:
-        config.set_main_option("sqlalchemy.url", raw_ini_url or db_url)
+        raise RuntimeError("DATABASE_URL must be set in environment for Alembic migrations.")
+elif db_url:
+    config.set_main_option("sqlalchemy.url", db_url)
+elif raw_ini_url:
+    config.set_main_option("sqlalchemy.url", raw_ini_url)
 
 app = create_app(start_jobs=False, run_seed=False)
 with app.app_context():
