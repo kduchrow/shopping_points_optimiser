@@ -23,14 +23,18 @@ import os  # noqa: E402
 
 # Robustly resolve %(DATABASE_URL)s in alembic.ini for CI and local
 db_url = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL")
+# Read the raw value from alembic.ini without interpolation
+raw_ini_url = None
+if config.file_config.has_option("alembic", "sqlalchemy.url"):
+    raw_ini_url = config.file_config.get("alembic", "sqlalchemy.url", raw=True)
+
 if db_url:
     os.environ["SQLALCHEMY_DATABASE_URI"] = db_url
     # If alembic.ini uses %(DATABASE_URL)s, substitute it manually
-    ini_url = config.get_main_option("sqlalchemy.url")
-    if ini_url and "%(" in ini_url and ")s" in ini_url:
+    if raw_ini_url and "%(DATABASE_URL)s" in raw_ini_url:
         config.set_main_option("sqlalchemy.url", db_url)
     else:
-        config.set_main_option("sqlalchemy.url", ini_url or db_url)
+        config.set_main_option("sqlalchemy.url", raw_ini_url or db_url)
 
 app = create_app(start_jobs=False, run_seed=False)
 with app.app_context():
