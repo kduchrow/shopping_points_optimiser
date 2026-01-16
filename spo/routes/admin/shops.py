@@ -74,8 +74,19 @@ def register_admin_shops(app):
 
         query = request.args.get("q", "").strip().lower()
         program_filter = request.args.get("program", "").strip()
-        mains_query = db.session.query(ShopMain).order_by(ShopMain.canonical_name).limit(300)
-        mains = mains_query.all()
+        try:
+            page = int(request.args.get("page", 1))
+            per_page = int(request.args.get("per_page", 50))
+        except Exception:
+            page = 1
+            per_page = 50
+
+        mains_query = db.session.query(ShopMain).order_by(ShopMain.canonical_name)
+        if query:
+            mains_query = mains_query.filter(ShopMain.canonical_name_lower.ilike(f"%{query}%"))
+
+        total = mains_query.count()
+        mains = mains_query.offset((page - 1) * per_page).limit(per_page).all()
 
         result = []
         for main in mains:
@@ -113,7 +124,9 @@ def register_admin_shops(app):
                         "shop_name": shop.name,
                         "program": program.name if program else "unknown",
                         "points_per_eur": rate.points_per_eur,
+                        "points_absolute": rate.points_absolute,
                         "cashback_pct": rate.cashback_pct,
+                        "cashback_absolute": rate.cashback_absolute,
                         "category": category_name,
                         "valid_from": (
                             rate.valid_from.isoformat()
@@ -144,10 +157,7 @@ def register_admin_shops(app):
                 }
             )
 
-            if len(result) >= 200:
-                break
-
-        return jsonify({"shops": result})
+        return jsonify({"shops": result, "total": total, "page": page, "per_page": per_page})
 
     @app.route("/admin/rate/<int:rate_id>/comment", methods=["POST"])
     @login_required
@@ -359,7 +369,9 @@ def register_admin_shops(app):
                         "rate_id": rate.id,
                         "program": program.name if program else "unknown",
                         "points_per_eur": rate.points_per_eur,
+                        "points_absolute": rate.points_absolute,
                         "cashback_pct": rate.cashback_pct,
+                        "cashback_absolute": rate.cashback_absolute,
                         "category": category_name,
                         "valid_from": (
                             rate.valid_from.isoformat()

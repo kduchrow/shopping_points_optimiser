@@ -3,6 +3,7 @@ from flask import current_app
 import bonus_programs.miles_and_more as mam
 import scrapers.example_scraper as exs_scraper
 import scrapers.payback_scraper_js as pb_scraper
+import scrapers.shoop_scraper as sh_scraper
 from spo.extensions import db
 from spo.models import ScrapeLog, Shop
 
@@ -86,6 +87,27 @@ def scrape_topcashback(job):
         added = tc.scrape_and_register(job)
         job.add_message(f"Fertig: {added} Partner registriert")
         db.session.add(ScrapeLog(message=f"TopCashback scraper finished, {added} partners"))
+        db.session.commit()
+        job.set_progress(100, 100)
+        return {"partners_added": added}
+
+
+def scrape_shoop(job):
+    with current_app.app_context():
+        job.add_message("Starte Shoop-Scraper...")
+        job.set_progress(10, 100)
+        db.session.add(ScrapeLog(message="Shoop scraper started"))
+        db.session.commit()
+        job.add_message("Fetche Partner von Shoop...")
+        job.set_progress(30, 100)
+        scraper = sh_scraper.ShoopScraper()
+        data = scraper.fetch()
+        job.add_message("Registriere Daten in Datenbank...")
+        job.set_progress(70, 100)
+        # Already registered in fetch()
+        added = len(data)
+        job.add_message(f"Fertig: {added} Partner registriert")
+        db.session.add(ScrapeLog(message=f"Shoop scraper finished, {added} partners"))
         db.session.commit()
         job.set_progress(100, 100)
         return {"partners_added": added}

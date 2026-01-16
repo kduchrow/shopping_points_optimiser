@@ -25,7 +25,25 @@ def register_admin_scheduler(app):
             return redirect(url_for("index"))
 
         jobs = ScheduledJob.query.order_by(ScheduledJob.job_name).all()
-        return render_template("admin_scheduled_jobs.html", jobs=jobs)
+        if request.args.get("json") == "1":
+            # Return jobs as JSON for AJAX loading
+            def serialize(job):
+                return {
+                    "id": job.id,
+                    "job_name": job.job_name,
+                    "job_type": job.job_type,
+                    "cron_expression": job.cron_expression,
+                    "enabled": job.enabled,
+                    "last_run_at": (
+                        job.last_run_at.strftime("%Y-%m-%d %H:%M:%S") if job.last_run_at else None
+                    ),
+                    "last_run_status": job.last_run_status,
+                    "last_run_message": job.last_run_message,
+                }
+
+            return jsonify({"jobs": [serialize(j) for j in jobs]})
+        # For non-JSON requests, redirect to the main admin dashboard (tab is loaded dynamically)
+        return redirect(url_for("admin"))
 
     @app.route("/admin/scheduled_jobs/create", methods=["GET", "POST"])
     @login_required
@@ -75,7 +93,7 @@ def register_admin_scheduler(app):
             reload_scheduled_job(new_job.id, app)
 
             flash(f"Job '{job_name}' wurde erstellt.", "success")
-            return redirect(url_for("admin_scheduled_jobs"))
+            return redirect(url_for("admin"))
 
         available_job_types = list(JOB_REGISTRY.keys())
         return render_template(
@@ -188,6 +206,22 @@ def register_admin_scheduler(app):
             .limit(limit)
             .all()
         )
+        if request.args.get("json") == "1" or request.headers.get("Accept") == "application/json":
+            return jsonify(
+                {
+                    "logs": [
+                        {
+                            "timestamp": (
+                                run.created_at.strftime("%Y-%m-%d %H:%M:%S")
+                                if run.created_at
+                                else ""
+                            ),
+                            "message": run.message or "",
+                        }
+                        for run in runs
+                    ]
+                }
+            )
         return render_template("admin_scheduled_job_logs.html", job=job, runs=runs)
 
     @app.route("/admin/scheduled_jobs/runs/<int:run_id>/cancel", methods=["POST"])

@@ -36,16 +36,7 @@
       <label for="shop-select">🏪 Shop wählen:</label>
       <select name="shop" id="shop-select" required>
         <option value="">-- Shop auswählen --</option>
-        {% for shop in shops_data %}
-        <option
-          value="{{ shop.id }}"
-          data-supports-shopping="{{ 'true' if shop.supports_shopping else 'false' }}"
-          data-supports-voucher="{{ 'true' if shop.supports_voucher else 'false' }}"
-          data-supports-contract="{{ 'true' if shop.supports_contract else 'false' }}"
-        >
-          {{ shop.name }}
-        </option>
-        {% endfor %}
+        <!-- Optionen werden dynamisch per JS geladen -->
       </select>
     </div>
 
@@ -77,17 +68,9 @@
 </div>
 {% endblock %} {% block scripts %}
 <script src="{{ url_for('static', filename='js/choices.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
 <script>
-  // Store shop support data in JavaScript object (Choices.js replaces the original options)
-  const shopSupportData = {
-    {% for shop in shops_data %}
-    {{ shop.id }}: {
-      shopping: {{ 'true' if shop.supports_shopping else 'false' }},
-      voucher: {{ 'true' if shop.supports_voucher else 'false' }},
-      contract: {{ 'true' if shop.supports_contract else 'false' }}
-    },
-    {% endfor %}
-  };
+  // Shopdaten werden dynamisch per AJAX geladen
 
   function selectMode(mode) {
     const radio = document.getElementById(`mode-${mode}`);
@@ -100,123 +83,6 @@
     updateUI();
   }
 
-  function updateUI() {
-    const checked = document.querySelector('input[name="mode"]:checked');
-    const mode = checked ? checked.value : "shopping";
-    const shopSelect = document.getElementById("shop-select");
-    const selectedShopId = shopSelect.value;
-
-    document.getElementById("shopping-fields").style.display =
-      mode === "shopping" ? "block" : "none";
-    document.getElementById("voucher-fields").style.display =
-      mode === "voucher" ? "block" : "none";
-    document.getElementById("contract-fields").style.display =
-      mode === "contract" ? "block" : "none";
-
-    if (mode === "shopping") {
-      document.getElementById("amount").required = true;
-      document.getElementById("voucher").required = false;
-    } else if (mode === "voucher") {
-      document.getElementById("amount").required = false;
-      document.getElementById("voucher").required = true;
-    } else {
-      document.getElementById("amount").required = false;
-      document.getElementById("voucher").required = false;
-    }
-
-    // Check if selected shop supports the current mode
-    let selectedShopSupportsMode = true;
-
-    if (selectedShopId) {
-      // Use the stored shop data instead of DOM attributes (Choices.js modifies the DOM)
-      const shopData = shopSupportData[selectedShopId];
-
-      if (shopData) {
-        selectedShopSupportsMode = shopData[mode] === true;
-
-        if (!selectedShopSupportsMode) {
-          document.getElementById("shop-warning").style.display = "block";
-          document.getElementById("submit-btn").disabled = true;
-        } else {
-          document.getElementById("shop-warning").style.display = "none";
-          document.getElementById("submit-btn").disabled = false;
-        }
-      }
-    } else {
-      document.getElementById("shop-warning").style.display = "none";
-      document.getElementById("submit-btn").disabled = true;
-    }
-  }
-
-  // Initialize Choices.js for the shop dropdown
-  let choicesInstance = null;
-  document.addEventListener("DOMContentLoaded", () => {
-    selectMode("shopping");
-
-    const shopSelect = document.getElementById("shop-select");
-    if (shopSelect) {
-      choicesInstance = new Choices(shopSelect, {
-        searchEnabled: true,
-        searchPlaceholderValue: "Shop suchen oder tippen...",
-        itemSelectText: "",
-        noResultsText: "Keine Shops gefunden",
-        noChoicesText: "Keine Shops verfügbar",
-        maxItemCount: 100,
-        shouldSort: true,
-        searchResultLimit: 100,
-        renderChoiceLimit: 100,
-        removeItemButton: false,
-        allowHTML: false,
-        classNames: {
-          containerOuter: "choices",
-          containerInner: "choices__inner",
-          input: "choices__input",
-          inputCloned: "choices__input--cloned",
-          list: "choices__list",
-          listItems: "choices__list--multiple",
-          listSingle: "choices__list--single",
-          listDropdown: "choices__list--dropdown",
-          item: "choices__item",
-          itemSelectable: "choices__item--selectable",
-          itemDisabled: "choices__item--disabled",
-          itemChoice: "choices__item--choice",
-          placeholder: "choices__placeholder",
-          group: "choices__group",
-          groupHeading: "choices__heading",
-          button: "choices__button",
-          activeState: "is-active",
-          focusState: "is-focused",
-          openState: "is-open",
-          disabledState: "is-disabled",
-          highlightedState: "is-highlighted",
-          selectedState: "is-selected",
-          flippedState: "is-flipped",
-          loadingState: "is-loading",
-          notice: "choices__notice",
-        },
-      });
-
-      // Listen to Choices.js change events (native onchange doesn't fire with Choices.js)
-      shopSelect.addEventListener("change", function() {
-        updateUI();
-      });
-
-      // Show message if results are limited
-      const totalOptions = shopSelect.options.length - 1; // Exclude placeholder
-      if (totalOptions > 100) {
-        const choicesContainer = shopSelect.parentElement;
-        const notice = document.createElement("div");
-        notice.className = "choices-notice";
-        notice.textContent = `Zeige die ersten 100 von ${totalOptions} Shops. Bitte Suche verfeinern.`;
-        notice.style.cssText =
-          "padding: 8px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-top: 8px; font-size: 0.9em;";
-        choicesContainer.appendChild(notice);
-      }
-    }
-
-    updateUI();
-  });
-
-  updateUI();
+  // Die gesamte Shop-Logik wird jetzt in static/js/index.js gehandhabt
 </script>
 {% endblock %}

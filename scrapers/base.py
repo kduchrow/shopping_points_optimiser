@@ -32,11 +32,29 @@ class BaseScraper(ABC):
             shop_name=data["name"], source=self.__class__.__name__, source_id=data.get("source_id")
         )
 
+        # Prevent duplicate ShopVariant insert (defensive, in case dedup logic missed)
+        from spo.models import ShopVariant
+
+        existing_variant = ShopVariant.query.filter_by(
+            shop_main_id=shop_main.id,
+            source=self.__class__.__name__,
+            source_id=data.get("source_id"),
+        ).first()
+        if not existing_variant:
+            # Only create ShopVariant if not present
+            variant = ShopVariant(
+                shop_main_id=shop_main.id,
+                source=self.__class__.__name__,
+                source_name=data["name"],
+                source_id=data.get("source_id"),
+                confidence_score=confidence,
+            )
+            db.session.add(variant)
+            db.session.commit()
+
         # For backward compatibility, get or create legacy Shop table entry
-        # Only create if it doesn't already exist for this ShopMain
         shop = Shop.query.filter_by(shop_main_id=shop_main.id).first()
         if not shop:
-            # Only create a new legacy Shop entry if one doesn't exist for this ShopMain
             shop = Shop(name=data["name"], shop_main_id=shop_main.id)
             db.session.add(shop)
             db.session.commit()
@@ -46,7 +64,6 @@ class BaseScraper(ABC):
         for r in data.get("rates", []):
             prog = ensure_program(r["program"], point_value_eur=r.get("point_value_eur", 0.0))
 
-            # Resolve category name into normalized category_id (nullable)
             category_name = r.get("category")
             category_id = None
             if category_name:
@@ -57,39 +74,45 @@ class BaseScraper(ABC):
                     db.session.commit()
                 category_id = cat.id
 
-            # Get currently active rate (no valid_to set) for this shop, program, and category_id
             existing = ShopProgramRate.query.filter_by(
                 shop_id=shop.id, program_id=prog.id, category_id=category_id, valid_to=None
             ).first()
 
             new_points = r.get("points_per_eur", 0.0)
             new_cashback = r.get("cashback_pct", 0.0)
+            new_points_abs = r.get("points_absolute", None)
+            new_cashback_abs = r.get("cashback_absolute", None)
 
             if not existing:
-                # No previous rate, create new one
                 new_rate = ShopProgramRate(
                     shop_id=shop.id,
                     program_id=prog.id,
                     points_per_eur=new_points,
                     cashback_pct=new_cashback,
+                    points_absolute=new_points_abs,
+                    cashback_absolute=new_cashback_abs,
                     category_id=category_id,
                     valid_from=now,
                     valid_to=None,
                 )
                 db.session.add(new_rate)
             else:
-                # Check if values changed
-                if existing.points_per_eur != new_points or existing.cashback_pct != new_cashback:
-                    # Archive old rate
+                # Also check absolute fields for changes
+                if (
+                    existing.points_per_eur != new_points
+                    or existing.cashback_pct != new_cashback
+                    or (getattr(existing, "points_absolute", None) != new_points_abs)
+                    or (getattr(existing, "cashback_absolute", None) != new_cashback_abs)
+                ):
                     existing.valid_to = now
                     db.session.merge(existing)
-
-                    # Create new rate
                     new_rate = ShopProgramRate(
                         shop_id=shop.id,
                         program_id=prog.id,
                         points_per_eur=new_points,
                         cashback_pct=new_cashback,
+                        points_absolute=new_points_abs,
+                        cashback_absolute=new_cashback_abs,
                         category_id=category_id,
                         valid_from=now,
                         valid_to=None,

@@ -14,7 +14,12 @@ def register_admin_core(app):
         if current_user.role != "admin":
             flash("Sie haben keine Berechtigung für diese Seite.", "error")
             return redirect(url_for("index"))
-        return render_template("admin.html")
+        from spo.models.core import User
+        from spo.models.logs import ScheduledJob
+
+        users = User.query.order_by(User.created_at.desc()).all()
+        jobs = ScheduledJob.query.order_by(ScheduledJob.job_name).all()
+        return render_template("admin.html", users=users, scheduled_jobs=jobs)
 
     @app.route("/admin/add_program", methods=["POST"])
     @login_required

@@ -10,6 +10,7 @@ from spo.services.scrapers import (
     scrape_example,
     scrape_miles_and_more,
     scrape_payback,
+    scrape_shoop,
     scrape_topcashback,
 )
 
@@ -69,6 +70,14 @@ def register_admin_jobs(app):
         return _run_scraper_job(
             scrape_miles_and_more, "Miles & More-Scraper gestartet. Job ID: {}..."
         )
+
+    @app.route("/admin/run_shoop", methods=["POST"])
+    @login_required
+    def admin_run_shoop():
+        if current_user.role != "admin":
+            flash("Sie haben keine Berechtigung für diese Aktion.", "error")
+            return jsonify({"error": "Unauthorized"}), 403
+        return _run_scraper_job(scrape_shoop, "Shoop-Scraper gestartet. Job ID: {}...")
 
     @app.route("/admin/run_deduplication", methods=["POST"])
     @login_required

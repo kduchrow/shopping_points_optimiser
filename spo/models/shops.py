@@ -27,7 +27,9 @@ class ShopVariant(db.Model):
     source_id = db.Column(db.String, nullable=True)
     confidence_score = db.Column(db.Float, default=100.0)
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
-    db.UniqueConstraint("source", "source_id", name="unique_source_variant")
+    __table_args__ = (
+        db.UniqueConstraint("shop_main_id", "source", "source_id", name="unique_shop_variant"),
+    )
 
 
 class Shop(db.Model):
@@ -43,8 +45,11 @@ class ShopProgramRate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     shop_id = db.Column(db.Integer, db.ForeignKey("shops.id"), nullable=False)
     program_id = db.Column(db.Integer, db.ForeignKey("bonus_programs.id"), nullable=False)
-    points_per_eur = db.Column(db.Float, default=0.0)
-    cashback_pct = db.Column(db.Float, default=0.0)
+    points_per_eur = db.Column(db.Float, default=None)  # points earned per 1 EUR spent
+    points_absolute = db.Column(db.Float, default=None)  # absolute points earned per transaction
+    cashback_pct = db.Column(db.Float, default=None)  # cashback percentage
+    cashback_absolute = db.Column(db.Float, default=None)  # absolute cashback amount in EUR
+    rate_note = db.Column(db.String, nullable=True)  # Additional notes about the rate
     # Normalized category reference (nullable)
     category_id = db.Column(db.Integer, db.ForeignKey("shop_categories.id"), nullable=True)
     category_obj = db.relationship("ShopCategory", backref="rates")

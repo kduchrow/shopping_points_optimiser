@@ -16,6 +16,20 @@ def register_admin_users(app):
             return redirect(url_for("admin"))
 
         users = User.query.order_by(User.created_at.desc()).all()
+        if request.args.get("json"):
+            return {
+                "users": [
+                    {
+                        "id": u.id,
+                        "username": u.username,
+                        "email": u.email,
+                        "role": u.role,
+                        "status": u.status,
+                        "created_at": u.created_at.isoformat() if u.created_at else None,
+                    }
+                    for u in users
+                ]
+            }
         return render_template("admin_users.html", users=users)
 
     @app.route("/admin/users/<int:user_id>/update_role", methods=["POST"])

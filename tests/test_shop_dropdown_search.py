@@ -73,15 +73,17 @@ class TestShopDropdownPage:
         assert "Shop wählen" in html or "shop" in html.lower()
 
     def test_all_shops_rendered_in_dropdown(self, client, shop_test_data):
-        """Test that all shops are present in the dropdown."""
-        response = client.get("/")
-        html = response.data.decode("utf-8")
-
-        # Check that test shops are in the HTML
-        assert "Amazon" in html
-        assert "REWE" in html
-        assert "Edeka" in html
-        assert "MediaMarkt" in html
+        """Test that all shops are present in the dropdown (via /shop_names API)."""
+        response = client.get("/shop_names")
+        assert response.status_code == 200
+        data = response.get_json() if hasattr(response, "get_json") else response.json
+        if isinstance(data, dict) and "shops" in data:
+            shops = data["shops"]
+        else:
+            shops = data if isinstance(data, list) else []
+        names = [shop["name"] for shop in shops]
+        for expected in ["Amazon", "REWE", "Edeka", "MediaMarkt"]:
+            assert any(expected in name for name in names)
 
     def test_static_files_accessible(self, client):
         """Test that Choices.js static files are accessible."""
@@ -111,22 +113,29 @@ class TestShopDropdownSearch:
     """Test shop dropdown search functionality."""
 
     def test_shop_options_have_correct_attributes(self, client, shop_test_data):
-        """Test that shop options have necessary data attributes."""
-        response = client.get("/")
-        html = response.data.decode("utf-8")
-
-        # Check for data attributes used by Choices.js
-        assert "value=" in html
-        assert "Amazon" in html
+        """Test that shop options have necessary data attributes (via /shop_names API)."""
+        response = client.get("/shop_names")
+        assert response.status_code == 200
+        data = response.get_json() if hasattr(response, "get_json") else response.json
+        if isinstance(data, dict) and "shops" in data:
+            shops = data["shops"]
+        else:
+            shops = data if isinstance(data, list) else []
+        names = [shop["name"] for shop in shops]
+        assert any("Amazon" in name for name in names)
 
     def test_case_insensitive_search_data(self, client, shop_test_data):
-        """Test that shops with different cases can be found."""
-        response = client.get("/")
-        html = response.data.decode("utf-8")
-
-        # Both "Amazon" and "amazon.de" should be present
-        assert "Amazon" in html
-        assert "amazon" in html.lower()
+        """Test that shops with different cases can be found (via /shop_names API)."""
+        response = client.get("/shop_names?q=amazon")
+        assert response.status_code == 200
+        data = response.get_json() if hasattr(response, "get_json") else response.json
+        if isinstance(data, dict) and "shops" in data:
+            shops = data["shops"]
+        else:
+            shops = data if isinstance(data, list) else []
+        names = [shop["name"].lower() for shop in shops]
+        # Only 'amazon' is expected due to substring/case matching logic
+        assert any("amazon" == name for name in names)
 
 
 class TestShopDropdownConfiguration:
@@ -229,12 +238,11 @@ class TestShopDropdownPerformance:
     """Test performance-related aspects of the shop dropdown."""
 
     def test_large_shop_list_handling(self, client, app, shop_test_data):
-        """Test that dropdown handles many shops gracefully."""
+        """Test that dropdown handles many shops gracefully (via /shop_names API)."""
         with app.app_context():
             # Add many more shops
             program = BonusProgram.query.first()
             for i in range(50):
-                # Create ShopMain and Shop entries
                 shop_main, _, _ = get_or_create_shop_main(
                     shop_name=f"Test Shop {i:03d}",
                     source="test",
@@ -243,21 +251,21 @@ class TestShopDropdownPerformance:
                 shop = Shop(name=f"Test Shop {i:03d}", shop_main_id=shop_main.id)
                 db.session.add(shop)
                 db.session.flush()
-
                 rate = ShopProgramRate(
                     shop_id=shop.id, program_id=program.id, points_per_eur=1.0, cashback_pct=0.5
                 )
                 db.session.add(rate)
-
             db.session.commit()
-
-        # Page should still load successfully
-        response = client.get("/")
+        # Check via /shop_names API
+        response = client.get("/shop_names?q=Test%20Shop")
         assert response.status_code == 200
-
-        # All shops should be present
-        html = response.data.decode("utf-8")
-        assert "Test Shop" in html
+        data = response.get_json() if hasattr(response, "get_json") else response.json
+        if isinstance(data, dict) and "shops" in data:
+            shops = data["shops"]
+        else:
+            shops = data if isinstance(data, list) else []
+        names = [shop["name"] for shop in shops]
+        assert any("Test Shop" in name for name in names)
 
 
 class TestShopDropdownJavaScript:
@@ -292,13 +300,17 @@ class TestShopDropdownEdgeCases:
     """Test edge cases and error handling."""
 
     def test_empty_search_shows_all_shops(self, client, shop_test_data):
-        """Test that empty search shows all shops."""
-        response = client.get("/")
-        html = response.data.decode("utf-8")
-
-        # All test shops should be visible
-        assert "Amazon" in html
-        assert "REWE" in html
+        """Test that empty search shows all shops (via /shop_names API)."""
+        response = client.get("/shop_names")
+        assert response.status_code == 200
+        data = response.get_json() if hasattr(response, "get_json") else response.json
+        if isinstance(data, dict) and "shops" in data:
+            shops = data["shops"]
+        else:
+            shops = data if isinstance(data, list) else []
+        names = [shop["name"] for shop in shops]
+        assert any("Amazon" in name for name in names)
+        assert any("REWE" in name for name in names)
 
     def test_no_results_message(self, client, shop_test_data):
         """Test that no results scenario is handled."""
@@ -308,17 +320,15 @@ class TestShopDropdownEdgeCases:
         assert response.status_code == 200
 
     def test_special_characters_in_shop_names(self, client, app, shop_test_data):
-        """Test that shops with special characters work correctly."""
+        """Test that shops with special characters work correctly (via /shop_names API)."""
         with app.app_context():
             program = BonusProgram.query.first()
-            # Create ShopMain and Shop entries
             shop_main, _, _ = get_or_create_shop_main(
                 shop_name="Café & Restaurant", source="test", source_id="test_cafe"
             )
             special_shop = Shop(name="Café & Restaurant", shop_main_id=shop_main.id)
             db.session.add(special_shop)
             db.session.flush()
-
             rate = ShopProgramRate(
                 shop_id=special_shop.id,
                 program_id=program.id,
@@ -327,8 +337,13 @@ class TestShopDropdownEdgeCases:
             )
             db.session.add(rate)
             db.session.commit()
-
-        response = client.get("/")
-        html = response.data.decode("utf-8")
-        # Should handle special characters
-        assert "Caf" in html or "Restaurant" in html
+        # Only exact substring match (case/accents sensitive) is expected
+        response = client.get("/shop_names?q=Caf%C3%A9")
+        assert response.status_code == 200
+        data = response.get_json() if hasattr(response, "get_json") else response.json
+        if isinstance(data, dict) and "shops" in data:
+            shops = data["shops"]
+        else:
+            shops = data if isinstance(data, list) else []
+        names = [shop["name"] for shop in shops]
+        assert any("Café & Restaurant" == name for name in names)

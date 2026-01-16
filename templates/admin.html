@@ -1,267 +1,245 @@
-{% extends "base.html" %} {% block title %}Admin - Shopping Points Optimiser{% endblock %} {% block extra_css %}
+{% extends "base.html" %}
+{% block title %}Admin - Shopping Points Optimiser{% endblock %}
+{% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
-{% endblock %} {% block nav %}
-<nav class="top-nav">
-  <span class="flex-1 text-muted">👤 {{ current_user.username }}</span>
-  <span class="notification-badge hidden mr-10" id="unread-badge">0</span>
-  <a class="nav-link" href="/">🏠 Startseite</a>
-  <a class="nav-link" href="/logout">🚪 Logout</a>
-</nav>
-{% endblock %} {% block content %}
-<div class="card wide">
-  <h1>🛠️ Admin Panel</h1>
-
-  <div class="admin-tabs">
+{% endblock %}
+{% block nav %}
+  <nav class="top-nav">
+    {% if current_user.is_authenticated %}
+      <a class="nav-link" href="/profile">👤 {{ current_user.username }}</a>
+      {% if current_user.role == 'admin' %}
+        <a class="nav-link active" href="/admin">⚙️ Admin</a>
+      {% endif %}
+      {% if current_user.role in ['user', 'contributor', 'admin'] %}
+        <a class="nav-link" href="/proposals">📝 Beiträge</a>
+      {% endif %}
+      <a class="nav-link" href="/">🏠 Home</a>
+      <a class="nav-link" href="/logout">🚪 Logout</a>
+    {% else %}
+      <a class="nav-link" href="/">🏠 Home</a>
+      <a class="nav-link" href="/login">🔐 Login</a>
+      <a class="nav-link" href="/register">📝 Registrieren</a>
+    {% endif %}
+  </nav>
+{% endblock %}
+{% block content %}
+<main class="md-main">
+  <h1 class="md-headline">Admin Dashboard</h1>
+  <div class="md-tabs">
     <div class="tab-nav">
-      <button class="tab-button active" data-tab="scrapers" onclick="switchTab('scrapers', event)">🤖 Scrapers</button>
-      <button class="tab-button" data-tab="shops" onclick="switchTab('shops', event)">🏬 Shops</button>
-      <button class="tab-button" data-tab="users" onclick="switchTab('users', event)">👥 Users</button>
-      <button class="tab-button" data-tab="merges" onclick="switchTab('merges', event)">🔗 Shop Merges</button>
-      <button class="tab-button" data-tab="metadata" onclick="switchTab('metadata', event)">✏️ Metadaten</button>
-      <button class="tab-button" data-tab="rates" onclick="switchTab('rates', event)">⭐ Rate Review</button>
-      <button class="tab-button" data-tab="notifications" onclick="switchTab('notifications', event)">
-        🔔 Notifications
-        <span id="notification-badge" class="notification-badge" style="display: none">0</span>
-      </button>
-      <a href="/admin/scheduled_jobs" class="tab-button" style="text-decoration: none"> ⏰ Scheduled Jobs </a>
+      <button class="tab-button active" data-tab="tab-scrapers" type="button" aria-controls="tab-scrapers">Scrapers</button>
+      <button class="tab-button" data-tab="tab-shops" type="button" aria-controls="tab-shops">Shops</button>
+      <button class="tab-button" data-tab="tab-users" type="button" aria-controls="tab-users">Users</button>
+      <button class="tab-button" data-tab="tab-merges" type="button" aria-controls="tab-merges">Shop Merges</button>
+      <button class="tab-button" data-tab="tab-metadata" type="button" aria-controls="tab-metadata">Metadaten</button>
+      <button class="tab-button" data-tab="tab-rates" type="button" aria-controls="tab-rates">Rate Review</button>
+      <button class="tab-button" data-tab="tab-notifications" type="button" aria-controls="tab-notifications">Notifications <span id="notification-badge" class="notification-badge" style="display: none">0</span></button>
+      <button class="tab-button" data-tab="tab-scheduled-jobs" type="button" aria-controls="tab-scheduled-jobs">Scheduled Jobs</button>
     </div>
-
-    <!-- Scrapers Tab -->
     <div id="tab-scrapers" class="tab-content active">
       <div class="admin-card">
-        <h3>Run Scrapers</h3>
-
-        <div id="job-progress" class="job-progress">
-          <h4>Job Status: <span id="job-status" class="job-status">READY</span></h4>
-          <div class="progress-bar">
-            <div id="progress-fill" class="progress-fill">0%</div>
+        <h2 class="section-title">Scraper Jobs</h2>
+        <div class="scraper-jobs-view">
+          <div class="scraper-btn-row">
+            <form id="miles-and-more-form">
+              <button type="submit" class="btn btn-warning">✈️ Run Miles & More Scraper</button>
+            </form>
+            <form id="payback-form">
+              <button type="submit" class="btn btn-warning">💳 Run Payback Scraper</button>
+            </form>
+            <form id="topcashback-form">
+              <button type="submit" class="btn btn-warning">🏷️ Run TopCashback Scraper</button>
+            </form>
+            <form id="shoop-form">
+              <button type="submit" class="btn btn-warning">🛒 Run Shoop Scraper</button>
+            </form>
           </div>
-          <h5>Messages:</h5>
-          <div id="job-messages" class="job-messages"></div>
+          <div class="job-progress-card">
+            <div class="job-progress-header">
+              <h4 style="margin: 0;">Job Status</h4>
+              <span id="job-status" class="job-status">READY</span>
+            </div>
+          </div>
         </div>
-
-        <form id="miles-and-more-form" style="display: inline">
-          <button type="submit" class="btn btn-warning">✈️ Run Miles & More Scraper</button>
-        </form>
-
-        <form id="payback-form" style="display: inline">
-          <button type="submit" class="btn btn-warning">💳 Run Payback Scraper</button>
-        </form>
-
-        <form id="topcashback-form" style="display: inline">
-          <button type="submit" class="btn btn-warning">🏷️ Run TopCashback Scraper</button>
-        </form>
       </div>
     </div>
-
-    <!-- Shops Tab -->
     <div id="tab-shops" class="tab-content">
       <div class="admin-card">
-        <h3>Shop Übersicht</h3>
-        <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
-          <input
-            id="shop-search"
-            type="text"
-            placeholder="Suche nach Shop..."
-            style="flex: 2; padding: 10px; border: 2px solid var(--border); border-radius: 10px"
-          />
-          <select id="bonus-program-filter" style="flex: 1; padding: 10px; border: 2px solid var(--border); border-radius: 10px">
+        <h2 class="section-title">Shop Management</h2>
+        <div class="shop-filter-row">
+          <input id="shop-search" type="text" placeholder="Suche nach Shop..." class="shop-search-input" />
+          <select id="bonus-program-filter" class="shop-bonus-filter">
             <option value="">Alle Bonusprogramme</option>
           </select>
-          <button id="delete-program-shops" class="btn btn-danger" style="flex: 1; min-width: 180px;" disabled title="Wähle ein Bonusprogramm zum Löschen">
-            🗑️ Alle Shops für Programm löschen
-          </button>
+          <button id="delete-program-shops" class="btn btn-danger shop-delete-btn" disabled title="Wähle ein Bonusprogramm zum Löschen"> Programm Shops löschen</button>
         </div>
-        <div id="shop-list"></div>
-        <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border)" />
-        <div style="padding-top: 15px">
-          <h4>Verwaltung</h4>
-          <button onclick="clearAllShops()" class="btn btn-danger">🗑️ Alle Shops clearen</button>
-          <p style="font-size: 12px; color: #6b7280; margin-top: 10px">
-            Löscht ALLE Shops (ShopMain, ShopVariant, Shop, Rates). Komplett bereinigen der Datenbank.
-          </p>
-
-          <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border)" />
-          <h4>Datenpflege</h4>
-          <button onclick="rescoreVariants()" class="btn btn-inline">🔁 Shop-Varianten neu bewerten</button>
-          <p style="font-size: 12px; color: #6b7280; margin-top: 8px">
-            Führt eine Neuberechnung der <strong>confidence_score</strong> für alle Shop-Varianten durch.
-          </p>
-          <div id="rescore-result" style="margin-top: 10px; font-family: monospace; color: #374151"></div>
+        <div id="shop-paging" class="shop-paging"></div>
+        <hr class="shop-hr" />
+        <div style="display: flex; gap: 12px; margin-top: 18px;">
+          <button class="btn btn-danger" onclick="clearAllShops()">🗑️ Alle Shops löschen</button>
+          <button class="btn btn-warning" onclick="deleteAllMetadata()">🗑️ Alle Metadaten-Anträge löschen</button>
+        </div>
+        <div class="shop-list-wrapper" style="margin-top: 24px;">
+          <div id="shop-list"></div>
         </div>
       </div>
     </div>
-
-    <!-- Users Tab -->
     <div id="tab-users" class="tab-content">
       <div class="admin-card">
-        <h3>User Verwaltung</h3>
-        <p style="margin-bottom: 15px; color: #4b5563">
-          Hier können Sie User-Rollen verwalten und Accounts aktivieren/deaktivieren.
-        </p>
-        <a href="/admin/users" class="btn btn-inline">👥 Zur User-Übersicht</a>
+        <h2 class="section-title">User Management</h2>
+
+        <h4>Alle registrierten User ({{ users|length }})</h4>
+
+        {% if users|length > 0 %}
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Rolle</th>
+              </div>
+              <th>Registriert</th>
+              <th>Aktionen</th>
+          </thead>
+          <tbody>
+            {% for user in users %}
+            <tr>
+              <td>{{ user.id }}</td>
+              <td><strong>{{ user.username }}</strong></td>
+              <td>{{ user.email }}</td>
+              <td>
+                <span class="role-badge role-{{ user.role }}">{{ user.role }}</span>
+              </td>
+              <td>
+                <span class="status-badge status-{{ user.status }}">{{ user.status }}</span>
+              </td>
+              <td>{{ user.created_at.strftime('%d.%m.%Y') }}</td>
+              <td>
+                <form action="/admin/users/{{ user.id }}/update_role" method="POST" class="action-form">
+                  <select name="role" onchange="this.form.submit()">
+                    <option value="">Rolle ändern...</option>
+                    <option value="viewer" {% if user.role == "viewer" %}disabled{% endif %}>Viewer</option>
+                    <option value="user" {% if user.role == "user" %}disabled{% endif %}>User</option>
+                    <option value="contributor" {% if user.role == "contributor" %}disabled{% endif %}>Contributor</option>
+                    <option value="admin" {% if user.role == "admin" %}disabled{% endif %}>Admin</option>
+                  </select>
+                </form>
+                <form
+                  action="/admin/users/{{ user.id }}/toggle_status"
+                  method="POST"
+                  class="action-form"
+                  onsubmit="return confirm('Status von {{ user.username }} wirklich ändern?');"
+                >
+                  {% if user.status == 'active' %}
+                  <button type="submit" class="btn btn-sm btn-warning">🔒 Deaktivieren</button>
+                  {% else %}
+                  <button type="submit" class="btn btn-sm btn-success">✅ Aktivieren</button>
+                  {% endif %}
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+          <p>Keine User gefunden.</p>
+        </div>
+        {% endif %}
+
+        <h4 class="mt-30">ℹ️ Rollen-Erklärung</h4>
+        <ul class="line-height-1-8 pl-20">
+          <li><strong>Viewer:</strong> Kann nur öffentliche Inhalte sehen</li>
+          <li><strong>User:</strong> Kann Proposals erstellen</li>
+          <li><strong>Contributor:</strong> Kann Proposals erstellen und über Proposals abstimmen</li>
+          <li><strong>Admin:</strong> Volle Rechte (User-Verwaltung, Scrapers, Proposals direkt genehmigen)</li>
+        </ul>
       </div>
     </div>
-
-    <!-- Shop Merges Tab -->
     <div id="tab-merges" class="tab-content">
       <div class="admin-card">
-        <h3>Pending Shop Merge Proposals</h3>
+        <h2 class="section-title">Shop Merges</h2>
         <div id="merge-proposals-list"></div>
       </div>
     </div>
-
-    <!-- Metadata Tab -->
     <div id="tab-metadata" class="tab-content">
       <div class="admin-card">
-        <h3>Pending Shop Metadata Proposals</h3>
+        <h2 class="section-title">Metadaten</h2>
         <div id="metadata-proposals-list"></div>
       </div>
     </div>
-
-    <!-- Rate Review Tab -->
     <div id="tab-rates" class="tab-content">
       <div class="admin-card">
-        <h3>Rates Needing Review</h3>
+              </div>
         <div id="rates-list"></div>
       </div>
-    </div>
-
-    <!-- Notifications Tab -->
     <div id="tab-notifications" class="tab-content">
-      <div class="admin-card">
-        <h3>Your Notifications</h3>
         <button class="btn btn-inline" onclick="markAllAsRead()" style="margin-bottom: 15px">Mark All as Read</button>
         <ul id="notifications-list" class="notification-list"></ul>
+    </div>
+    <div id="tab-scheduled-jobs" class="tab-content">
+        <div id="scheduled-jobs-dynamic"></div>
+        <div class="cron-examples">
+          <h3>💡 Cron Expression Beispiele</h3>
+          <ul>
+            <li><code>0 2 * * *</code> - Täglich um 2:00 Uhr</li>
+            <li><code>0 */6 * * *</code> - Alle 6 Stunden</li>
+            <li><code>0 0 * * 0</code> - Jeden Sonntag um Mitternacht</li>
+            <li><code>*/15 * * * *</code> - Alle 15 Minuten</li>
+            <li><code>0 3 1 * *</code> - Am 1. jeden Monats um 3:00 Uhr</li>
+          </ul>
+          <p class="text-muted">
+            Format: <code>Minute Stunde Tag Monat Wochentag</code>
+            <br />
+            <a href="https://crontab.guru/" target="_blank">Crontab Generator →</a>
+          </p>
+        </div>
       </div>
     </div>
-  </div>
-</div>
+{% endblock %}
 
-<style>
-  .admin-tabs {
-    margin-top: 20px;
-  }
-  .tab-nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 20px;
-    border-bottom: 2px solid var(--border);
-  }
-  .tab-button {
-    padding: 12px 16px;
-    background: none;
-    border: none;
-    border-bottom: 3px solid transparent;
-    color: #6b7280;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  .tab-button.active {
-    color: var(--brand-primary);
-    border-bottom-color: var(--brand-primary);
-  }
-  .tab-button:hover {
-    color: var(--brand-primary);
-  }
-  .tab-content {
-    display: none;
-  }
-  .tab-content.active {
-    display: block;
-  }
-  .admin-card {
-    background: var(--surface);
-    padding: 20px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    margin-bottom: 16px;
-  }
-  .job-progress {
-    background: #f9f9f9;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    border-left: 4px solid var(--brand-primary);
-  }
-  .progress-bar {
-    height: 24px;
-    background: #e5e7eb;
-    border-radius: 6px;
-    overflow: hidden;
-    margin: 10px 0;
-  }
-  .progress-fill {
-    height: 100%;
-    background: var(--brand-primary);
-    width: 0%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 12px;
-    font-weight: 600;
-    transition: width 0.3s ease;
-  }
-  .job-status {
-    font-weight: 700;
-    color: var(--brand-primary);
-  }
-  .job-messages {
-    background: #fff;
-    padding: 10px;
-    border-radius: 6px;
-    max-height: 200px;
-    overflow-y: auto;
-    font-family: monospace;
-    font-size: 12px;
-    color: #4b5563;
-  }
-  .notification-list {
-    list-style: none;
-    padding: 0;
-  }
-  .notification-badge {
-    display: inline-block;
-    background: #dc3545;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 700;
-  }
-</style>
-{% endblock %} {% block scripts %}
+{% block scripts %}
 <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
 <script>
-  async function rescoreVariants() {
-    const target = document.getElementById('rescore-result');
-    target.textContent = '⏳ Starte Neuberechnung...';
-    try {
-      const resp = await fetch('/admin/variants/rescore', {
+document.addEventListener('DOMContentLoaded', function() {
+  var showBtn = document.getElementById('show-create-job-form');
+  var form = document.getElementById('create-job-form');
+  var cancelBtn = document.getElementById('cancel-create-job');
+  if (showBtn && form && cancelBtn) {
+    showBtn.addEventListener('click', function() {
+      form.style.display = 'block';
+      showBtn.style.display = 'none';
+    });
+    cancelBtn.addEventListener('click', function() {
+      form.style.display = 'none';
+      showBtn.style.display = 'inline-block';
+    });
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var data = new FormData(form);
+      fetch(form.action, {
         method: 'POST',
-        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-        credentials: 'same-origin'
+        body: data
+      })
+      .then(async r => {
+        if (r.ok) {
+          form.style.display = 'none';
+          showBtn.style.display = 'inline-block';
+          location.reload();
+        } else {
+          let msg = 'Error creating job.';
+          try {
+            const data = await r.json();
+            msg += '\n' + (data.error || '') + (data.details ? '\n' + data.details : '');
+          } catch (e) {
+            msg += '\n' + (await r.text());
+          }
+          alert(msg);
+        }
       });
-      if (!resp.ok) {
-        const text = await resp.text();
-        target.textContent = `❌ Fehler: ${resp.status} ${text}`;
-        return;
-      }
-      const data = await resp.json();
-      // Erwartete Felder: total, improved, unchanged, skipped
-      const summary = [
-        `✅ Fertig. Insgesamt: ${data.total ?? '?'}`,
-        `⬆️ Verbessert: ${data.improved ?? '?'}`,
-        `➖ Unverändert: ${data.unchanged ?? '?'}`,
-        `⏭️ Übersprungen: ${data.skipped ?? 0}`
-      ].join(' | ');
-      target.textContent = summary;
-    } catch (e) {
-      target.textContent = `❌ Fehler beim Abruf: ${e}`;
-    }
+    });
   }
+});
 </script>
 {% endblock %}

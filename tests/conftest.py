@@ -16,6 +16,7 @@ from spo.models import (
     ShopVariant,
     User,
 )
+from spo.services.dedup import get_or_create_shop_main
 
 
 # --- LOGGED IN ADMIN FIXTURE FOR ADMIN ROUTE TESTS ---
@@ -85,6 +86,13 @@ def clean_and_migrate_test_db():
 def app():
     app = create_app(run_seed=False)
     return app
+
+
+@pytest.fixture(scope="function")
+def db(app):
+    """Provide the database instance for tests."""
+    with app.app_context():
+        yield _db
 
 
 # Utility fixture to create a test shop and program for protected and evaluation tests
@@ -200,13 +208,6 @@ def client(app):
 
 
 @pytest.fixture(scope="function")
-def db(app):
-    """Provide the database instance for tests."""
-    with app.app_context():
-        yield _db
-
-
-@pytest.fixture(scope="function")
 def admin_user(app, db):
     """Create an admin user for tests using credentials from environment."""
     with app.app_context():
@@ -235,3 +236,46 @@ def admin_user(app, db):
         admin._test_password = test_admin_password
 
         yield admin
+
+
+# --- SHOP TEST DATA FIXTURE (für Dropdown- und API-Tests) ---
+@pytest.fixture(scope="function")
+def shop_test_data(app, session):
+    """Create test shops and bonus program for dropdown and API tests."""
+    # Create test bonus program
+    program = BonusProgram(name="Test Program", point_value_eur=0.01)
+    session.add(program)
+    session.flush()
+
+    # Create test shops with various names for search testing
+    test_shop_names = [
+        "Amazon",
+        "amazon.de",
+        "REWE",
+        "Edeka",
+        "Lidl",
+        "Aldi",
+        "MediaMarkt",
+        "Saturn",
+        "Zalando",
+        "Otto",
+    ]
+
+    for name in test_shop_names:
+        # Create ShopMain entry using dedup service
+        shop_main, _, _ = get_or_create_shop_main(
+            shop_name=name, source="test", source_id=f"test_{name}"
+        )
+
+        # Create Shop entry linked to ShopMain
+        shop = Shop(name=name, shop_main_id=shop_main.id)
+        session.add(shop)
+        session.flush()
+
+        # Add rate for the shop
+        rate = ShopProgramRate(
+            shop_id=shop.id, program_id=program.id, points_per_eur=2.0, cashback_pct=1.5
+        )
+        session.add(rate)
+
+    session.commit()
