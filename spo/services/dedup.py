@@ -59,12 +59,15 @@ def fuzzy_match_score(str1: str, str2: str) -> float:
     if not s1 or not s2:
         return 0.0
 
-    # Treat whitespace-only differences (e.g., "Media Markt" vs "mediamarkt") as exact
+    # Only treat as 100% match if normalized names are exactly equal (case/space insensitive)
     if s1.replace(" ", "") == s2.replace(" ", ""):
         return 100.0
 
-    # If one contains the other (after normalization), it's a very strong match
-    if s1 in s2 or s2 in s1:
+    # For substring matches, require at least 2 token overlap to avoid over-merging (e.g., 'otto' vs 'ottonova')
+    tokens1 = set(s1.split())
+    tokens2 = set(s2.split())
+    common_tokens = tokens1 & tokens2
+    if (s1 in s2 or s2 in s1) and len(common_tokens) >= 2:
         return 98.0
 
     ratio = SequenceMatcher(None, s1, s2).ratio()
@@ -76,7 +79,7 @@ def find_shop_by_similarity(shop_name: str, threshold: float = 98.0) -> tuple:
     all_shops = ShopMain.query.all()
 
     best_match = None
-    best_score = 0
+    best_score = 0.0
 
     for shop in all_shops:
         score = fuzzy_match_score(shop_name, shop.canonical_name)
@@ -90,20 +93,25 @@ def find_shop_by_similarity(shop_name: str, threshold: float = 98.0) -> tuple:
     return None, best_score
 
 
-def get_or_create_shop_main(shop_name: str, source: str, source_id: str = None) -> tuple:
+def get_or_create_shop_main(shop_name: str, source: str, source_id: str | None = None) -> tuple:
     """Get or create a ShopMain entry with automatic deduplication."""
     existing_shop, score = find_shop_by_similarity(shop_name, threshold=0)
 
     if score >= 98.0:
-        variant = ShopVariant(
-            shop_main_id=existing_shop.id,
-            source=source,
-            source_name=shop_name,
-            source_id=source_id,
-            confidence_score=100.0,
-        )
-        db.session.add(variant)
-        db.session.commit()
+        # Check for existing variant with same source and source_id
+        existing_variant = ShopVariant.query.filter_by(
+            shop_main_id=existing_shop.id, source=source, source_id=source_id
+        ).first()
+        if not existing_variant:
+            variant = ShopVariant(
+                shop_main_id=existing_shop.id,
+                source=source,
+                source_name=shop_name,
+                source_id=source_id,
+                confidence_score=100.0,
+            )
+            db.session.add(variant)
+            db.session.commit()
         return existing_shop, False, 100.0
 
     if 70.0 <= score < 98.0:
@@ -116,15 +124,19 @@ def get_or_create_shop_main(shop_name: str, source: str, source_id: str = None) 
         db.session.add(new_main_shop)
         db.session.flush()
 
-        variant = ShopVariant(
-            shop_main_id=new_main_shop.id,
-            source=source,
-            source_name=shop_name,
-            source_id=source_id,
-            confidence_score=score,
-        )
-        db.session.add(variant)
-        db.session.commit()
+        existing_variant = ShopVariant.query.filter_by(
+            shop_main_id=new_main_shop.id, source=source, source_id=source_id
+        ).first()
+        if not existing_variant:
+            variant = ShopVariant(
+                shop_main_id=new_main_shop.id,
+                source=source,
+                source_name=shop_name,
+                source_id=source_id,
+                confidence_score=score,
+            )
+            db.session.add(variant)
+            db.session.commit()
 
         return new_main_shop, True, score
 
@@ -137,15 +149,19 @@ def get_or_create_shop_main(shop_name: str, source: str, source_id: str = None) 
     db.session.add(new_main_shop)
     db.session.flush()
 
-    variant = ShopVariant(
-        shop_main_id=new_main_shop.id,
-        source=source,
-        source_name=shop_name,
-        source_id=source_id,
-        confidence_score=100.0,
-    )
-    db.session.add(variant)
-    db.session.commit()
+    existing_variant = ShopVariant.query.filter_by(
+        shop_main_id=new_main_shop.id, source=source, source_id=source_id
+    ).first()
+    if not existing_variant:
+        variant = ShopVariant(
+            shop_main_id=new_main_shop.id,
+            source=source,
+            source_name=shop_name,
+            source_id=source_id,
+            confidence_score=100.0,
+        )
+        db.session.add(variant)
+        db.session.commit()
 
     return new_main_shop, True, 100.0
 
@@ -161,7 +177,8 @@ def merge_shops(main_from_id: str, main_to_id: str, user_id: int):
         raise ValueError("One or both shops not found")
 
     # Move all ShopVariants to the target ShopMain
-    for variant in from_shop.variants:
+    variants = list(from_shop.variants) if hasattr(from_shop.variants, "__iter__") else []
+    for variant in variants:
         variant.shop_main_id = to_shop.id
 
     # Move all Shop entries to the target ShopMain
@@ -233,7 +250,7 @@ def run_deduplication(
                 continue
 
             merge_shops(
-                main_from_id=source_shop.id, main_to_id=target_shop.id, user_id=system_user_id
+                main_from_id=source_shop.id, main_to_id=target_shop.id, user_id=system_user_id or 0
             )
 
             merged_count += 1

@@ -37,6 +37,11 @@ RUN if [ "$FLASK_ENV" = "development" ]; then \
     fi; \
 fi
 
+# Install Playwright and Chromium dependencies in builder
+RUN pip install --user --no-cache-dir playwright && \
+    python -m playwright install-deps chromium && \
+    python -m playwright install chromium
+
 # --- Final stage: production image ---
 FROM python:3.11-slim
 
@@ -64,7 +69,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Python packages from builder
-COPY --from=builder /root/.local /root/.local
+
+# Only copy dev dependencies if FLASK_ENV=development
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+# Only copy and install dev requirements if FLASK_ENV=development
+
+COPY requirements-dev.txt .
+RUN if [ "$FLASK_ENV" = "development" ]; then \
+    if [ -f requirements-dev.txt ]; then \
+        echo "Installing dev requirements..."; \
+        pip install --user --no-cache-dir -r requirements-dev.txt; \
+    fi; \
+fi
+# Install Playwright and Chromium dependencies in final image
+RUN pip install --no-cache-dir playwright && \
+    python -m playwright install-deps chromium && \
+    python -m playwright install chromium
 
 # Set PATH and PYTHONPATH for installed packages
 ENV PATH=/root/.local/bin:$PATH

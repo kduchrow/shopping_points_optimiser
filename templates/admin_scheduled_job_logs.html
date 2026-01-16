@@ -85,7 +85,7 @@
 <div class="card wide">
   <div style="display: flex; justify-content: space-between; align-items: center">
     <h1>📜 Logs: {{ job.job_name }}</h1>
-    <a href="{{ url_for('admin_scheduled_jobs') }}" class="btn btn-secondary">⬅️ Zurück</a>
+    <a href="/admin" class="btn btn-secondary">⬅️ Zurück</a>
   </div>
 
   {% if runs|length == 0 %}

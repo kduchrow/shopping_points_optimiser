@@ -64,10 +64,57 @@
   </div>
 
   <div class="mode-toggle" style="display: flex; align-items: center; gap: 16px;">
-    <div>
-      <button class="mode-btn active" onclick="sortResults('base', event)">📊 Nach Basiswert</button>
-      <button class="mode-btn" onclick="sortResults('coupon', event)">🎉 Mit Sonderaktionen</button>
+    <style>
+      .toggle-switch-wrapper {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+      }
+      .toggle-switch {
+        display: flex;
+        background: #e5e7eb;
+        border-radius: 999px;
+        padding: 3px;
+        box-shadow: 0 1px 4px #3b82f622;
+        position: relative;
+        width: fit-content;
+      }
+      .toggle-switch-btn {
+        border: none;
+        background: none;
+        padding: 8px 22px;
+        border-radius: 999px;
+        font-size: 1em;
+        font-weight: 500;
+        color: #444;
+        cursor: pointer;
+        transition: background 0.18s, color 0.18s;
+        z-index: 1;
+      }
+      .toggle-switch-btn.active {
+        background: #fff;
+        color: #2563eb;
+        box-shadow: 0 2px 8px #3b82f633;
+      }
+    </style>
+    <div class="toggle-switch-wrapper">
+      <div class="toggle-switch" id="modeToggle">
+        <button class="toggle-switch-btn active" id="toggle-base" onclick="toggleMode('base', event)">📊 Nach Basiswert</button>
+        <button class="toggle-switch-btn" id="toggle-coupon" onclick="toggleMode('coupon', event)">🎉 Mit Sonderaktionen</button>
+      </div>
     </div>
+    <script>
+      function toggleMode(mode, event) {
+        document.getElementById('toggle-base').classList.remove('active');
+        document.getElementById('toggle-coupon').classList.remove('active');
+        if (mode === 'base') {
+          document.getElementById('toggle-base').classList.add('active');
+        } else {
+          document.getElementById('toggle-coupon').classList.add('active');
+        }
+        sortResults(mode, event);
+      }
+    </script>
   </div>
   {% endif %}
 
@@ -93,15 +140,31 @@
                 <strong>Kategorien:</strong>
                 <ul style="margin:6px 0 0 12px; padding:0; list-style: none;">
                   {% for c in prog.categories %}
-                    <li style="padding:4px 0; border-bottom:1px solid #f3f4f6;">
-                      <div style="font-weight:600; padding-left: 4px;">{{ c.category or c.sub_category or 'Allgemein' }}</div>
-                      <div style="font-size:13px; color:#555">
-                        {% if c.cashback is defined and c.cashback|float > 0.0 %}
-                          {{ c.cashback|round(2) }}% Cashback → {{ c.euros|round(2) }}€
-                        {% else %}
-                          {{ c.points }} Punkte → {{ c.euros|round(2) }}€
-                        {% endif %}
-                        {% if c.coupon_info %} (Aktion: {{ c.coupon_info.euros }}€){% endif %}
+                    <li style="padding:4px 0; border-bottom:1px solid #f3f4f6; display: flex; flex-direction: column; align-items: stretch;">
+                      <div style="display: flex; justify-content: flex-start;">
+                        <span style="font-weight:600; padding-right: 4px; padding-left: 4px; text-align: left; max-width: 320px; word-break: break-word;">{{ c.category or c.sub_category or 'Allgemein' }}</span>
+                      </div>
+                      <div style="display: flex; justify-content: flex-end; ">
+                        <span style="font-size:13px; color:#555; text-align: right; padding-right: 10px;">
+                          {% if c.cashback_absolute is defined and (c.cashback_absolute|float > 0.0 or c.cashback_absolute|int > 0) %}
+                            {{ c.cashback_absolute|round(2) }}€ Cashback (absolut)
+                            {% if c.cashback_rate is defined and c.cashback_rate|float > 0.0 %}
+                              + {{ c.cashback_rate|round(2) }}% Cashback
+                            {% endif %}
+                            → {{ c.euros|round(2) }}€
+                          {% elif c.cashback_rate is defined and c.cashback_rate|float > 0.0 %}
+                            {{ c.cashback_rate|round(2) }}% Cashback → {{ c.euros|round(2) }}€
+                          {% elif c.points_absolute is defined and c.points_absolute|float > 0.0 %}
+                            {{ c.points_absolute|round(2) }} Punkte (absolut)
+                            {% if c.points is defined and c.points|float > 0.0 %}
+                              + {{ c.points|round(2) }} Punkte
+                            {% endif %}
+                            → {{ c.euros|round(2) }}€
+                          {% else %}
+                            {{ c.points }} Punkte → {{ c.euros|round(2) }}€
+                          {% endif %}
+                          {% if c.coupon_info %} (Aktion: {{ c.coupon_info.euros }}€){% endif %}
+                        </span>
                       </div>
                     </li>
                   {% endfor %}

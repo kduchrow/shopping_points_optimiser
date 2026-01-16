@@ -2,16 +2,152 @@ function switchTab(tabName, evt) {
   document.querySelectorAll(".tab-button").forEach((btn) => btn.classList.remove("active"));
   document.querySelectorAll(".tab-content").forEach((content) => content.classList.remove("active"));
 
-  const target = evt?.target || document.querySelector(`[data-tab="${tabName}"]`);
+  const target = evt?.target || document.querySelector(`[data-tab='${tabName}']`);
   if (target) target.classList.add("active");
-  const tab = document.getElementById(`tab-${tabName}`);
-  if (tab) tab.classList.add("active");
+  const tab = document.getElementById(tabName);
+  if (tab) {
+    tab.classList.add("active");
+  } else {
+    // fallback: activate first tab-content if not found
+    const firstTab = document.querySelector(".tab-content");
+    if (firstTab) firstTab.classList.add("active");
+  }
 
-  if (tabName === "merges") loadMergeProposals();
-  if (tabName === "metadata") loadMetadataProposals();
-  if (tabName === "rates") loadRatesForReview();
-  if (tabName === "notifications") loadNotifications();
-  if (tabName === "shops") loadShops();
+  if (tabName === "tab-merges") loadMergeProposals();
+  if (tabName === "tab-metadata") loadMetadataProposals();
+  if (tabName === "tab-rates") loadRatesForReview();
+  if (tabName === "tab-notifications") loadNotifications();
+  if (tabName === "tab-shops") loadShops();
+  if (tabName === "tab-users") loadUsers();
+  if (tabName === "tab-scheduled-jobs") loadScheduledJobs();
+}
+
+function loadScheduledJobs() {
+  const container = document.getElementById("scheduled-jobs-dynamic");
+  if (!container) return;
+  container.innerHTML = `<div class='admin-card'><h3 class='mt-18'>Scheduled Jobs</h3><div>Loading...</div></div>`;
+  fetch("/admin/scheduled_jobs?json=1")
+    .then((r) => r.json())
+    .then((data) => renderScheduledJobs(data.jobs))
+    .catch((err) => {
+      container.innerHTML = `<div class='admin-card'><h3 class='mt-18'>Scheduled Jobs</h3><div class='empty-state'><p>Fehler beim Laden der Jobs: ${err}</p></div></div>`;
+    });
+}
+
+function renderScheduledJobs(jobs) {
+  const container = document.getElementById("scheduled-jobs-dynamic");
+  if (!container) return;
+  let html = `<div class='admin-card'>`;
+  html += `<h2 class='section-title'>Scheduled Jobs</h2>`;
+  html += `<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;'>`;
+  html += `<a class='btn btn-success' href='/admin/scheduled_jobs/create'>➕ Neuen Job hinzufügen</a>`;
+  html += `</div>`;
+  if (!jobs || jobs.length === 0) {
+    html += `<div class='empty-state'><p>Keine Scheduled Jobs vorhanden.</p></div>`;
+  } else {
+    html += `<table class='admin-table'><thead><tr><th>ID</th><th>Name</th><th>Typ</th><th>Cron</th><th>Status</th><th>Letzter Lauf</th><th>Ergebnis</th><th>Aktionen</th></tr></thead><tbody>`;
+    jobs.forEach((job) => {
+      html += `<tr>`;
+      html += `<td><strong>${job.id}</strong></td>`;
+      html += `<td>${job.job_name || "—"}</td>`;
+      html += `<td>${job.job_type || "—"}</td>`;
+      html += `<td><code>${job.cron_expression || "—"}</code></td>`;
+      html += `<td>${
+        job.enabled
+          ? "<span class='job-enabled'>✅ Aktiviert</span>"
+          : "<span class='job-disabled'>⏸️ Deaktiviert</span>"
+      }</td>`;
+      html += `<td>${job.last_run_at || "<span class='text-muted'>Noch nicht ausgeführt</span>"}</td>`;
+      html += `<td>`;
+      if (job.last_run_status === "success") html += `<span class='status-success'>✅ Erfolgreich</span>`;
+      else if (job.last_run_status === "failed") html += `<span class='status-failed'>❌ Fehlgeschlagen</span>`;
+      else if (job.last_run_status === "queued") html += `<span class='status-queued'>⏳ In Warteschlange</span>`;
+      else html += `<span class='text-muted'>—</span>`;
+      if (job.last_run_message) html += `<br /><small class='text-muted'>${job.last_run_message}</small>`;
+      html += `</td>`;
+      html += `<td><div class='btn-group' style='display:flex;gap:6px;flex-wrap:wrap;'>`;
+      html += `<a href='/admin/scheduled_jobs/${job.id}/edit' class='btn btn-sm btn-primary' title='Bearbeiten'>✏️</a> `;
+      html += `<button class='btn btn-sm btn-success' title='Jetzt ausführen' onclick='runScheduledJob(${job.id})'>▶️</button> `;
+      html += `<button class='btn btn-sm btn-danger' title='Entfernen' onclick='deleteScheduledJob(${job.id})'>🗑️</button> `;
+      html += `<button class='btn btn-sm btn-secondary' title='Logs anzeigen' onclick='showJobLogs(${job.id})'>📜</button>`;
+      html += `</div></td>`;
+      html += `</tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+  html += `</div>`;
+  container.innerHTML = html;
+}
+// Dynamically load users for Users tab
+function loadUsers() {
+  fetch("/admin/users?json=1")
+    .then((r) => r.json())
+    .then((data) => renderUserTable(data.users))
+    .catch((err) => {
+      const tab = document.getElementById("tab-users");
+      if (tab) tab.innerHTML = `<div class='empty-state'><p>Fehler beim Laden der User: ${err}</p></div>`;
+    });
+}
+
+function renderUserTable(users) {
+  const tab = document.getElementById("tab-users");
+  if (!tab) return;
+  let html = `<div class='admin-card'><h3>👥 User-Verwaltung</h3>`;
+  html += `<h4>Alle registrierten User (${users.length})</h4>`;
+  if (users.length > 0) {
+    html += `<table class='user-table'><thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Rolle</th><th>Status</th><th>Registriert</th><th>Aktionen</th></tr></thead><tbody>`;
+    users.forEach((user) => {
+      html += `<tr>`;
+      html += `<td>${user.id}</td>`;
+      html += `<td><strong>${user.username}</strong></td>`;
+      html += `<td>${user.email}</td>`;
+      html += `<td><span class='role-badge role-${user.role}'>${user.role}</span></td>`;
+      html += `<td><span class='status-badge status-${user.status}'>${user.status}</span></td>`;
+      html += `<td>${user.created_at ? new Date(user.created_at).toLocaleDateString() : ""}</td>`;
+      html += `<td>`;
+      html += `<form action='/admin/users/${user.id}/update_role' method='POST' class='action-form user-role-form' data-user-id='${user.id}'>`;
+      html += `<select name='role' class='role-select'>`;
+      html += `<option value=''>Rolle ändern...</option>`;
+      ["viewer", "user", "contributor", "admin"].forEach((role) => {
+        html += `<option value='${role}'${user.role === role ? " disabled" : ""}>${
+          role.charAt(0).toUpperCase() + role.slice(1)
+        }</option>`;
+      });
+      html += `</select></form>`;
+      // Wire up AJAX role change after rendering
+      setTimeout(() => {
+        document.querySelectorAll(".user-role-form .role-select").forEach((select) => {
+          select.addEventListener("change", function (e) {
+            const form = this.closest("form");
+            const userId = form.getAttribute("data-user-id");
+            const newRole = this.value;
+            if (!newRole) return;
+            fetch(`/admin/users/${userId}/update_role`, {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+              body: `role=${encodeURIComponent(newRole)}`,
+            })
+              .then((r) => (r.ok ? r.json() : r.text()))
+              .then(() => loadUsers())
+              .catch(() => loadUsers());
+          });
+        });
+      }, 50);
+      html += `<form action='/admin/users/${user.id}/toggle_status' method='POST' class='action-form' onsubmit='return confirm("Status von ${user.username} wirklich ändern?");'>`;
+      if (user.status === "active") {
+        html += `<button type='submit' class='btn btn-sm btn-warning'>🔒 Deaktivieren</button>`;
+      } else {
+        html += `<button type='submit' class='btn btn-sm btn-success'>✅ Aktivieren</button>`;
+      }
+      html += `</form>`;
+      html += `</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  } else {
+    html += `<div class='empty-state'><p>Keine User gefunden.</p></div>`;
+  }
+  html += `<h4 class='mt-30'>ℹ️ Rollen-Erklärung</h4><ul class='line-height-1-8 pl-20'><li><strong>Viewer:</strong> Kann nur öffentliche Inhalte sehen</li><li><strong>User:</strong> Kann Proposals erstellen</li><li><strong>Contributor:</strong> Kann Proposals erstellen und über Proposals abstimmen</li><li><strong>Admin:</strong> Volle Rechte (User-Verwaltung, Scrapers, Proposals direkt genehmigen)</li></ul></div>`;
+  tab.innerHTML = html;
 }
 
 // Shop details modal helpers
@@ -30,8 +166,8 @@ function _ensureShopDetailsModal() {
   modal.innerHTML = `
     <div id="shop-details-box" style="background:#fff; max-width:900px; margin:40px auto; padding:20px; border-radius:8px; overflow:auto; max-height:80%; position:relative;">
       <button style="position:absolute; right:12px; top:12px;" onclick="closeShopDetails()">✖</button>
-      <h3 id="shop-details-title">Shop Details</h3>
-      <div id="shop-details-content"></div>
+      <h3 id="shop-details-title" style="margin-top:40px;">Shop Details</h3>
+      <div id="shop-details-content" style="margin-top:50px;"></div>
     </div>
   `;
   document.body.appendChild(modal);
@@ -53,28 +189,66 @@ function openShopDetails(mainId) {
         content.innerHTML = "<div>No linked shops or rates found.</div>";
         return;
       }
-      const html = data.shops
-        .map((s) => {
-          const rates = s.rates
-            .map((rt) => {
-              const cat = rt.category ? `<strong>[${rt.category}]</strong> ` : "";
-              const valid = rt.valid_from ? `${rt.valid_from}${rt.valid_to ? " → " + rt.valid_to : ""}` : "";
-              return `<div style="padding:6px 0; border-bottom:1px solid #f0f0f0;">${cat}${rt.program}: ${
-                rt.points_per_eur
-              } P/EUR${
-                rt.cashback_pct ? `, ${rt.cashback_pct}% CB` : ""
-              }<div style="font-size:12px;color:#666">${valid}</div></div>`;
-            })
-            .join("");
-          return `<div style="margin-bottom:12px;"><h4 style="margin:6px 0;">${s.name}</h4>${
-            rates || "<div>No rates</div>"
-          }</div>`;
-        })
-        .join("");
+      let html = "";
+      // ShopMain metadata
+      html += `<div style='margin-bottom:18px;'>`;
+      html += `<strong>ShopMain Metadaten:</strong><ul style='margin:6px 0 0 18px;'>`;
+      html += `<li><strong>Name:</strong> ${data.canonical_name || "—"}</li>`;
+      html += `<li><strong>Status:</strong> ${data.status || "—"}</li>`;
+      html += `<li><strong>Website:</strong> ${
+        data.website ? `<a href='${data.website}' target='_blank'>${data.website}</a>` : "—"
+      }</li>`;
+      if (data.logo_url)
+        html += `<li><strong>Logo:</strong> <img src='${data.logo_url}' alt='Logo' style='max-height:32px;vertical-align:middle;'></li>`;
+      html += `</ul></div>`;
+      // Variants section (detailed, with all metadata)
+      if (data.variants && data.variants.length > 0) {
+        html += `<div style='margin-bottom:18px;'><strong>Varianten:</strong><table class='admin-table' style='margin-top:6px;'><thead><tr><th>Source</th><th>Name</th><th>Source ID</th><th>Confidence</th><th>Status</th><th>Website</th><th>Logo</th></tr></thead><tbody>`;
+        data.variants.forEach((v) => {
+          html += `<tr>`;
+          html += `<td>${v.source}</td>`;
+          html += `<td>${v.name}</td>`;
+          html += `<td>${v.source_id || "—"}</td>`;
+          html += `<td>${typeof v.confidence !== "undefined" ? Math.round(v.confidence) + "%" : "—"}</td>`;
+          html += `<td>${v.status || "—"}</td>`;
+          html += `<td>${v.website ? `<a href='${v.website}' target='_blank'>${v.website}</a>` : "—"}</td>`;
+          html += `<td>${
+            v.logo_url ? `<img src='${v.logo_url}' alt='Logo' style='max-height:24px;vertical-align:middle;'>` : "—"
+          }</td>`;
+          html += `</tr>`;
+        });
+        html += `</tbody></table></div>`;
+      }
+      // Linked shops and rates
+      data.shops.forEach((s) => {
+        html += `<div style='margin-bottom:18px;'><h4 style='margin:6px 0 4px 0;'>${s.name}</h4>`;
+        if (s.rates && s.rates.length > 0) {
+          html += `<table class='admin-table' style='margin-bottom:8px;'><thead><tr><th>Programm</th><th>Kategorie</th><th>Subkategorie</th><th>Raten</th><th>Gültig von</th><th>Gültig bis</th></tr></thead><tbody>`;
+          s.rates.forEach((rt) => {
+            let rateParts = [];
+            if (rt.points_per_eur) rateParts.push(`${rt.points_per_eur} P/EUR`);
+            if (rt.points_absolute) rateParts.push(`${rt.points_absolute} P absolut`);
+            if (rt.cashback_pct) rateParts.push(`${rt.cashback_pct}% CB`);
+            if (rt.cashback_absolute) rateParts.push(`${rt.cashback.absolute}€ CB absolut`);
+            html += `<tr>`;
+            html += `<td>${rt.program}</td>`;
+            html += `<td>${rt.category || "—"}</td>`;
+            html += `<td>${rt.sub_category || "—"}</td>`;
+            html += `<td>${rateParts.join(", ") || "—"}</td>`;
+            html += `<td>${rt.valid_from ? rt.valid_from.split("T")[0] : "—"}</td>`;
+            html += `<td>${rt.valid_to ? rt.valid_to.split("T")[0] : "—"}</td>`;
+            html += `</tr>`;
+          });
+          html += `</tbody></table>`;
+        } else {
+          html += `<div style='color:#888'>Keine Raten vorhanden.</div>`;
+        }
+        html += `</div>`;
+      });
       content.innerHTML = html;
     })
     .catch((err) => {
-      content.innerHTML = `<div style="color:red">Error: ${err}</div>`;
+      content.innerHTML = `<div style=\"color:red\">Error: ${err}</div>`;
     });
 }
 
@@ -310,6 +484,21 @@ function wireScraperForms() {
   const milesForm = document.getElementById("miles-and-more-form");
   const paybackForm = document.getElementById("payback-form");
   const topcashbackForm = document.getElementById("topcashback-form");
+  const shoopForm = document.getElementById("shoop-form");
+  if (shoopForm) {
+    shoopForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      fetch("/admin/run_shoop", {
+        method: "POST",
+        headers: { Accept: "application/json" },
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.job_id) startJobMonitoring(data.job_id);
+        })
+        .catch((err) => alert("Error starting Shoop scraper: " + err));
+    });
+  }
 
   if (milesForm) {
     milesForm.addEventListener("submit", (e) => {
@@ -407,43 +596,72 @@ function updateJobStatus() {
 
 function renderShopList(data) {
   const container = document.getElementById("shop-list");
+  const paging = document.getElementById("shop-paging");
   if (!container) return;
   if (!data.shops || data.shops.length === 0) {
     container.innerHTML =
       '<div class="empty-state"><div class="empty-state-icon">🛒</div><p>Keine Shops gefunden.</p></div>';
+    if (paging) paging.innerHTML = "";
     return;
   }
 
-  const rows = data.shops
-    .map((shop) => {
-      const variants = shop.variants
-        .map((v) => `${v.source}: ${v.name} (conf ${Math.round(v.confidence)}%)`)
-        .join("<br>");
-      const rates = shop.rates
-        .map((r) => {
-          let cat = r.category ? `<span style='color:#888'>[${r.category}]</span> ` : "";
-          let subcat = r.sub_category ? ` (${r.sub_category})` : "";
-          return `${cat}${r.program}: ${r.points_per_eur} P/EUR${
-            r.cashback_pct ? `, ${r.cashback_pct}% CB` : ""
-          }${subcat}`;
-        })
-        .join("<br>");
-      return `
-        <div style="border-bottom:1px solid #eee; padding:10px 0;">
-          <div style="font-weight:600;">${shop.name}</div>
-          <div style="color:#666;">${shop.status}${shop.website ? " • " + shop.website : ""}</div>
-          <div style="margin-top:6px;"><button class="btn btn-inline" onclick="openShopDetails('${
-            shop.id
-          }')">🔎 Details</button></div>
-          <div style="margin-top:6px;"><strong>Varianten:</strong><br>${variants || "—"}</div>
-          <div style="margin-top:6px;"><strong>Raten:</strong><br>${rates || "—"}</div>
-        </div>
-      `;
-    })
-    .join("");
-  container.innerHTML = rows;
+  let html = `<table class='admin-table'><thead><tr><th>Name</th><th>Status</th><th>Website</th><th>Varianten</th><th>Raten</th><th>Aktionen</th></tr></thead><tbody>`;
+  data.shops.forEach((shop) => {
+    const variants = shop.variants
+      .map((v) => `${v.source}: ${v.name} (conf ${Math.round(v.confidence)}%)`)
+      .join("<br>");
+    let rates = "—";
+    if (shop.rates && shop.rates.length > 0) {
+      const r = shop.rates[0];
+      let cat = r.category ? `<span style='color:#888'>[${r.category}]</span> ` : "";
+      let subcat = r.sub_category ? ` (${r.sub_category})` : "";
+      let rateParts = [];
+      if (r.points_per_eur) rateParts.push(`${r.points_per_eur} P/EUR`);
+      if (r.points_absolute) rateParts.push(`${r.points_absolute} P absolut`);
+      if (r.cashback_pct) rateParts.push(`${r.cashback_pct}% CB`);
+      if (r.cashback_absolute) rateParts.push(`${r.cashback.absolute}€ CB absolut`);
+      rates = `${cat}${r.program}: ${rateParts.join(", ")}${subcat}`;
+      if (shop.rates.length > 1) {
+        rates += ` <span style='color:#888'>(+${shop.rates.length - 1} weitere, siehe Details)</span>`;
+      }
+    }
+    html += `<tr>`;
+    html += `<td><strong>${shop.name}</strong></td>`;
+    html += `<td>${shop.status}</td>`;
+    html += `<td>${shop.website ? `<a href='${shop.website}' target='_blank'>${shop.website}</a>` : "—"}</td>`;
+    html += `<td>${variants || "—"}</td>`;
+    html += `<td>${rates}</td>`;
+    html += `<td><button class='btn btn-inline' onclick="openShopDetails('${shop.id}')">🔎 Details</button></td>`;
+    html += `</tr>`;
+  });
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+
+  // Paging controls
+  if (paging && data.total && data.per_page) {
+    const totalPages = Math.ceil(data.total / data.per_page);
+    let html = "";
+    if (totalPages > 1) {
+      const page = data.page || 1;
+      html += `<button class='btn btn-inline' ${page <= 1 ? "disabled" : ""} onclick='changeShopPage(${
+        page - 1
+      })'>⏮️ Vorherige</button>`;
+      html += ` Seite ${page} / ${totalPages} `;
+      html += `<button class='btn btn-inline' ${page >= totalPages ? "disabled" : ""} onclick='changeShopPage(${
+        page + 1
+      })'>Nächste ⏭️</button>`;
+    }
+    paging.innerHTML = html;
+  }
 }
 
+let shopPage = 1;
+let shopPerPage = 50;
+function changeShopPage(page) {
+  if (page < 1) page = 1;
+  shopPage = page;
+  loadShops();
+}
 function loadShops() {
   const searchInput = document.getElementById("shop-search");
   const programSelect = document.getElementById("bonus-program-filter");
@@ -451,7 +669,7 @@ function loadShops() {
   const program = programSelect?.value || "";
   const url = `/admin/shops_overview?q=${encodeURIComponent(q)}${
     program ? `&program=${encodeURIComponent(program)}` : ""
-  }`;
+  }&page=${shopPage}&per_page=${shopPerPage}`;
   fetch(url)
     .then((r) => r.json())
     .then((data) => renderShopList(data));
@@ -462,16 +680,27 @@ function wireShopSearch() {
   if (input) {
     input.addEventListener("input", () => {
       clearTimeout(window._shopSearchTimer);
-      window._shopSearchTimer = setTimeout(loadShops, 250);
+      window._shopSearchTimer = setTimeout(() => {
+        shopPage = 1;
+        loadShops();
+      }, 250);
     });
   }
   const programSelect = document.getElementById("bonus-program-filter");
   if (programSelect) {
-    programSelect.addEventListener("change", loadShops);
+    programSelect.addEventListener("change", () => {
+      shopPage = 1;
+      loadShops();
+    });
   }
 }
 
 function initAdminPage() {
+  // Load shops immediately if Shop tab is active on page load
+  const shopsTab = document.getElementById("tab-shops");
+  if (shopsTab && shopsTab.classList.contains("active")) {
+    loadShops();
+  }
   updateNotificationBadge();
   setInterval(updateNotificationBadge, 30000);
   wireScraperForms();
@@ -526,6 +755,15 @@ function initAdminPage() {
         });
       }
     });
+
+  // Ensure only the first tab-content is active on load
+  document.querySelectorAll(".tab-content").forEach((el, idx) => {
+    if (idx === 0) {
+      el.classList.add("active");
+    } else {
+      el.classList.remove("active");
+    }
+  });
 }
 
 function clearAllShops() {
@@ -561,8 +799,25 @@ function clearAllShops() {
     });
 }
 
+function setupTabDelegation() {
+  const tabNav = document.querySelector(".tab-nav");
+  if (tabNav) {
+    tabNav.addEventListener("click", function (e) {
+      const btn = e.target.closest(".tab-button");
+      if (btn && btn.dataset.tab) {
+        e.preventDefault();
+        switchTab(btn.dataset.tab, e);
+      }
+    });
+  }
+}
+
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initAdminPage);
+  document.addEventListener("DOMContentLoaded", () => {
+    initAdminPage();
+    setupTabDelegation();
+  });
 } else {
   initAdminPage();
+  setupTabDelegation();
 }

@@ -38,12 +38,12 @@ endblock %} {% block extra_css %}
   <span class="flex-1 text-muted">👤 {{ current_user.username }}</span>
   <a class="nav-link" href="/">🏠 Startseite</a>
   <a class="nav-link" href="/admin">🛠️ Admin Panel</a>
-  <a class="nav-link" href="/admin/scheduled_jobs">⏰ Scheduled Jobs</a>
+  <!-- Removed Scheduled Jobs link to avoid confusion -->
   <a class="nav-link" href="/logout">🚪 Logout</a>
 </nav>
 {% endblock %} {% block content %}
-<div class="card wide">
-  <h1>{% if job %}✏️ Job bearbeiten{% else %}➕ Neuen Job erstellen{% endif %}</h1>
+<div class="admin-card" style="max-width: 700px; margin: 0 auto;">
+  <h1 style="margin-bottom: 24px;">{% if job %}✏️ Job bearbeiten{% else %}➕ Neuen Job erstellen{% endif %}</h1>
 
   <form method="POST">
     <div class="form-group">
@@ -104,13 +104,13 @@ endblock %} {% block extra_css %}
 
     <div class="form-actions">
       <button type="submit" class="btn btn-primary">{% if job %}💾 Speichern{% else %}➕ Erstellen{% endif %}</button>
-      <a href="{{ url_for('admin_scheduled_jobs') }}" class="btn btn-secondary"> ❌ Abbrechen </a>
+      <a href="/admin" class="btn btn-secondary"> ❌ Abbrechen </a>
     </div>
   </form>
 
   {% if job %}
-  <div style="margin-top: 40px; padding: 20px; background-color: #f8f9fa; border-radius: 4px">
-    <h3>📊 Job Informationen</h3>
+  <div style="margin-top: 40px; padding: 20px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #e0e7ef;">
+    <h3 style="margin-bottom: 12px;">📊 Job Informationen</h3>
     <p><strong>Erstellt am:</strong> {{ job.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
     <p><strong>Letztes Update:</strong> {{ job.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
     {% if job.last_run_at %}

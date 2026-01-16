@@ -1,8 +1,183 @@
+/* Ensure admin action buttons are always in a row */
+.btn-group {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+/* Admin Dashboard Table Style */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0 24px 0;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #e0e7ef22;
+  font-size: 15px;
+  overflow: hidden;
+}
+.admin-table th,
+.admin-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e0e7ef;
+  text-align: left;
+}
+.admin-table th {
+  background: #f5f8fa;
+  color: #1976d2;
+  font-weight: 700;
+  font-size: 1em;
+  letter-spacing: 0.5px;
+}
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+.admin-table tbody tr:hover {
+  background: #f0f6ff;
+}
+.admin-table td {
+  color: #333;
+}
+/* Section Titles */
+.section-title {
+  font-size: 1.3em;
+  font-weight: 600;
+  color: #1976d2;
+  margin-bottom: 18px;
+  margin-top: 0;
+  letter-spacing: 0.2px;
+}
+/* Admin Dashboard Header */
+.admin-header {
+  background: linear-gradient(90deg, #007bff 0%, #00c6ff 100%);
+  color: white;
+  padding: 24px 40px 18px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 0 0 18px 18px;
+  box-shadow: 0 4px 16px #007bff22;
+  margin-bottom: 32px;
+}
+.admin-logo {
+  height: 48px;
+  margin-right: 18px;
+}
+.admin-title {
+  font-size: 2.1em;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.admin-subtitle {
+  font-size: 0.6em;
+  font-weight: 400;
+  margin-left: 12px;
+  color: #e0e7ef;
+}
+.header-left {
+  display: flex;
+  align-items: center;
+}
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.user-badge {
+  background: #fff;
+  color: #007bff;
+  border-radius: 16px;
+  padding: 6px 16px;
+  font-weight: 600;
+  margin-right: 10px;
+  box-shadow: 0 2px 8px #007bff22;
+}
+
+/* Dashboard background */
+.admin-dashboard-bg {
+  background: linear-gradient(135deg, #f8f9fa 60%, #e3f0ff 100%);
+  border: none;
+  box-shadow: 0 4px 24px #007bff11;
+}
+
+.dashboard-title {
+  font-size: 2.3em;
+  font-weight: 800;
+  color: #007bff;
+  margin-bottom: 18px;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px #007bff22;
+}
+
+/* Card shadow for tabs */
+.shadow-lg {
+  box-shadow:
+    0 8px 32px #007bff22,
+    0 1.5px 8px #00c6ff22;
+  border-radius: 12px;
+}
+.job-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.mb-6 {
+  margin-bottom: 6px !important;
+}
+.shop-filter-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+.shop-paging {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0;
+}
+/* Scraper Jobs Layout */
+.scraper-jobs-view {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.scraper-btn-row {
+  display: flex;
+  gap: 18px;
+  margin: 0 0 8px 0;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.scraper-btn-row form {
+  margin: 0;
+}
+.scraper-btn-row .btn-warning {
+  min-width: 180px;
+  font-size: 1em;
+  padding: 12px 18px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #e0e7ef33;
+}
+.job-progress-card {
+  margin-top: 0;
+}
+.mt-18 {
+  margin-top: 18px !important;
+}
+.cron-examples {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
 body {
   font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #f5f5f5;
+  background-color: #f7f8fa;
 }
 .header {
   background-color: #007bff;
@@ -38,28 +213,38 @@ body {
 }
 .tab-nav {
   display: flex;
-  background-color: #f8f9fa;
-  border-bottom: 2px solid #dee2e6;
+  background: #f8f9fa;
+  border-bottom: 1.5px solid #dee2e6;
+  gap: 0;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
 }
 .tab-button {
-  flex: 1;
-  padding: 15px 20px;
-  background-color: transparent;
+  flex: 1 1 0;
+  padding: 8px 14px;
+  background: none;
   border: none;
+  border-radius: 0;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 15px;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
   font-weight: 500;
-  color: #495057;
-  transition: all 0.3s;
+  color: #333;
+  letter-spacing: 0.1px;
+  transition:
+    background 0.2s,
+    color 0.2s;
+  outline: none;
 }
 .tab-button:hover {
-  background-color: #e9ecef;
+  background: #f0f4f8;
+  color: #1976d2;
 }
 .tab-button.active {
-  background-color: white;
-  color: #007bff;
-  border-bottom: 3px solid #007bff;
-  margin-bottom: -2px;
+  background: #fff;
+  color: #1976d2;
+  border-bottom: 2.5px solid #1976d2;
+  font-weight: 600;
+  z-index: 1;
 }
 .tab-content {
   display: none;
@@ -90,12 +275,14 @@ body {
 
 /* Buttons */
 .btn {
-  padding: 10px 20px;
+  padding: 12px 24px;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
-  margin-right: 10px;
+  font-size: 15px;
+  margin-right: 12px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px #e0e7ef33;
   transition: all 0.3s;
 }
 .btn-primary {

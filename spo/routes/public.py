@@ -14,6 +14,24 @@ from spo.utils import ensure_variant_for_shop
 
 
 def register_public(app):
+    @app.route("/shop_names", methods=["GET"])
+    def shop_names():
+        # API: Liefert Shop-Namen für das Dropdown, gefiltert nach Query-String
+        q = request.args.get("q", "").strip().lower()
+        limit = 30
+        query = ShopMain.query.filter_by(status="active")
+        if q:
+            query = query.filter(ShopMain.canonical_name_lower.contains(q))
+        shop_mains = query.order_by(ShopMain.canonical_name).limit(limit).all()
+        # Hole jeweils den ersten aktiven Shop für die ID
+        result = []
+        for shop_main in shop_mains:
+            shop = Shop.query.filter_by(shop_main_id=shop_main.id).first()
+            if not shop:
+                continue
+            result.append({"id": shop.id, "name": shop_main.canonical_name})
+        return result
+
     @app.route("/", methods=["GET"])
     def index():
         # Show shop selection page with all active shops and support flags
@@ -67,7 +85,8 @@ def register_public(app):
             ).all()
         if not shop:
             return redirect(url_for("index"))
-        shop_ids = [shop.id]
+        # Use all sibling shops for this ShopMain to ensure all rates (e.g. Payback) are included
+        shop_ids = [s.id for s in Shop.query.filter_by(shop_main_id=shop.shop_main_id).all()]
         rates = ShopProgramRate.query.filter(
             ShopProgramRate.shop_id.in_(shop_ids), ShopProgramRate.valid_to.is_(None)
         ).all()
@@ -117,9 +136,21 @@ def register_public(app):
                 program = db.session.get(BonusProgram, rate.program_id)
                 if not program:
                     continue
-                base_points = amount * rate.points_per_eur
-                base_cashback = amount * (rate.cashback_pct / 100.0)
-                base_euros = base_points * program.point_value_eur + base_cashback
+                # Defensive: Only use non-None values for calculations
+                base_points = (
+                    amount * rate.points_per_eur if rate.points_per_eur is not None else 0.0
+                )
+                base_points_abs = rate.points_absolute if rate.points_absolute is not None else 0.0
+                base_cashback = (
+                    amount * (rate.cashback_pct / 100.0) if rate.cashback_pct is not None else 0.0
+                )
+                base_cashback_abs = (
+                    rate.cashback_absolute if rate.cashback_absolute is not None else 0.0
+                )
+                # Sum all possible values
+                total_points = base_points + base_points_abs
+                total_cashback = base_cashback + base_cashback_abs
+                base_euros = total_points * program.point_value_eur + total_cashback
                 # Only apply coupons that are global (program_id is None) or match the current program
                 program_coupons = [
                     c
@@ -139,8 +170,8 @@ def register_public(app):
                     elif c.coupon_type == "discount":
                         total_discount += c.value
                         discounts.append(f"-{c.value}%")
-                coupon_points = base_points * total_multiplier
-                coupon_cashback = base_cashback + (amount * (total_discount / 100.0))
+                coupon_points = total_points * total_multiplier
+                coupon_cashback = total_cashback + (amount * (total_discount / 100.0))
                 coupon_euros = coupon_points * program.point_value_eur + coupon_cashback
                 coupon_info = None
                 if total_multiplier != 1.0 or total_discount != 0.0:
@@ -164,8 +195,11 @@ def register_public(app):
                     "rate_id": rate.id,
                     "category": category_name,
                     "sub_category": getattr(rate, "sub_category", None),
-                    "points": round(base_points, 2),
-                    "cashback": round(base_cashback, 2),
+                    "points": round(total_points, 2),
+                    "points_absolute": base_points_abs,
+                    "cashback_rate": rate.cashback_pct,
+                    "cashback": round(total_cashback, 2),
+                    "cashback_absolute": base_cashback_abs,
                     "euros": round(base_euros, 2),
                     "coupon_info": coupon_info,
                 }

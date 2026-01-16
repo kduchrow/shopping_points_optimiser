@@ -68,9 +68,9 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
             "github_repo_url": app.config.get("GITHUB_REPO_URL", DEFAULT_GITHUB_URL),
         }
 
-    # if run_seed:
-    #     with app.app_context():
-    #         seed_initial_data()
+    if run_seed:
+        with app.app_context():
+            seed_initial_data()
 
     register_auth(app)
     register_public(app)
@@ -86,6 +86,7 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
         scrape_example,
         scrape_miles_and_more,
         scrape_payback,
+        scrape_shoop,
         scrape_topcashback,
     )
 
@@ -93,6 +94,7 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
     register_job_type("scrape_payback", scrape_payback)
     register_job_type("scrape_miles_and_more", scrape_miles_and_more)
     register_job_type("scrape_topcashback", scrape_topcashback)
+    register_job_type("scrape_shoop", scrape_shoop)
     register_job_type("scrape_example", scrape_example)
 
     if start_jobs and os.environ.get("DISABLE_JOB_QUEUE", "false").lower() != "true":
