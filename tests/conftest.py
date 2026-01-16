@@ -88,6 +88,13 @@ def app():
     return app
 
 
+@pytest.fixture(scope="function")
+def db(app):
+    """Provide the database instance for tests."""
+    with app.app_context():
+        yield _db
+
+
 # Utility fixture to create a test shop and program for protected and evaluation tests
 @pytest.fixture(scope="function")
 def test_resources(app, db):
