@@ -1,0 +1,82 @@
+---
+name: CI/CD Shopping Points Optimiser
+
+on:
+  push:
+    branches: [main, ci/deployment]
+  workflow_dispatch:
+
+# Erlaubt GitHub, Pakete (Images) zu schreiben
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    outputs:
+      image_name: ghcr.io/${{ github.repository_owner }}/shopping-points-app
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/shopping-points-app:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code (für Compose-Dateien)
+        uses: actions/checkout@v4
+
+      - name: Copy docker-compose files via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.SERVER_HOST }}
+          username: ${{ vars.SSH_USER }}
+          port: ${{ vars.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker-compose.yml,docker-compose.prod.override.yml"
+          target: "/opt/app"
+
+      - name: Execute remote SSH commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ vars.SERVER_HOST }}
+          username: ${{ vars.SSH_USER }}
+          port: ${{ vars.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/app
+            # Login to GHCR on the server
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # Create .env file from repo variables/secrets
+            {
+              echo "DOMAIN_NAME=${{ vars.DOMAIN_NAME }}"
+              echo "ACME_EMAIL=${{ vars.ACME_EMAIL }}"
+              echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}"
+              echo "SECRET_KEY=${{ secrets.SECRET_KEY }}"
+              echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"
+              echo "DATABASE_URL=postgresql+psycopg2://spo:${{ secrets.POSTGRES_PASSWORD }}@db:5432/spo"
+              echo "FLASK_ENV=production"
+              echo "DEBUG=False"
+              echo "IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/shopping-points-app:latest"
+            } > .env
+            # Update and restart containers with both compose files
+            docker compose -f docker-compose.yml -f docker-compose.prod.override.yml pull
+            docker compose -f docker-compose.yml -f docker-compose.prod.override.yml up -d
+            # Cleanup: Remove old images
+            docker image prune -f
