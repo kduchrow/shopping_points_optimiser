@@ -3,7 +3,7 @@ name: CI/CD Shopping Points Optimiser
 
 on:
   push:
-    branches: [main, ci/deployment]
+    branches: [main]
   workflow_dispatch:
 
 # Erlaubt GitHub, Pakete (Images) zu schreiben
