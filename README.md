@@ -369,6 +369,33 @@ python -m alembic upgrade head
 
 MIT License - See LICENSE file
 
+## 🚀 Production CI/CD & Deployment (2026 Update)
+
+### Automated CI/CD Pipeline
+
+- **GitHub Actions**: Automated build, test, and deployment pipeline.
+- **Build & Push**: Docker image is built and pushed to GitHub Container Registry (GHCR) on every push to `main` or `ci/deployment`.
+- **Deploy Job**: Uses SCP and SSH to deploy to your production server.
+
+### Production Deployment
+
+- **docker-compose.prod.override.yml**: Used for production deployments. Integrates Traefik v3 as a reverse proxy, Gunicorn for WSGI, and all configuration via environment variables.
+- **Traefik v3**: Handles HTTPS (Let's Encrypt), domain routing, and secure entrypoints. Configurable via `.env` and GitHub secrets.
+- **Gunicorn Workers**: Number of workers is configurable via environment variable (`GUNICORN_WORKERS`).
+- **.env Generation**: The deploy workflow creates a `.env` file on the server from GitHub repository variables and secrets, ensuring all sensitive data is never committed.
+- **Custom SSH Port**: Deployment supports custom SSH ports via the `SSH_PORT` variable. Ensure your firewall/security group allows access from GitHub Actions runners.
+
+### Deployment File Compliance
+
+- All deployment and override files are fully yamllint and pre-commit compliant (no comments, no deprecated fields).
+
+### Retrying Deployment
+
+- **Manual Dispatch**: Go to GitHub → Actions → CI/CD Shopping Points Optimiser → Run workflow (top right) to manually trigger a deployment.
+- **Branch Push**: Pushing to `main` or `ci/deployment` will also trigger the workflow.
+
+See `.github/workflows/deploy.yml` and `docker-compose.prod.override.yml` for implementation details.
+
 ## 🤝 Contributing
 
 1. Fork the repository

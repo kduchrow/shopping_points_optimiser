@@ -89,10 +89,11 @@ RUN pip install --no-cache-dir playwright && \
     python -m playwright install-deps chromium && \
     python -m playwright install chromium
 
-# Set PATH and PYTHONPATH for installed packages
 ENV PATH=/root/.local/bin:$PATH
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app:$PYTHONPATH
+# Gunicorn workers configurable via env
+ENV GUNICORN_WORKERS=1
 
 # Install Playwright browser binaries and system deps (Chromium)
 RUN python -m playwright install-deps chromium && \
