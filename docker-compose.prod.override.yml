@@ -25,6 +25,7 @@ services:
       - spo-network
 
   app:
+    image: "${IMAGE_NAME}"
     environment:
       - REMOTE_INTERFACE=mirror-remote
       - MONITOR_PLUG_ID=main-plug

@@ -49,5 +49,5 @@ echo "🚀 Starting gunicorn..."
 # Make Gunicorn workers configurable via env (default 1)
 : "${GUNICORN_WORKERS:=1}"
 # Gunicorn config for Traefik: log to stdout/stderr, trust proxy headers
-GUNICORN_CMD_ARGS="--access-logfile - --error-logfile - --forwarded-allow-ips='*'"
+GUNICORN_CMD_ARGS="--access-logfile - --error-logfile - --forwarded-allow-ips='0.0.0.0/0'"
 exec gunicorn --bind 0.0.0.0:5000 --workers "$GUNICORN_WORKERS" --worker-class sync --timeout 60 $GUNICORN_CMD_ARGS app:app
