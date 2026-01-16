@@ -34,39 +34,7 @@ def register_public(app):
 
     @app.route("/", methods=["GET"])
     def index():
-        # Show shop selection page with all active shops and support flags
-        shop_mains = (
-            ShopMain.query.filter_by(status="active").order_by(ShopMain.canonical_name).all()
-        )
-        shops_data = []
-        for shop_main in shop_mains:
-            # Aggregate support flags across all Shops for this ShopMain
-            sibling_shops = Shop.query.filter_by(shop_main_id=shop_main.id).all()
-            if not sibling_shops:
-                continue
-            all_rates = ShopProgramRate.query.filter(
-                ShopProgramRate.shop_id.in_([s.id for s in sibling_shops]),
-                ShopProgramRate.valid_to.is_(None),
-            ).all()
-            supports_shopping = any(
-                (r.points_per_eur or 0) > 0 or (r.cashback_pct or 0) > 0 for r in all_rates
-            )
-            supports_voucher = any((r.points_per_eur or 0) > 0 for r in all_rates)
-            supports_contract = any(
-                (r.points_per_eur or 0) == 0 and (r.cashback_pct or 0) == 0 for r in all_rates
-            )
-            # Use the first Shop for id (legacy: one-to-many)
-            shop = sibling_shops[0]
-            shops_data.append(
-                {
-                    "id": shop.id,
-                    "name": shop_main.canonical_name,
-                    "supports_shopping": supports_shopping,
-                    "supports_voucher": supports_voucher,
-                    "supports_contract": supports_contract,
-                }
-            )
-        return render_template("index.html", shops_data=shops_data)
+        return render_template("index.html")
 
     @app.route("/evaluate", methods=["POST"])
     def evaluate():
