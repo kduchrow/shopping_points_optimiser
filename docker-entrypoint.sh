@@ -46,5 +46,8 @@ echo "📦 Running migrations..."
 cd /app && python -m alembic upgrade head
 
 echo "🚀 Starting gunicorn..."
-# Use a single worker to avoid concurrent DB init races during startup.
-exec gunicorn --bind 0.0.0.0:5000 --workers 1 --worker-class sync --timeout 60 app:app
+# Make Gunicorn workers configurable via env (default 1)
+: "${GUNICORN_WORKERS:=1}"
+# Gunicorn config for Traefik: log to stdout/stderr, trust proxy headers
+GUNICORN_CMD_ARGS="--access-logfile - --error-logfile - --forwarded-allow-ips='*'"
+exec gunicorn --bind 0.0.0.0:5000 --workers "$GUNICORN_WORKERS" --worker-class sync --timeout 60 $GUNICORN_CMD_ARGS app:app

@@ -1,0 +1,47 @@
+---
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+    networks:
+      - spo-network
+
+  app:
+    environment:
+      - REMOTE_INTERFACE=mirror-remote
+      - MONITOR_PLUG_ID=main-plug
+      - GUNICORN_WORKERS=4
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.spo.rule=Host(`${DOMAIN_NAME}`)"
+      - "traefik.http.routers.spo.entrypoints=websecure"
+      - "traefik.http.routers.spo.tls.certresolver=myresolver"
+      - "traefik.http.services.spo.loadbalancer.server.port=5000"
+    networks:
+      - spo-network
+
+  db:
+    networks:
+      - spo-network
+
+networks:
+  spo-network:
+    external: true

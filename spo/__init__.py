@@ -17,6 +17,24 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
         static_folder=os.path.join(base_dir, "..", "static"),
     )
 
+    # --- Traefik/Proxy compatibility ---
+    # Use ProxyFix to trust X-Forwarded headers from Traefik
+    try:
+        from werkzeug.middleware.proxy_fix import ProxyFix
+
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+    except ImportError:
+        pass  # ProxyFix not available, skip
+    app.config["SESSION_COOKIE_SECURE"] = True
+    app.config["PREFERRED_URL_SCHEME"] = "https"
+    # Optionally, force HTTPS redirect (uncomment if needed)
+    # from flask import redirect, request
+    # @app.before_request
+    # def enforce_https():
+    #     if not request.is_secure:
+    #         url = request.url.replace("http://", "https://", 1)
+    #         return redirect(url, code=301)
+
     # Import heavy modules lazily to avoid circular imports when scrapers use spo.* helpers
     from job_queue import job_queue
     from spo.models import User
