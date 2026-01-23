@@ -11,13 +11,19 @@
   <div class="info-box">
     <p>🏪 <strong>Shop:</strong> {{ shop.name }}</p>
     {% if mode == 'shopping' %}
-    <p>💵 <strong>Einkaufsbetrag:</strong> {{ amount }}€</p>
+      {% if amount is not none %}
+      <p>💵 <strong>Einkaufsbetrag:</strong> {{ amount }}€</p>
+      {% else %}
+      <p>ℹ️ <strong>Kein Betrag angegeben:</strong> Wir zeigen die verfügbaren Raten ohne Berechnung.</p>
+      {% endif %}
     {% elif mode == 'voucher' %}
     <p>🎁 <strong>Gewünschter Gutschein:</strong> {{ voucher }}€</p>
     {% endif %}
   </div>
 
-  {% if mode == 'shopping' %} {% if has_coupons %}
+  {% if mode == 'shopping' %}
+  {% if amount is not none %}
+  {% if has_coupons %}
   <div class="coupons-section">
     <h3>🎉 Verfügbare Sonderaktionen für diesen Shop</h3>
     <form id="coupon-selection-form" method="post" action="/evaluate">
@@ -127,7 +133,7 @@
             <div style="flex: 1 1 auto;">
               <div style="display: flex; align-items: flex-start; justify-content: space-between;">
                 <div class="program-name">{{ prog.program }}</div>
-                <div class="program-value" style="margin-left: 12px; white-space: nowrap; font-size: 1.15em; font-weight: 600;">{{ prog.best_value }}€ ( {{ amount - prog.best_value }}€ ) </div>
+                <div class="program-value" style="margin-left: 12px; white-space: nowrap; font-size: 1.15em; font-weight: 600;">{{ prog.best_value }}€{% if amount is not none %} ( {{ (amount - prog.best_value)|round(2) }}€ ){% endif %}</div>
               </div>
               <div class="program-details">
                 {% if prog.categories|length > 1 %}
@@ -198,6 +204,57 @@
       {% endfor %}
     {% endif %}
   </ul>
+  {% else %}
+  <div class="info-box">
+    Du hast keinen Betrag eingegeben. Hier siehst du die hinterlegten Punkte- und Cashback-Raten pro Programm.
+  </div>
+  <h2>ℹ️ Programme (Raten ohne Betrag)</h2>
+  <ul class="results-list" id="results-list">
+    {% for prog in grouped_results %}
+      <li>
+        <div class="program-name">{{ prog.program }}</div>
+        <div style="margin-top:8px;">
+          <strong>Kategorien:</strong>
+          <ul style="margin:6px 0 0 12px; padding:0; list-style: none;">
+            {% for c in prog.categories %}
+              <li style="padding:4px 0; border-bottom:1px solid #f3f4f6; display: flex; flex-direction: column; align-items: stretch;">
+                <div style="display: flex; justify-content: flex-start;">
+                  <span style="font-weight:600; padding-right: 4px; padding-left: 4px; text-align: left; max-width: 320px; word-break: break-word;">{{ c.category or c.sub_category or 'Allgemein' }}</span>
+                </div>
+                <div style="display: flex; justify-content: flex-end; ">
+                  <span style="font-size:13px; color:#555; text-align: right; padding-right: 10px;">
+                    {% set has_points_per_eur = c.points_per_eur is not none %}
+                    {% set has_cashback_pct = c.cashback_pct is not none %}
+                    {% set has_points_abs = c.points_absolute is not none %}
+                    {% set has_cashback_abs = c.cashback_absolute is not none %}
+                    {% if has_points_per_eur %}
+                      {{ c.points_per_eur }} Punkte/EUR
+                    {% endif %}
+                    {% if has_cashback_pct %}
+                      {% if has_points_per_eur %} | {% endif %}
+                      {{ c.cashback_pct }}% Cashback
+                    {% endif %}
+                    {% if has_points_abs %}
+                      {% if has_points_per_eur or has_cashback_pct %} | {% endif %}
+                      {{ c.points_absolute }} Punkte (absolut)
+                    {% endif %}
+                    {% if has_cashback_abs %}
+                      {% if has_points_per_eur or has_cashback_pct or has_points_abs %} | {% endif %}
+                      {{ c.cashback_absolute }}€ Cashback (absolut)
+                    {% endif %}
+                    {% if not (has_points_per_eur or has_cashback_pct or has_points_abs or has_cashback_abs) %}
+                      Siehe Admin für Details
+                    {% endif %}
+                  </span>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
   {% elif mode == 'voucher' %}
   <h2>🎯 Benötigter Umsatz nach Programm</h2>
   <ul class="results-list">

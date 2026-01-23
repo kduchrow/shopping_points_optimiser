@@ -2,6 +2,8 @@
 
 document.addEventListener("DOMContentLoaded", function () {
   const shopSelect = document.getElementById("shop-select");
+  const amountInput = document.getElementById("amount");
+  const submitBtn = document.getElementById("submit-btn");
   let choicesInstance = null;
   let lastQuery = "";
   let debounceTimeout = null;
@@ -68,5 +70,16 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     // Choices.js Event: Jedes Mal, wenn das Dropdown geöffnet wird, Listener setzen
     shopSelect.addEventListener("showDropdown", attachSearchListener);
+  }
+
+  function updateSubmitLabel() {
+    if (!submitBtn) return;
+    const hasAmount = amountInput && amountInput.value.trim() !== "";
+    submitBtn.textContent = hasAmount ? "🔍 Bonus berechnen" : "ℹ️ Informationen ohne Wert anzeigen";
+  }
+
+  if (amountInput) {
+    amountInput.addEventListener("input", updateSubmitLabel);
+    updateSubmitLabel();
   }
 });

@@ -28,10 +28,15 @@ def test_evaluate_route(client, test_resources):
 
 
 def test_voucher_route(client, test_resources):
+    # Voucher mode is currently disabled, should redirect to index
     shop = test_resources["shop"]
-    resp = client.post("/evaluate", data={"shop": shop.id, "voucher": 10, "mode": "voucher"})
-    assert resp.status_code == 200
-    assert b"Gutschein" in resp.data or b"Umsatz" in resp.data
+    resp = client.post(
+        "/evaluate",
+        data={"shop": shop.id, "voucher": 10, "mode": "voucher"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302  # Redirect to index
+    assert resp.location == "/"
 
 
 def test_contract_route(client, test_resources):

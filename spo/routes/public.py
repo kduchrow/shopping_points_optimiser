@@ -40,7 +40,11 @@ def register_public(app):
     def evaluate():
         # Handle calculation logic for selected shop
         shop_id = request.form.get("shop", type=int)
-        amount = request.form.get("amount", type=float, default=100.0)
+        raw_amount = (request.form.get("amount") or "").strip()
+        try:
+            amount = float(raw_amount) if raw_amount else None
+        except (TypeError, ValueError):
+            amount = None
         mode = request.form.get("mode", default="shopping")
         shop = db.session.get(Shop, shop_id) if shop_id else None
         shop_coupons = []
@@ -96,11 +100,51 @@ def register_public(app):
                 best_coupons.add(best_global.id)
             selected_coupon_ids = best_coupons
         if mode == "shopping":
-            program_map = {}
+            shopping_rates = [r for r in rates if getattr(r, "rate_type", "shop") != "contract"]
             # Mark selected coupons for template
             for c in shop_coupons:
                 c.selected = c.id in selected_coupon_ids
-            for rate in rates:
+
+            if amount is None:
+                program_map = {}
+                for rate in shopping_rates:
+                    program = db.session.get(BonusProgram, rate.program_id)
+                    if not program:
+                        continue
+                    category_name = None
+                    if hasattr(rate, "category_obj") and rate.category_obj is not None:
+                        try:
+                            category_name = rate.category_obj.name
+                        except Exception:
+                            category_name = None
+                    prog = program_map.setdefault(
+                        program.name, {"program": program.name, "categories": []}
+                    )
+                    entry = {
+                        "rate_id": rate.id,
+                        "category": category_name,
+                        "sub_category": getattr(rate, "sub_category", None),
+                        "points_per_eur": rate.points_per_eur,
+                        "points_absolute": rate.points_absolute,
+                        "cashback_pct": rate.cashback_pct,
+                        "cashback_absolute": rate.cashback_absolute,
+                        "rate_type": getattr(rate, "rate_type", None),
+                    }
+                    prog["categories"].append(entry)
+                programs_list = sorted(program_map.values(), key=lambda p: p["program"])
+                return render_template(
+                    "result.html",
+                    mode="shopping",
+                    shop=shop,
+                    amount=None,
+                    grouped_results=programs_list,
+                    has_coupons=False,
+                    active_coupons=[],
+                    combine_coupons=False,
+                )
+
+            program_map = {}
+            for rate in shopping_rates:
                 program = db.session.get(BonusProgram, rate.program_id)
                 if not program:
                     continue
@@ -206,42 +250,65 @@ def register_public(app):
                 active_coupons=shop_coupons,
                 combine_coupons=False,
             )
+        # VOUCHER MODE COMMENTED OUT
+        # elif mode == "voucher":
+        #     rates = ShopProgramRate.query.filter(
+        #         ShopProgramRate.shop_id.in_(shop_ids), ShopProgramRate.valid_to.is_(None), ShopProgramRate.rate_type == "voucher"
+        #     ).all()
+        #     voucher = float(request.form.get("voucher") or 0)
+        #     results = []
+        #     for rate in rates:
+        #         program = db.session.get(BonusProgram, rate.program_id)
+        #         if not program or program.point_value_eur is None:
+        #             continue
+        #         req_points = (
+        #             voucher / program.point_value_eur
+        #             if program.point_value_eur > 0
+        #             else float("inf")
+        #         )
+        #         spend = (
+        #             req_points / rate.points_per_eur if rate.points_per_eur > 0 else float("inf")
+        #         )
+        #         results.append(
+        #             {
+        #                 "program": program.name if program else "?",
+        #                 "spend": round(spend, 2),
+        #                 "req_points": round(req_points, 2),
+        #             }
+        #         )
+        #     results.sort(key=lambda r: r["spend"])
+        #     return render_template(
+        #         "result.html", mode="voucher", shop=shop, voucher=voucher, results=results
+        #     )
         elif mode == "voucher":
-            voucher = float(request.form.get("voucher") or 0)
-            results = []
-            for rate in rates:
-                program = db.session.get(BonusProgram, rate.program_id)
-                if not program or program.point_value_eur is None:
-                    continue
-                req_points = (
-                    voucher / program.point_value_eur
-                    if program.point_value_eur > 0
-                    else float("inf")
-                )
-                spend = (
-                    req_points / rate.points_per_eur if rate.points_per_eur > 0 else float("inf")
-                )
-                results.append(
-                    {
-                        "program": program.name if program else "?",
-                        "spend": round(spend, 2),
-                        "req_points": round(req_points, 2),
-                    }
-                )
-            results.sort(key=lambda r: r["spend"])
-            return render_template(
-                "result.html", mode="voucher", shop=shop, voucher=voucher, results=results
-            )
+            # Voucher mode is currently disabled
+            flash("Gutschein-Modus ist derzeit nicht verfügbar.", "error")
+            return redirect(url_for("index"))
         elif mode == "contract":
+            # Filter only contract-type rates
+            contract_rates = [r for r in rates if getattr(r, "rate_type", "shop") == "contract"]
             results = []
-            for rate in rates:
+            for rate in contract_rates:
                 program = db.session.get(BonusProgram, rate.program_id)
                 if not program:
                     continue
+                # Build bonus description
+                bonus_parts = []
+                if rate.points_absolute:
+                    bonus_parts.append(f"{rate.points_absolute:.0f} Punkte")
+                if rate.points_per_eur:
+                    bonus_parts.append(f"{rate.points_per_eur} P/EUR")
+                if rate.cashback_absolute:
+                    bonus_parts.append(f"{rate.cashback_absolute}€ Cashback")
+                if rate.cashback_pct:
+                    bonus_parts.append(f"{rate.cashback_pct}% Cashback")
+
+                bonus_text = " + ".join(bonus_parts) if bonus_parts else "Siehe Admin für Details"
                 results.append(
                     {
                         "program": program.name if program else "?",
-                        "note": "Vertragsabschluss - siehe Admin für genaue Angaben",
+                        "bonus": bonus_text,
+                        "note": rate.rate_note or "",
                     }
                 )
             return render_template("result.html", mode="contract", shop=shop, results=results)
