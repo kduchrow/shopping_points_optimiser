@@ -1,6 +1,7 @@
 {
   "printWidth": 120,
   "proseWrap": "preserve",
+  "endOfLine": "lf",
   "overrides": [
     {
       "files": "*.html",

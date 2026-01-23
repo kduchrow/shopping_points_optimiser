@@ -69,11 +69,15 @@ def clean_and_migrate_test_db():
         # Find project root (where alembic.ini is located)
         project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         alembic_ini = os.path.join(project_root, "alembic.ini")
+        # Pass DATABASE_URL from current app config to subprocess environment
+        env = os.environ.copy()
+        env["DATABASE_URL"] = app.config["SQLALCHEMY_DATABASE_URI"]
         result = subprocess.run(
             [sys.executable, "-m", "alembic", "-c", alembic_ini, "upgrade", "head"],
             cwd=project_root,
             capture_output=True,
             text=True,
+            env=env,
         )
         print("[DEBUG] Alembic output:", result.stdout)
         if result.returncode != 0:

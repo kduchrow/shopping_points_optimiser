@@ -1,3 +1,4 @@
+/* COUPON FUNCTIONALITY COMMENTED OUT
 // AJAX recalculation for coupon selection
 document.addEventListener("DOMContentLoaded", function () {
   const couponForm = document.getElementById("coupon-selection-form");
@@ -76,6 +77,7 @@ function sortResults(sortBy, evt) {
   resultsList.innerHTML = "";
   items.forEach((item) => resultsList.appendChild(item));
 }
+*/
 
 function openProposalModal(proposalId, shopName, reason, sourceUrl) {
   const modal = document.getElementById("proposalModal");

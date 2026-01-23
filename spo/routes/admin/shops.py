@@ -127,6 +127,7 @@ def register_admin_shops(app):
                         "points_absolute": rate.points_absolute,
                         "cashback_pct": rate.cashback_pct,
                         "cashback_absolute": rate.cashback_absolute,
+                        "rate_type": getattr(rate, "rate_type", "shop"),
                         "category": category_name,
                         "valid_from": (
                             rate.valid_from.isoformat()
@@ -372,6 +373,7 @@ def register_admin_shops(app):
                         "points_absolute": rate.points_absolute,
                         "cashback_pct": rate.cashback_pct,
                         "cashback_absolute": rate.cashback_absolute,
+                        "rate_type": getattr(rate, "rate_type", "shop"),
                         "category": category_name,
                         "valid_from": (
                             rate.valid_from.isoformat()
