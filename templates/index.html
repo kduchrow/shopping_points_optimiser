@@ -1,7 +1,20 @@
 {% extends "base.html" %} {% block title %}Shopping Points Optimiser{% endblock %} {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/choices.min.css') }}" />
 {% endblock %} {% block content %}
-<div class="card medium">
+<!-- Info Section - Top Card -->
+<div class="card wide" style="margin-bottom: 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+  <h2 style="margin-top: 0; color: white;">🎯 Was ist Shopping Points Optimiser?</h2>
+  <p style="color: rgba(255,255,255,0.95); font-size: 1.05em; line-height: 1.6; margin: 0;">
+    Ein <strong>von der Community getragenes Tool</strong>, das dir zeigt, wie viel Cashback und Bonuspunkte du bei deinem nächsten Online-Einkauf verdienen kannst.
+    Vergleiche alle verfügbaren Loyalitätsprogramme für deinen Shop und maximiere deine Belohnungen.
+  </p>
+  <p style="color: rgba(255,255,255,0.9); margin-top: 12px; margin-bottom: 0;">
+    ✨ <strong>Kostenlos, datenschutzfreundlich & ohne versteckte Gebühren</strong>
+  </p>
+</div>
+
+<!-- Form Card -->
+<div class="card medium" style="margin-bottom: 24px;">
   <h1>💰 Shopping Points Optimiser</h1>
 
   <form method="post" action="/evaluate">
@@ -28,6 +41,69 @@
 
     <button type="submit" id="submit-btn">ℹ️ Informationen ohne Wert anzeigen</button>
   </form>
+</div>
+
+<!-- How it works Section -->
+<div class="card wide" style="margin-bottom: 24px;">
+  <h2 style="margin-top: 0;">🚀 Wie funktioniert's?</h2>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+    <!-- Step 1 -->
+    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+      <h3 style="margin: 0 0 8px 0; color: #1f2937;">1️⃣ Shop wählen</h3>
+      <p style="color: #666; margin: 0; font-size: 0.95em;">Wähle den Online-Shop aus, bei dem du kaufen möchtest</p>
+    </div>
+
+    <!-- Step 2 -->
+    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #8b5cf6;">
+      <h3 style="margin: 0 0 8px 0; color: #1f2937;">2️⃣ Betrag eingeben (optional)</h3>
+      <p style="color: #666; margin: 0; font-size: 0.95em;">Gib einen Betrag ein oder lass das Feld leer um nur die Raten zu sehen</p>
+    </div>
+
+    <!-- Step 3 -->
+    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #ec4899;">
+      <h3 style="margin: 0 0 8px 0; color: #1f2937;">3️⃣ Ergebnisse vergleichen</h3>
+      <p style="color: #666; margin: 0; font-size: 0.95em;">Sehe alle verfügbaren Bonusprogramme und deren geschätzten Wert</p>
+    </div>
+  </div>
+
+  <div style="margin-top: 20px; padding: 16px; background: #ecf0ff; border-radius: 8px; border-left: 4px solid #3b82f6;">
+    <strong>💡 Tipp:</strong> Du brauchst keinen Betrag einzugeben um die aktuellen Raten zu sehen. Lass das Feld einfach leer und klicke auf "Informationen ohne Wert anzeigen"!
+  </div>
+</div>
+
+<!-- Community Section -->
+<div class="card wide" style="margin-bottom: 24px; background: #fef3c7; border: 2px solid #f59e0b;">
+  <h2 style="margin-top: 0; color: #92400e;">👥 Community-getriebenes Projekt</h2>
+  <p style="color: #78350f; margin: 0;">
+    Shopping Points Optimiser lebt von deiner Mitwirkung! Wenn du <strong>fehlerhafte Daten, fehlende Shops oder veraltete Raten</strong> entdeckst,
+    kannst du ganz einfach einen Vorschlag einreichen. Unsere Community und Administratoren prüfen diese regelmäßig.
+  </p>
+  <p style="color: #78350f; margin-top: 12px; margin-bottom: 0;">
+    <strong>Du findest einen Fehler?</strong> Nach dem Vergleich auf der Ergebnisseite kannst du unter <em>"✏️ Vorschlag einreichen"</em> Verbesserungen vorschlagen!
+  </p>
+</div>
+
+<!-- FAQ Section -->
+<div class="card wide">
+  <h2 style="margin-top: 0;">❓ Häufig gestellte Fragen</h2>
+  <div style="display: grid; gap: 16px;">
+    <div>
+      <h3 style="margin: 0 0 6px 0; color: #1f2937; font-size: 1em;">💾 Werden meine Daten gespeichert?</h3>
+      <p style="color: #666; margin: 0; font-size: 0.95em;">Nein. Wir speichern keine Suchverlauf oder Kaufdaten. Jede Suche ist völlig anonym.</p>
+    </div>
+    <div>
+      <h3 style="margin: 0 0 6px 0; color: #1f2937; font-size: 1em;">📊 Warum unterscheiden sich die Raten zwischen Programmen?</h3>
+      <p style="color: #666; margin: 0; font-size: 0.95em;">Jedes Loyalitätsprogramm verhandelt Raten direkt mit den Händlern. Manche spezialisieren sich auf Cashback, andere auf Punkte.</p>
+    </div>
+    <div>
+      <h3 style="margin: 0 0 6px 0; color: #1f2937; font-size: 1em;">🔄 Wie oft werden die Raten aktualisiert?</h3>
+      <p style="color: #666; margin: 0; font-size: 0.95em;">Raten werden regelmäßig durch automatisierte Scraper aktualisiert, um die neuesten Angebote widerzuspiegeln.</p>
+    </div>
+    <div>
+      <h3 style="margin: 0 0 6px 0; color: #1f2937; font-size: 1em;">➕ Kann ich mehrere Programme kombinieren?</h3>
+      <p style="color: #666; margin: 0; font-size: 0.95em;">Das hängt vom Händler ab. Manche ermöglichen die Kombination von Multiplikatoren und Rabatten. Siehe die Sonderaktionen für Details.</p>
+    </div>
+  </div>
 </div>
 {% endblock %} {% block scripts %}
 <script src="{{ url_for('static', filename='js/choices.min.js') }}"></script>
