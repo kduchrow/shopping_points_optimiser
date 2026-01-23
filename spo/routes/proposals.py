@@ -320,6 +320,7 @@ def register_proposals(app):
                     shop_id = request.form.get("shop_id")
                     program_id = request.form.get("program_id")
                     rate_type = request.form.get("rate_type", "cashback")
+                    rate_category = request.form.get("rate_category", "shop")
                     points_per_eur = request.form.get("points_per_eur")
                     cashback_pct = request.form.get("cashback_pct")
                     if not shop_id or not program_id:
@@ -339,6 +340,8 @@ def register_proposals(app):
                             return redirect(url_for("create_proposal"))
                         proposal.proposed_points_per_eur = float(points_per_eur)
                         proposal.proposed_cashback_pct = 0.0
+                    # Store whether this is a contract or shop rate
+                    proposal.proposed_rate_type = rate_category
 
                 elif proposal_type == "shop_add":
                     shop_name = request.form.get("shop_name", "").strip()
