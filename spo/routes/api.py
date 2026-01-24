@@ -104,7 +104,9 @@ def register_api_routes(app):
             {
                 "logged_in": current_user.is_authenticated,
                 "username": current_user.username if current_user.is_authenticated else None,
-                "is_admin": current_user.is_admin if current_user.is_authenticated else False,
+                "is_admin": (
+                    current_user.role == "admin" if current_user.is_authenticated else False
+                ),
             }
         )
 

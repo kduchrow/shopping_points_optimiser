@@ -25,8 +25,22 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     except ImportError:
         pass  # ProxyFix not available, skip
-    app.config["SESSION_COOKIE_SECURE"] = True
-    app.config["PREFERRED_URL_SCHEME"] = "https"
+
+    # Session security settings
+    # For development with localhost HTTP, disable SECURE flag
+    if os.environ.get("FLASK_ENV") == "development":
+        app.config["SESSION_COOKIE_SECURE"] = False
+        app.config["SESSION_COOKIE_HTTPONLY"] = True
+        app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    else:
+        # Production: require HTTPS
+        app.config["SESSION_COOKIE_SECURE"] = True
+        app.config["SESSION_COOKIE_HTTPONLY"] = True
+        app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
+
+    app.config["PREFERRED_URL_SCHEME"] = (
+        "https" if os.environ.get("FLASK_ENV") != "development" else "http"
+    )
     # Optionally, force HTTPS redirect (uncomment if needed)
     # from flask import redirect, request
     # @app.before_request
