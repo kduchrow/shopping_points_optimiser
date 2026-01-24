@@ -40,6 +40,7 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
     from spo.models import User
     from spo.routes.admin import register_admin
     from spo.routes.admin.scheduler import register_admin_scheduler
+    from spo.routes.api import register_api_routes
     from spo.routes.auth import register_auth
     from spo.routes.notifications import register_notifications
     from spo.routes.proposals import register_proposals
@@ -96,6 +97,7 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
     register_admin(app)
     register_admin_scheduler(app)
     register_notifications(app)
+    register_api_routes(app)
 
     # Register job types (always, even if scheduler isn't started)
     from spo.services.dedup import run_deduplication
