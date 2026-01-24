@@ -59,32 +59,66 @@ def register_api_routes(app):
     @app.route("/api/shops/<int:shop_id>/rates", methods=["GET"])
     def api_get_shop_rates(shop_id):
         """Get all rates for a specific shop."""
+        from spo.models.core import BonusProgram
+
         shop = Shop.query.get_or_404(shop_id)
         shop_main = ShopMain.query.get(shop.shop_main_id) if shop.shop_main_id else None
 
-        rates = ShopProgramRate.query.filter_by(shop_id=shop_id).all()
+        # Get all sibling shops for this ShopMain to ensure all rates are included
+        shop_ids = (
+            [s.id for s in Shop.query.filter_by(shop_main_id=shop.shop_main_id).all()]
+            if shop.shop_main_id
+            else [shop.id]
+        )
+        rates = ShopProgramRate.query.filter(
+            ShopProgramRate.shop_id.in_(shop_ids), ShopProgramRate.valid_to.is_(None)
+        ).all()
 
-        rates_data = []
+        # Group by program and calculate effective values
+        program_map = {}
         for rate in rates:
-            # Get the bonus program name
-            from spo.models.core import BonusProgram
-
             program = db.session.get(BonusProgram, rate.program_id)
+            if not program:
+                continue
+
+            # Calculate effective value (same as evaluate route)
+            points_per_eur = float(rate.points_per_eur or 0)
+            cashback_pct = float(rate.cashback_pct or 0)
+            point_value_eur = float(program.point_value_eur or 0.005)
+
+            # Effective value per EUR: points_value + cashback
+            effective_value = (points_per_eur * point_value_eur) + (cashback_pct / 100.0)
 
             rate_data = {
                 "id": rate.id,
-                "program": program.name if program else "Unknown",
-                "points_per_eur": float(rate.points_per_eur or 0),
-                "cashback_pct": float(rate.cashback_pct or 0),
-                "point_value_eur": float(rate.point_value_eur or 0.005),
+                "points_per_eur": points_per_eur,
+                "cashback_pct": cashback_pct,
+                "point_value_eur": point_value_eur,
                 "rate_type": rate.rate_type or "shop",
+                "effective_value": round(effective_value, 4),
             }
 
             # Add incentive text if available
-            if hasattr(rate, "incentive_text") and rate.incentive_text:
-                rate_data["incentive_text"] = rate.incentive_text
+            if hasattr(rate, "rate_note") and rate.rate_note:
+                rate_data["incentive_text"] = rate.rate_note
 
-            rates_data.append(rate_data)
+            if program.name not in program_map:
+                program_map[program.name] = {
+                    "program": program.name,
+                    "program_id": program.id,
+                    "point_value_eur": point_value_eur,
+                    "best_value": effective_value,
+                    "rates": [],
+                }
+            else:
+                # Update best value if this rate is better
+                if effective_value > program_map[program.name]["best_value"]:
+                    program_map[program.name]["best_value"] = effective_value
+
+            program_map[program.name]["rates"].append(rate_data)
+
+        # Sort programs by best_value (descending)
+        programs_list = sorted(program_map.values(), key=lambda p: p["best_value"], reverse=True)
 
         return jsonify(
             {
@@ -93,7 +127,7 @@ def register_api_routes(app):
                     "name": shop_main.canonical_name if shop_main else shop.name,
                     "url": shop_main.website if shop_main else "",
                 },
-                "rates": rates_data,
+                "programs": programs_list,
             }
         )
 

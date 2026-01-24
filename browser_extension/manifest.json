@@ -4,13 +4,7 @@
   "version": "1.0.0",
   "description": "Zeigt die besten Bonusprogramme für den aktuellen Shop an",
   "permissions": ["activeTab", "storage"],
-  "host_permissions": [
-    "http://localhost:5000/*",
-    "https://*.payback.de/*",
-    "https://*.miles-and-more.com/*",
-    "https://*.shoop.de/*",
-    "https://*.topcashback.de/*"
-  ],
+  "host_permissions": ["http://localhost:5000/*", "https://*.shopping-optimiser.de/*"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

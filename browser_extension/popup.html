@@ -44,10 +44,15 @@
         <h2>Shop nicht erkannt</h2>
         <p>Diese Webseite ist noch nicht in unserer Datenbank.</p>
 
+        <!-- Login-Aufforderung -->
         <div id="login-required" class="login-box">
           <p>Bitte logge dich ein, um einen Vorschlag zu erstellen:</p>
           <button id="btn-login" class="btn btn-primary">Anmelden</button>
           <button id="btn-check-login" class="btn btn-secondary" style="margin-top: 8px">Login-Status prüfen</button>
+        </div>
+
+        <!-- Proposal-Formular (wird angezeigt wenn eingeloggt) -->
+        <div id="create-proposal" class="hidden">
           <h3>Shop-Vorschlag erstellen</h3>
           <form id="proposal-form">
             <div class="form-group">
@@ -66,6 +71,7 @@
           </form>
         </div>
 
+        <!-- Success-Ansicht -->
         <div id="proposal-success" class="hidden">
           <div class="success-icon">✅</div>
           <h3>Vorschlag erfolgreich erstellt!</h3>

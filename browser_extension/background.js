@@ -41,20 +41,37 @@ async function getShops() {
 }
 
 /**
+ * Extrahiert die Top-Level-Domain (z.B. example.com von www.example.com)
+ */
+function extractTLD(hostname) {
+  const parts = hostname.split(".");
+  if (parts.length >= 2) {
+    // Nimm die letzten 2 Teile (domain.tld)
+    return parts.slice(-2).join(".");
+  }
+  return hostname;
+}
+
+/**
  * Prüft ob die aktuelle URL einem bekannten Shop entspricht
  */
 function matchShop(url, shops) {
   try {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname.toLowerCase();
-    const pathname = urlObj.pathname.toLowerCase();
+    const tld = extractTLD(hostname);
 
     for (const shop of shops) {
       // Prüfe Shop-URL
       if (shop.url) {
-        const shopUrl = new URL(shop.url);
-        if (hostname.includes(shopUrl.hostname) || shopUrl.hostname.includes(hostname)) {
-          return shop;
+        try {
+          const shopUrl = new URL(shop.url);
+          const shopTld = extractTLD(shopUrl.hostname.toLowerCase());
+          if (tld === shopTld) {
+            return shop;
+          }
+        } catch (e) {
+          // Ignore invalid shop URLs
         }
       }
 
@@ -63,7 +80,8 @@ function matchShop(url, shops) {
         for (const altUrl of shop.alternative_urls) {
           try {
             const altUrlObj = new URL(altUrl);
-            if (hostname.includes(altUrlObj.hostname) || altUrlObj.hostname.includes(hostname)) {
+            const altTld = extractTLD(altUrlObj.hostname.toLowerCase());
+            if (tld === altTld) {
               return shop;
             }
           } catch (e) {

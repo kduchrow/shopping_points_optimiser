@@ -35,6 +35,24 @@ const elements = {
   btnRetry: document.getElementById("btn-retry"),
 };
 
+/**
+ * Extrahiert die Top-Level-Domain aus einer URL
+ * z.B. https://www.amazon.de/gp/cart/view.html -> https://amazon.de
+ */
+function extractDomainUrl(url) {
+  try {
+    const urlObj = new URL(url);
+    const parts = urlObj.hostname.split(".");
+    // Nimm die letzten 2 Teile (domain.tld)
+    const tld = parts.length >= 2 ? parts.slice(-2).join(".") : urlObj.hostname;
+    // Gebe nur Protokoll + TLD zurück
+    return `${urlObj.protocol}//${tld}`;
+  } catch (error) {
+    console.error("Error extracting domain URL:", error);
+    return url;
+  }
+}
+
 let currentTab = null;
 let currentUrl = null;
 let isLoggedIn = false;
@@ -168,8 +186,8 @@ async function loadRates(shopId) {
     }
 
     const data = await response.json();
-    console.log("Loaded rates:", data.rates?.length || 0);
-    return data.rates || [];
+    console.log("Loaded programs:", data.programs?.length || 0);
+    return data.programs || [];
   } catch (error) {
     console.error("Error loading rates:", error);
     return [];
@@ -177,60 +195,66 @@ async function loadRates(shopId) {
 }
 
 /**
- * Rendert eine Rate-Card
+ * Rendert eine Rate-Card für ein Bonusprogramm
  */
-function renderRateCard(rate) {
-  const value = rate.point_value_eur || 0.005;
-  const pointsPerEur = rate.points_per_eur || 0;
-  const cashbackPct = rate.cashback_pct || 0;
+function renderProgramCard(program) {
+  const bestRate = program.rates.reduce((best, current) => {
+    return current.effective_value > best.effective_value ? current : best;
+  });
+
+  const pointsPerEur = bestRate.points_per_eur || 0;
+  const cashbackPct = bestRate.cashback_pct || 0;
+  const effectiveValue = bestRate.effective_value || 0;
 
   let rateDisplay = "";
+  const parts = [];
+
   if (pointsPerEur > 0) {
-    const valuePerEur = pointsPerEur * value;
-    rateDisplay = `${pointsPerEur} Punkte/€ (≈ ${valuePerEur.toFixed(2)}€ Wert)`;
-  } else if (cashbackPct > 0) {
-    rateDisplay = `${cashbackPct}% Cashback`;
+    parts.push(`${pointsPerEur} Punkte/€`);
+  }
+  if (cashbackPct > 0) {
+    parts.push(`${cashbackPct}% Cashback`);
+  }
+
+  if (parts.length > 0) {
+    rateDisplay = parts.join(" + ");
+    rateDisplay += ` (≈ ${(effectiveValue * 100).toFixed(2)}€ Wert pro 100€)`;
   } else {
     rateDisplay = "Rate nicht verfügbar";
   }
 
   return `
     <div class="rate-card">
-      <div class="rate-program">${rate.program || "Unbekannt"}</div>
+      <div class="rate-program">${program.program}</div>
       <div class="rate-value">${rateDisplay}</div>
-      ${rate.incentive_text ? `<div class="rate-incentive">${rate.incentive_text}</div>` : ""}
+      ${bestRate.incentive_text ? `<div class="rate-incentive">${bestRate.incentive_text}</div>` : ""}
     </div>
   `;
 }
 
 /**
- * Zeigt die Rates für einen Shop an
+ * Zeigt die Rates für einen Shop an (gruppiert nach Programm)
  */
-function displayRates(rates, bestRateElement, ratesListElement) {
+function displayRates(programs, bestRateElement, ratesListElement) {
   if (!bestRateElement || !ratesListElement) {
     console.error("Missing rate display elements");
     return;
   }
 
-  if (rates.length === 0) {
+  if (programs.length === 0) {
     bestRateElement.innerHTML = "<p>Keine Rates verfügbar</p>";
     ratesListElement.innerHTML = "<p>Keine Rates verfügbar</p>";
     return;
   }
 
-  // Finde beste Rate
-  const bestRate = rates.reduce((best, current) => {
-    const bestValue = (best.points_per_eur || 0) * (best.point_value_eur || 0.005) + (best.cashback_pct || 0);
-    const currentValue =
-      (current.points_per_eur || 0) * (current.point_value_eur || 0.005) + (current.cashback_pct || 0);
-    return currentValue > bestValue ? current : best;
-  });
+  // Best program is already first (sorted by API)
+  const bestProgram = programs[0];
 
-  // Zeige beste Rate
-  bestRateElement.innerHTML = renderRateCard(bestRate);
+  // Zeige bestes Programm
+  bestRateElement.innerHTML = renderProgramCard(bestProgram);
 
-  // Zeige alle Rates
-  ratesListElement.innerHTML = rates.map((rate) => renderRateCard(rate)).join("");
+  // Zeige alle Programme
+  ratesListElement.innerHTML = programs.map((program) => renderProgramCard(program)).join("");
 }
 
 /**
@@ -261,15 +285,18 @@ async function initialize() {
       if (elements.shopName) elements.shopName.textContent = matchedShop.name;
       if (elements.shopUrl) elements.shopUrl.textContent = matchedShop.url;
 
-      // Lade Rates
-      const rates = await loadRates(matchedShop.id);
-      displayRates(rates, elements.bestRateContent, elements.ratesList);
+      // Lade Programme mit Rates
+      const programs = await loadRates(matchedShop.id);
+      displayRates(programs, elements.bestRateContent, elements.ratesList);
 
       showView("shop-found");
     } else {
       console.log("Shop not matched - showing proposal form");
       // Shop nicht erkannt
-      if (elements.urlInput) elements.urlInput.value = currentUrl;
+      // Extrahiere nur die Top-Level-Domain für das Proposal
+      const domainUrl = extractDomainUrl(currentUrl);
+      console.log("Domain URL for proposal:", domainUrl);
+      if (elements.urlInput) elements.urlInput.value = domainUrl;
 
       // Prüfe Login-Status
       const loggedIn = await checkLoginStatus();
@@ -403,11 +430,13 @@ if (elements.proposalForm) {
 
     try {
       showView("loading");
-      await createProposal(shopId, currentUrl);
+      // Verwende die bereinigte Domain-URL für das Proposal
+      const domainUrl = extractDomainUrl(currentUrl);
+      await createProposal(shopId, domainUrl);
 
-      // Lade Rates für den vorgeschlagenen Shop
-      const rates = await loadRates(shopId);
-      displayRates(rates, elements.proposalBestRate, elements.proposalRatesList);
+      // Lade Programme mit Rates für den vorgeschlagenen Shop
+      const programs = await loadRates(shopId);
+      displayRates(programs, elements.proposalBestRate, elements.proposalRatesList);
 
       // Zeige Success View
       if (elements.proposalSuccess) {
