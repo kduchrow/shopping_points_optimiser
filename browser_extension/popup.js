@@ -2,7 +2,7 @@
  * Popup Script für Shopping Points Optimiser Extension
  */
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://shopping-optimiser.de/";
 
 // DOM Elemente - Mit Null-Checks
 const elements = {
