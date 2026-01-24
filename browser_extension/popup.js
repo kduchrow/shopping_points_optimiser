@@ -4,7 +4,7 @@
 
 const API_BASE_URL = "http://localhost:5000";
 
-// DOM Elemente
+// DOM Elemente - Mit Null-Checks
 const elements = {
   loading: document.getElementById("loading"),
   shopFound: document.getElementById("shop-found"),
@@ -43,23 +43,25 @@ let isLoggedIn = false;
  * Zeigt einen View an und versteckt alle anderen
  */
 function showView(viewName) {
-  elements.loading.classList.add("hidden");
-  elements.shopFound.classList.add("hidden");
-  elements.shopNotFound.classList.add("hidden");
-  elements.error.classList.add("hidden");
+  // Sicher verstecke alle Views
+  if (elements.loading) elements.loading.classList.add("hidden");
+  if (elements.shopFound) elements.shopFound.classList.add("hidden");
+  if (elements.shopNotFound) elements.shopNotFound.classList.add("hidden");
+  if (elements.error) elements.error.classList.add("hidden");
 
+  // Zeige den gewünschten View
   switch (viewName) {
     case "loading":
-      elements.loading.classList.remove("hidden");
+      if (elements.loading) elements.loading.classList.remove("hidden");
       break;
     case "shop-found":
-      elements.shopFound.classList.remove("hidden");
+      if (elements.shopFound) elements.shopFound.classList.remove("hidden");
       break;
     case "shop-not-found":
-      elements.shopNotFound.classList.remove("hidden");
+      if (elements.shopNotFound) elements.shopNotFound.classList.remove("hidden");
       break;
     case "error":
-      elements.error.classList.remove("hidden");
+      if (elements.error) elements.error.classList.remove("hidden");
       break;
   }
 }
@@ -68,8 +70,29 @@ function showView(viewName) {
  * Zeigt einen Fehler an
  */
 function showError(message) {
-  elements.errorMessage.textContent = message;
+  if (elements.errorMessage) elements.errorMessage.textContent = message;
   showView("error");
+}
+
+/**
+ * Verarbeitet Fehlerhafte API-Antworten
+ */
+async function handleFetchError(response) {
+  const contentType = response.headers.get("content-type");
+
+  if (contentType?.includes("application/json")) {
+    try {
+      return await response.json();
+    } catch (e) {
+      console.error("Failed to parse JSON error response:", e);
+      return { error: "Unerwartete Serverfehler" };
+    }
+  } else {
+    // HTML error page
+    const text = await response.text();
+    console.error("Server returned HTML instead of JSON:", text.substring(0, 200));
+    return { error: "Serverfehler - Bitte versuche es später erneut" };
+  }
 }
 
 /**
@@ -77,11 +100,20 @@ function showError(message) {
  */
 async function checkLoginStatus() {
   try {
+    console.log("Checking login status at:", API_BASE_URL);
     const response = await fetch(`${API_BASE_URL}/api/user/status`, {
       credentials: "include",
     });
+
+    if (!response.ok) {
+      console.error(`Login status check failed with status: ${response.status}`);
+      const errorData = await handleFetchError(response);
+      throw new Error(errorData.error || "Login-Status konnte nicht abgerufen werden");
+    }
+
     const data = await response.json();
     isLoggedIn = data.logged_in || false;
+    console.log("Login status:", isLoggedIn);
     return isLoggedIn;
   } catch (error) {
     console.error("Error checking login status:", error);
@@ -94,17 +126,28 @@ async function checkLoginStatus() {
  */
 async function loadShopsForSelect() {
   try {
+    console.log("Loading shops list...");
     const response = await fetch(`${API_BASE_URL}/api/shops`);
+
+    if (!response.ok) {
+      console.error(`Shops request failed with status: ${response.status}`);
+      const errorData = await handleFetchError(response);
+      throw new Error(errorData.error || "Shops konnten nicht geladen werden");
+    }
+
     const data = await response.json();
     const shops = data.shops || [];
+    console.log("Loaded shops:", shops.length);
 
-    elements.shopSelect.innerHTML = '<option value="">-- Shop auswählen --</option>';
-    shops.forEach((shop) => {
-      const option = document.createElement("option");
-      option.value = shop.id;
-      option.textContent = shop.name;
-      elements.shopSelect.appendChild(option);
-    });
+    if (elements.shopSelect) {
+      elements.shopSelect.innerHTML = '<option value="">-- Shop auswählen --</option>';
+      shops.forEach((shop) => {
+        const option = document.createElement("option");
+        option.value = shop.id;
+        option.textContent = shop.name;
+        elements.shopSelect.appendChild(option);
+      });
+    }
   } catch (error) {
     console.error("Error loading shops:", error);
   }
@@ -115,8 +158,17 @@ async function loadShopsForSelect() {
  */
 async function loadRates(shopId) {
   try {
+    console.log("Loading rates for shop:", shopId);
     const response = await fetch(`${API_BASE_URL}/api/shops/${shopId}/rates`);
+
+    if (!response.ok) {
+      console.error(`Rates request failed with status: ${response.status}`);
+      const errorData = await handleFetchError(response);
+      throw new Error(errorData.error || "Rates konnten nicht geladen werden");
+    }
+
     const data = await response.json();
+    console.log("Loaded rates:", data.rates?.length || 0);
     return data.rates || [];
   } catch (error) {
     console.error("Error loading rates:", error);
@@ -155,6 +207,11 @@ function renderRateCard(rate) {
  * Zeigt die Rates für einen Shop an
  */
 function displayRates(rates, bestRateElement, ratesListElement) {
+  if (!bestRateElement || !ratesListElement) {
+    console.error("Missing rate display elements");
+    return;
+  }
+
   if (rates.length === 0) {
     bestRateElement.innerHTML = "<p>Keine Rates verfügbar</p>";
     ratesListElement.innerHTML = "<p>Keine Rates verfügbar</p>";
@@ -180,22 +237,29 @@ function displayRates(rates, bestRateElement, ratesListElement) {
  * Initialisiert das Popup
  */
 async function initialize() {
+  console.log("Initializing popup...");
   showView("loading");
 
   try {
     // Hole aktuelle Tab-Info
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tabs || !tabs[0]) {
+      throw new Error("Keine aktive Tab gefunden");
+    }
+
     currentTab = tabs[0];
     currentUrl = currentTab.url;
+    console.log("Current URL:", currentUrl);
 
     // Hole erkannten Shop aus Storage
     const result = await chrome.storage.local.get([`shop_${currentTab.id}`]);
     const matchedShop = result[`shop_${currentTab.id}`];
 
     if (matchedShop) {
+      console.log("Shop matched:", matchedShop.name);
       // Shop wurde erkannt
-      elements.shopName.textContent = matchedShop.name;
-      elements.shopUrl.textContent = matchedShop.url;
+      if (elements.shopName) elements.shopName.textContent = matchedShop.name;
+      if (elements.shopUrl) elements.shopUrl.textContent = matchedShop.url;
 
       // Lade Rates
       const rates = await loadRates(matchedShop.id);
@@ -203,21 +267,24 @@ async function initialize() {
 
       showView("shop-found");
     } else {
+      console.log("Shop not matched - showing proposal form");
       // Shop nicht erkannt
-      elements.urlInput.value = currentUrl;
+      if (elements.urlInput) elements.urlInput.value = currentUrl;
 
       // Prüfe Login-Status
       const loggedIn = await checkLoginStatus();
 
       if (loggedIn) {
+        console.log("User is logged in - showing form");
         // Zeige Proposal-Formular
         await loadShopsForSelect();
-        elements.loginRequired.classList.add("hidden");
-        elements.createProposal.classList.remove("hidden");
+        if (elements.loginRequired) elements.loginRequired.classList.add("hidden");
+        if (elements.createProposal) elements.createProposal.classList.remove("hidden");
       } else {
+        console.log("User is not logged in - showing login prompt");
         // Zeige Login-Aufforderung
-        elements.loginRequired.classList.remove("hidden");
-        elements.createProposal.classList.add("hidden");
+        if (elements.loginRequired) elements.loginRequired.classList.remove("hidden");
+        if (elements.createProposal) elements.createProposal.classList.add("hidden");
       }
 
       showView("shop-not-found");
@@ -233,6 +300,7 @@ async function initialize() {
  */
 async function createProposal(shopId, url) {
   try {
+    console.log("Creating proposal for shop:", shopId);
     const response = await fetch(`${API_BASE_URL}/api/proposals/url`, {
       method: "POST",
       headers: {
@@ -246,10 +314,14 @@ async function createProposal(shopId, url) {
     });
 
     if (!response.ok) {
-      throw new Error("Fehler beim Erstellen des Proposals");
+      console.error(`Proposal request failed with status: ${response.status}`);
+      const errorData = await handleFetchError(response);
+      throw new Error(errorData.error || "Fehler beim Erstellen des Proposals");
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log("Proposal created successfully");
+    return result;
   } catch (error) {
     console.error("Error creating proposal:", error);
     throw error;
@@ -257,88 +329,102 @@ async function createProposal(shopId, url) {
 }
 
 // Event Listeners
-elements.btnOpenWeb.addEventListener("click", () => {
-  chrome.tabs.create({ url: `${API_BASE_URL}/` });
-});
-
-elements.btnLogin.addEventListener("click", () => {
-  // Öffne Login-Seite in neuem Tab
-  chrome.tabs.create({ url: `${API_BASE_URL}/login` }, (tab) => {
-    // Warte auf Tab-Updates (wenn User sich einloggt)
-    const tabId = tab.id;
-    const listener = (updatedTabId, changeInfo, updatedTab) => {
-      // Prüfe ob der User zurück zur Hauptseite navigiert hat (nach Login)
-      if (
-        updatedTabId === tabId &&
-        changeInfo.status === "complete" &&
-        updatedTab.url &&
-        updatedTab.url.startsWith(API_BASE_URL) &&
-        !updatedTab.url.includes("/login")
-      ) {
-        // User hat sich wahrscheinlich eingeloggt, prüfe Status neu
-        setTimeout(() => {
-          initialize();
-        }, 1000);
-        chrome.tabs.onUpdated.removeListener(listener);
-      }
-    };
-    chrome.tabs.onUpdated.addListener(listener);
-
-    // Cleanup nach 5 Minuten
-    setTimeout(
-      () => {
-        chrome.tabs.onUpdated.removeListener(listener);
-      },
-      5 * 60 * 1000,
-    );
+if (elements.btnOpenWeb) {
+  elements.btnOpenWeb.addEventListener("click", () => {
+    chrome.tabs.create({ url: `${API_BASE_URL}/` });
   });
-});
+}
 
-elements.btnRetry.addEventListener("click", () => {
-  initialize();
-});
+if (elements.btnLogin) {
+  elements.btnLogin.addEventListener("click", () => {
+    // Öffne Login-Seite in neuem Tab
+    chrome.tabs.create({ url: `${API_BASE_URL}/login` }, (tab) => {
+      // Warte auf Tab-Updates (wenn User sich einloggt)
+      const tabId = tab.id;
+      const listener = (updatedTabId, changeInfo, updatedTab) => {
+        // Prüfe ob der User zurück zur Hauptseite navigiert hat (nach Login)
+        if (
+          updatedTabId === tabId &&
+          changeInfo.status === "complete" &&
+          updatedTab.url &&
+          updatedTab.url.startsWith(API_BASE_URL) &&
+          !updatedTab.url.includes("/login")
+        ) {
+          // User hat sich wahrscheinlich eingeloggt, prüfe Status neu
+          setTimeout(() => {
+            initialize();
+          }, 1000);
+          chrome.tabs.onUpdated.removeListener(listener);
+        }
+      };
+      chrome.tabs.onUpdated.addListener(listener);
 
-elements.btnCheckLogin.addEventListener("click", async () => {
-  showView("loading");
-  const loggedIn = await checkLoginStatus();
-  if (loggedIn) {
-    // User ist jetzt eingeloggt, neu initialisieren
-    await initialize();
-  } else {
-    // Immer noch nicht eingeloggt
-    showView("shop-not-found");
-    alert("Du bist noch nicht eingeloggt. Bitte melde dich zuerst an.");
-  }
-});
+      // Cleanup nach 5 Minuten
+      setTimeout(
+        () => {
+          chrome.tabs.onUpdated.removeListener(listener);
+        },
+        5 * 60 * 1000,
+      );
+    });
+  });
+}
 
-elements.proposalForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
+if (elements.btnRetry) {
+  elements.btnRetry.addEventListener("click", () => {
+    initialize();
+  });
+}
 
-  const shopId = elements.shopSelect.value;
-  if (!shopId) {
-    alert("Bitte wähle einen Shop aus");
-    return;
-  }
-
-  try {
+if (elements.btnCheckLogin) {
+  elements.btnCheckLogin.addEventListener("click", async () => {
     showView("loading");
-    await createProposal(shopId, currentUrl);
+    const loggedIn = await checkLoginStatus();
+    if (loggedIn) {
+      // User ist jetzt eingeloggt, neu initialisieren
+      await initialize();
+    } else {
+      // Immer noch nicht eingeloggt
+      showView("shop-not-found");
+      alert("Du bist noch nicht eingeloggt. Bitte melde dich zuerst an.");
+    }
+  });
+}
 
-    // Lade Rates für den vorgeschlagenen Shop
-    const rates = await loadRates(shopId);
-    displayRates(rates, elements.proposalBestRate, elements.proposalRatesList);
+if (elements.proposalForm) {
+  elements.proposalForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-    // Zeige Success View
-    elements.proposalSuccess.classList.remove("hidden");
-    elements.createProposal.classList.add("hidden");
-    showView("shop-not-found");
+    const shopId = elements.shopSelect?.value;
+    if (!shopId) {
+      alert("Bitte wähle einen Shop aus");
+      return;
+    }
 
-    // Aktualisiere Cache im Background Script
-    chrome.runtime.sendMessage({ action: "refreshCache" });
-  } catch (error) {
-    showError("Fehler beim Erstellen des Vorschlags. Bitte versuche es erneut.");
-  }
-});
+    try {
+      showView("loading");
+      await createProposal(shopId, currentUrl);
 
-// Initialisiere beim Laden
+      // Lade Rates für den vorgeschlagenen Shop
+      const rates = await loadRates(shopId);
+      displayRates(rates, elements.proposalBestRate, elements.proposalRatesList);
+
+      // Zeige Success View
+      if (elements.proposalSuccess) {
+        elements.proposalSuccess.classList.remove("hidden");
+      }
+      if (elements.createProposal) {
+        elements.createProposal.classList.add("hidden");
+      }
+      showView("shop-not-found");
+
+      // Aktualisiere Cache im Background Script
+      chrome.runtime.sendMessage({ action: "refreshCache" });
+    } catch (error) {
+      showError("Fehler beim Erstellen des Vorschlags. Bitte versuche es erneut.");
+    }
+  });
+}
+
+// Initialisiere beim Laden des Popups
 document.addEventListener("DOMContentLoaded", initialize);

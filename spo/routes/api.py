@@ -5,7 +5,7 @@ from flask_login import current_user
 
 from spo.extensions import db
 from spo.models.proposals import Proposal
-from spo.models.shops import Shop, ShopProgramRate
+from spo.models.shops import Shop, ShopMain, ShopProgramRate
 
 
 def register_api_routes(app):
@@ -26,11 +26,22 @@ def register_api_routes(app):
     @app.route("/api/shops", methods=["GET"])
     def api_get_shops():
         """Get all shops with their URLs for matching."""
-        shops = Shop.query.filter_by(is_active=True).all()
+        # Get all active ShopMain entries
+        shop_mains = ShopMain.query.filter_by(status="active").all()
 
         shops_data = []
-        for shop in shops:
-            shop_data = {"id": shop.id, "name": shop.name, "url": shop.url, "alternative_urls": []}
+        for shop_main in shop_mains:
+            # Get at least one Shop entry for each ShopMain
+            shop = Shop.query.filter_by(shop_main_id=shop_main.id).first()
+            if not shop:
+                continue
+
+            shop_data = {
+                "id": shop.id,
+                "name": shop_main.canonical_name,
+                "url": shop_main.website or "",
+                "alternative_urls": [],
+            }
 
             # Add alternative URLs from approved URL proposals
             proposals = Proposal.query.filter_by(
@@ -49,14 +60,20 @@ def register_api_routes(app):
     def api_get_shop_rates(shop_id):
         """Get all rates for a specific shop."""
         shop = Shop.query.get_or_404(shop_id)
+        shop_main = ShopMain.query.get(shop.shop_main_id) if shop.shop_main_id else None
 
         rates = ShopProgramRate.query.filter_by(shop_id=shop_id).all()
 
         rates_data = []
         for rate in rates:
+            # Get the bonus program name
+            from spo.models.core import BonusProgram
+
+            program = db.session.get(BonusProgram, rate.program_id)
+
             rate_data = {
                 "id": rate.id,
-                "program": rate.bonus_program.name if rate.bonus_program else "Unknown",
+                "program": program.name if program else "Unknown",
                 "points_per_eur": float(rate.points_per_eur or 0),
                 "cashback_pct": float(rate.cashback_pct or 0),
                 "point_value_eur": float(rate.point_value_eur or 0.005),
@@ -70,7 +87,14 @@ def register_api_routes(app):
             rates_data.append(rate_data)
 
         return jsonify(
-            {"shop": {"id": shop.id, "name": shop.name, "url": shop.url}, "rates": rates_data}
+            {
+                "shop": {
+                    "id": shop.id,
+                    "name": shop_main.canonical_name if shop_main else shop.name,
+                    "url": shop_main.website if shop_main else "",
+                },
+                "rates": rates_data,
+            }
         )
 
     @app.route("/api/user/status", methods=["GET"])
