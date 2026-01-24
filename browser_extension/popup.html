@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shopping Points Optimiser</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🎯 Shopping Points Optimiser</h1>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Lade Daten...</p>
+      </div>
+
+      <!-- Shop erkannt -->
+      <div id="shop-found" class="hidden">
+        <div class="shop-info">
+          <h2 id="shop-name"></h2>
+          <p class="shop-url" id="shop-url"></p>
+        </div>
+
+        <div class="best-rate">
+          <h3>🏆 Beste Rate</h3>
+          <div id="best-rate-content"></div>
+        </div>
+
+        <div class="all-rates">
+          <h3>📊 Alle Bonusprogramme</h3>
+          <div id="rates-list"></div>
+        </div>
+
+        <button id="btn-open-web" class="btn btn-primary">Im Web öffnen</button>
+      </div>
+
+      <!-- Shop nicht erkannt -->
+      <div id="shop-not-found" class="hidden">
+        <div class="not-found-icon">❓</div>
+        <h2>Shop nicht erkannt</h2>
+        <p>Diese Webseite ist noch nicht in unserer Datenbank.</p>
+
+        <!-- Login-Aufforderung -->
+        <div id="login-required" class="login-box">
+          <p>Bitte logge dich ein, um einen Vorschlag zu erstellen:</p>
+          <button id="btn-login" class="btn btn-primary">Anmelden</button>
+          <button id="btn-check-login" class="btn btn-secondary" style="margin-top: 8px">Login-Status prüfen</button>
+        </div>
+
+        <!-- Proposal-Formular (wird angezeigt wenn eingeloggt) -->
+        <div id="create-proposal" class="hidden">
+          <h3>Shop-Vorschlag erstellen</h3>
+          <form id="proposal-form">
+            <div class="form-group">
+              <label for="shop-select">Welcher Shop ist das?</label>
+              <select id="shop-select" required>
+                <option value="">-- Shop auswählen --</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="url-input">URL:</label>
+              <input type="url" id="url-input" readonly />
+            </div>
+
+            <button type="submit" class="btn btn-success">Vorschlag erstellen</button>
+          </form>
+        </div>
+
+        <!-- Success-Ansicht -->
+        <div id="proposal-success" class="hidden">
+          <div class="success-icon">✅</div>
+          <h3>Vorschlag erfolgreich erstellt!</h3>
+          <p>Die Rates werden jetzt angezeigt:</p>
+
+          <div class="best-rate">
+            <h3>🏆 Beste Rate</h3>
+            <div id="proposal-best-rate"></div>
+          </div>
+
+          <div class="all-rates">
+            <h3>📊 Alle Bonusprogramme</h3>
+            <div id="proposal-rates-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div id="error" class="hidden error-box">
+        <h3>⚠️ Fehler</h3>
+        <p id="error-message"></p>
+        <button id="btn-retry" class="btn btn-secondary">Erneut versuchen</button>
+      </div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
