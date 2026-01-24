@@ -12,6 +12,18 @@ from spo.models.shops import Shop
 def register_api_routes(app):
     """Register API routes for the browser extension."""
 
+    @app.after_request
+    def after_request(response):
+        """Add CORS headers for browser extension."""
+        # Allow extension to access API
+        origin = request.headers.get("Origin")
+        if origin and origin.startswith("chrome-extension://"):
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        return response
+
     @app.route("/api/shops", methods=["GET"])
     def api_get_shops():
         """Get all shops with their URLs for matching."""

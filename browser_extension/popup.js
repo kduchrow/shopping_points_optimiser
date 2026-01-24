@@ -24,6 +24,7 @@ const elements = {
   createProposal: document.getElementById("create-proposal"),
   proposalSuccess: document.getElementById("proposal-success"),
   btnLogin: document.getElementById("btn-login"),
+  btnCheckLogin: document.getElementById("btn-check-login"),
   shopSelect: document.getElementById("shop-select"),
   urlInput: document.getElementById("url-input"),
   proposalForm: document.getElementById("proposal-form"),
@@ -261,11 +262,53 @@ elements.btnOpenWeb.addEventListener("click", () => {
 });
 
 elements.btnLogin.addEventListener("click", () => {
-  chrome.tabs.create({ url: `${API_BASE_URL}/login` });
+  // Öffne Login-Seite in neuem Tab
+  chrome.tabs.create({ url: `${API_BASE_URL}/login` }, (tab) => {
+    // Warte auf Tab-Updates (wenn User sich einloggt)
+    const tabId = tab.id;
+    const listener = (updatedTabId, changeInfo, updatedTab) => {
+      // Prüfe ob der User zurück zur Hauptseite navigiert hat (nach Login)
+      if (
+        updatedTabId === tabId &&
+        changeInfo.status === "complete" &&
+        updatedTab.url &&
+        updatedTab.url.startsWith(API_BASE_URL) &&
+        !updatedTab.url.includes("/login")
+      ) {
+        // User hat sich wahrscheinlich eingeloggt, prüfe Status neu
+        setTimeout(() => {
+          initialize();
+        }, 1000);
+        chrome.tabs.onUpdated.removeListener(listener);
+      }
+    };
+    chrome.tabs.onUpdated.addListener(listener);
+
+    // Cleanup nach 5 Minuten
+    setTimeout(
+      () => {
+        chrome.tabs.onUpdated.removeListener(listener);
+      },
+      5 * 60 * 1000,
+    );
+  });
 });
 
 elements.btnRetry.addEventListener("click", () => {
   initialize();
+});
+
+elements.btnCheckLogin.addEventListener("click", async () => {
+  showView("loading");
+  const loggedIn = await checkLoginStatus();
+  if (loggedIn) {
+    // User ist jetzt eingeloggt, neu initialisieren
+    await initialize();
+  } else {
+    // Immer noch nicht eingeloggt
+    showView("shop-not-found");
+    alert("Du bist noch nicht eingeloggt. Bitte melde dich zuerst an.");
+  }
 });
 
 elements.proposalForm.addEventListener("submit", async (e) => {
