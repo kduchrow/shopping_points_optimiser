@@ -4,7 +4,7 @@ from flask import jsonify, request
 from flask_login import current_user
 
 from spo.extensions import db
-from spo.models.proposals import ShopURLProposal
+from spo.models.proposals import Proposal
 from spo.models.rates import ShopProgramRate
 from spo.models.shops import Shop
 
@@ -33,12 +33,14 @@ def register_api_routes(app):
         for shop in shops:
             shop_data = {"id": shop.id, "name": shop.name, "url": shop.url, "alternative_urls": []}
 
-            # Add alternative URLs from approved proposals
-            proposals = ShopURLProposal.query.filter_by(shop_id=shop.id, status="approved").all()
+            # Add alternative URLs from approved URL proposals
+            proposals = Proposal.query.filter_by(
+                shop_id=shop.id, proposal_type="url", status="approved"
+            ).all()
 
             for proposal in proposals:
-                if proposal.url and proposal.url not in shop_data["alternative_urls"]:
-                    shop_data["alternative_urls"].append(proposal.url)
+                if proposal.source_url and proposal.source_url not in shop_data["alternative_urls"]:
+                    shop_data["alternative_urls"].append(proposal.source_url)
 
             shops_data.append(shop_data)
 
@@ -101,7 +103,9 @@ def register_api_routes(app):
             return jsonify({"error": "Shop not found"}), 404
 
         # Check if proposal already exists
-        existing = ShopURLProposal.query.filter_by(shop_id=shop_id, url=url).first()
+        existing = Proposal.query.filter_by(
+            shop_id=shop_id, proposal_type="url", source_url=url
+        ).first()
 
         if existing:
             return jsonify(
@@ -112,9 +116,15 @@ def register_api_routes(app):
                 }
             )
 
-        # Create new proposal
-        proposal = ShopURLProposal(
-            shop_id=shop_id, url=url, proposed_by_id=current_user.id, status="pending"
+        # Create new URL proposal
+        proposal = Proposal(
+            proposal_type="url",
+            shop_id=shop_id,
+            source_url=url,
+            user_id=current_user.id,
+            status="approved",  # Auto-approve for browser extension
+            approved_by_system=True,
+            source="browser_extension",
         )
 
         db.session.add(proposal)
