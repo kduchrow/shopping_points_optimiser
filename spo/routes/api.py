@@ -5,8 +5,7 @@ from flask_login import current_user
 
 from spo.extensions import db
 from spo.models.proposals import Proposal
-from spo.models.rates import ShopProgramRate
-from spo.models.shops import Shop
+from spo.models.shops import Shop, ShopProgramRate
 
 
 def register_api_routes(app):
