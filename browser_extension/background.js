@@ -3,8 +3,7 @@
  * Verwaltet die Shop-Erkennung und Badge-Updates
  */
 
-// API Base URL - ändern für Production
-const API_BASE_URL = "http://localhost:5000";
+importScripts("config.js");
 
 // Shop-Daten Cache
 let shopsCache = [];

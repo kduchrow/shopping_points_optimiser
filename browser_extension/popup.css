@@ -196,6 +196,27 @@ body {
   border-color: #667eea;
 }
 
+/* Shop Search Input Autocomplete */
+#shop-search-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background: white;
+}
+
+#shop-search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+#shop-search-input::placeholder {
+  color: #999;
+  font-style: italic;
+}
+
 /* Proposal Success */
 #proposal-success {
   text-align: center;

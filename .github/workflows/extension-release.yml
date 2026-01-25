@@ -1,0 +1,65 @@
+---
+name: Browser Extension Release
+
+on:
+  push:
+    tags:
+      - "browser-extension-v*"
+  workflow_dispatch: {}
+
+permissions:
+  # needed to create releases and upload assets
+  contents: write
+
+jobs:
+  build-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read version from manifest
+        id: manifest
+        run: |
+          VERSION=$(jq -r '.version' browser_extension/manifest.json)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Install crx3 packer
+        run: |
+          npm install -g crx3
+
+      - name: Restore PEM key from secret
+        if: env.EXTENSION_PEM_B64 != ''
+        run: |
+          echo "$EXTENSION_PEM_B64" | base64 -d > key.pem
+        env:
+          EXTENSION_PEM_B64: ${{ secrets.EXTENSION_PEM_B64 }}
+
+      - name: Pack extension (crx + zip)
+        run: |
+          VERSION=${{ steps.manifest.outputs.version }}
+          crx3 --key=key.pem \
+               --crx=browser_extension-${VERSION}.crx \
+               --zip=browser_extension-${VERSION}.zip \
+               ./browser_extension
+        env:
+          EXTENSION_PEM_B64: ${{ secrets.EXTENSION_PEM_B64 }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser_extension
+          path: |
+            browser_extension-${{ steps.manifest.outputs.version }}.zip
+            browser_extension-${{ steps.manifest.outputs.version }}.crx
+
+      - name: Publish GitHub Release asset (tag trigger)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            browser_extension-${{ steps.manifest.outputs.version }}.zip
+            browser_extension-${{ steps.manifest.outputs.version }}.crx
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
