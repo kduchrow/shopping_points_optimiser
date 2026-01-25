@@ -39,6 +39,15 @@
       </div>
     </div>
 
+    {% if current_user.is_authenticated %}
+    <div class="form-group" style="margin-top: 12px;">
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <input type="checkbox" name="include_my_proposals" value="on" checked style="width:18px; height:18px;">
+        <span>Meine Vorschläge im Ergebnis anzeigen (nur für mich sichtbar)</span>
+      </label>
+    </div>
+    {% endif %}
+
     <button type="submit" id="submit-btn">ℹ️ Informationen ohne Wert anzeigen</button>
   </form>
 </div>
