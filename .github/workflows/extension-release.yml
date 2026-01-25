@@ -14,6 +14,9 @@ permissions:
 jobs:
   build-and-package:
     runs-on: ubuntu-latest
+    env:
+      EXTENSION_PEM: ${{ secrets.EXTENSION_PEM }}
+      EXTENSION_PEM_B64: ${{ secrets.EXTENSION_PEM_B64 }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,14 +32,14 @@ jobs:
           npm install -g crx3
 
       - name: Restore PEM key from secret (raw PEM)
-        if: ${{ secrets.EXTENSION_PEM != '' }}
+        if: env.EXTENSION_PEM != ''
         run: |
-          printf "%s" "${{ secrets.EXTENSION_PEM }}" > key.pem
+          printf "%s" "$EXTENSION_PEM" > key.pem
 
       - name: Restore PEM key from secret (base64)
-        if: ${{ secrets.EXTENSION_PEM_B64 != '' }}
+        if: env.EXTENSION_PEM_B64 != ''
         run: |
-          printf "%s" "${{ secrets.EXTENSION_PEM_B64 }}" | base64 --decode --ignore-garbage > key.pem
+          printf "%s" "$EXTENSION_PEM_B64" | base64 --decode --ignore-garbage > key.pem
 
       - name: Validate key.pem exists
         run: |
