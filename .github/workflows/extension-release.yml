@@ -1,0 +1,78 @@
+---
+name: Browser Extension Release
+
+on:
+  push:
+    tags:
+      - "browser-extension-v*"
+  workflow_dispatch: {}
+
+permissions:
+  # needed to create releases and upload assets
+  contents: write
+
+jobs:
+  build-and-package:
+    runs-on: ubuntu-latest
+    env:
+      EXTENSION_PEM: ${{ secrets.EXTENSION_PEM }}
+      EXTENSION_PEM_B64: ${{ secrets.EXTENSION_PEM_B64 }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read version from manifest
+        id: manifest
+        run: |
+          VERSION=$(jq -r '.version' browser_extension/manifest.json)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Install crx3 packer
+        run: |
+          npm install -g crx3
+
+      - name: Restore PEM key from secret (raw PEM)
+        if: env.EXTENSION_PEM != ''
+        run: |
+          printf "%s" "$EXTENSION_PEM" > key.pem
+
+      - name: Restore PEM key from secret (base64)
+        if: env.EXTENSION_PEM_B64 != ''
+        run: |
+          printf "%s" "$EXTENSION_PEM_B64" | base64 --decode --ignore-garbage > key.pem
+
+      - name: Validate key.pem exists and format
+        run: |
+          test -s key.pem || { echo "Missing key.pem. Set EXTENSION_PEM or EXTENSION_PEM_B64."; exit 1; }
+          if ! openssl pkey -in key.pem -pubout -out /tmp/pubkey.pem >/dev/null 2>&1; then
+            echo "key.pem is not a valid unencrypted PEM (RSA/PKCS#8)."
+            echo "Recreate the key: openssl pkcs8 -topk8 -nocrypt -in key.pem -out key_unencrypted.pem"
+            exit 1
+          fi
+
+      - name: Pack extension (crx + zip)
+        run: |
+          VERSION=${{ steps.manifest.outputs.version }}
+          crx3 --key=key.pem \
+               --crx=browser_extension-${VERSION}.crx \
+               --zip=browser_extension-${VERSION}.zip \
+               ./browser_extension
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser_extension
+          path: |
+            browser_extension-${{ steps.manifest.outputs.version }}.zip
+            browser_extension-${{ steps.manifest.outputs.version }}.crx
+
+      - name: Publish GitHub Release asset (tag trigger)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            browser_extension-${{ steps.manifest.outputs.version }}.zip
+            browser_extension-${{ steps.manifest.outputs.version }}.crx
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

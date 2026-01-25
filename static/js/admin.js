@@ -78,6 +78,68 @@ function renderScheduledJobs(jobs) {
   html += `</div>`;
   container.innerHTML = html;
 }
+
+function runScheduledJob(jobId) {
+  if (!confirm("Diesen Job jetzt ausführen?")) return;
+  fetch(`/admin/scheduled_jobs/${jobId}/run`, {
+    method: "POST",
+    headers: { Accept: "application/json" },
+    credentials: "same-origin",
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.success) {
+        alert("✅ Job wurde gestartet!");
+        loadScheduledJobs();
+      } else {
+        alert("❌ Fehler: " + (data.error || "Unbekannter Fehler"));
+      }
+    })
+    .catch((err) => alert("❌ Fehler: " + err));
+}
+
+function deleteScheduledJob(jobId) {
+  if (!confirm("Diesen Job wirklich löschen?")) return;
+  fetch(`/admin/scheduled_jobs/${jobId}/delete`, {
+    method: "POST",
+    headers: { Accept: "application/json" },
+    credentials: "same-origin",
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.success) {
+        alert("✅ Job wurde gelöscht!");
+        loadScheduledJobs();
+      } else {
+        alert("❌ Fehler: " + (data.error || "Unbekannter Fehler"));
+      }
+    })
+    .catch((err) => alert("❌ Fehler: " + err));
+}
+
+function showJobLogs(jobId) {
+  fetch(`/admin/scheduled_jobs/${jobId}/logs?json=1`, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    credentials: "same-origin",
+  })
+    .then((r) => {
+      if (!r.ok) {
+        throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+      }
+      return r.json();
+    })
+    .then((data) => {
+      if (data.logs && data.logs.length > 0) {
+        const logs = data.logs.map((log) => `[${log.timestamp}] ${log.message}`).join("\n");
+        alert("Job Logs:\n\n" + logs);
+      } else {
+        alert("Keine Logs vorhanden für diesen Job.");
+      }
+    })
+    .catch((err) => alert("❌ Fehler beim Laden der Logs: " + err.message));
+}
+
 // Dynamically load users for Users tab
 function loadUsers() {
   fetch("/admin/users?json=1")
@@ -223,15 +285,17 @@ function openShopDetails(mainId) {
       data.shops.forEach((s) => {
         html += `<div style='margin-bottom:18px;'><h4 style='margin:6px 0 4px 0;'>${s.name}</h4>`;
         if (s.rates && s.rates.length > 0) {
-          html += `<table class='admin-table' style='margin-bottom:8px;'><thead><tr><th>Programm</th><th>Kategorie</th><th>Subkategorie</th><th>Raten</th><th>Gültig von</th><th>Gültig bis</th></tr></thead><tbody>`;
+          html += `<table class='admin-table' style='margin-bottom:8px;'><thead><tr><th>Programm</th><th>Typ</th><th>Kategorie</th><th>Subkategorie</th><th>Raten</th><th>Gültig von</th><th>Gültig bis</th></tr></thead><tbody>`;
           s.rates.forEach((rt) => {
             let rateParts = [];
             if (rt.points_per_eur) rateParts.push(`${rt.points_per_eur} P/EUR`);
             if (rt.points_absolute) rateParts.push(`${rt.points_absolute} P absolut`);
             if (rt.cashback_pct) rateParts.push(`${rt.cashback_pct}% CB`);
-            if (rt.cashback_absolute) rateParts.push(`${rt.cashback.absolute}€ CB absolut`);
+            if (rt.cashback_absolute) rateParts.push(`${rt.cashback_absolute}€ CB absolut`);
+            const rateTypeLabel = rt.rate_type === "contract" ? "📝 Vertrag" : "🛒 Shop";
             html += `<tr>`;
             html += `<td>${rt.program}</td>`;
+            html += `<td>${rateTypeLabel}</td>`;
             html += `<td>${rt.category || "—"}</td>`;
             html += `<td>${rt.sub_category || "—"}</td>`;
             html += `<td>${rateParts.join(", ") || "—"}</td>`;
@@ -491,6 +555,7 @@ function wireScraperForms() {
       fetch("/admin/run_shoop", {
         method: "POST",
         headers: { Accept: "application/json" },
+        credentials: "same-origin",
       })
         .then((r) => r.json())
         .then((data) => {
@@ -506,6 +571,7 @@ function wireScraperForms() {
       fetch("/admin/run_miles_and_more", {
         method: "POST",
         headers: { Accept: "application/json" },
+        credentials: "same-origin",
       })
         .then((r) => r.json())
         .then((data) => {
@@ -521,6 +587,7 @@ function wireScraperForms() {
       fetch("/admin/run_payback", {
         method: "POST",
         headers: { Accept: "application/json" },
+        credentials: "same-origin",
       })
         .then((r) => r.json())
         .then((data) => {
@@ -536,6 +603,7 @@ function wireScraperForms() {
       fetch("/admin/run_topcashback", {
         method: "POST",
         headers: { Accept: "application/json" },
+        credentials: "same-origin",
       })
         .then((r) => r.json())
         .then((data) => {
@@ -615,12 +683,13 @@ function renderShopList(data) {
       const r = shop.rates[0];
       let cat = r.category ? `<span style='color:#888'>[${r.category}]</span> ` : "";
       let subcat = r.sub_category ? ` (${r.sub_category})` : "";
+      const rateTypeIcon = r.rate_type === "contract" ? "📝" : "🛒";
       let rateParts = [];
       if (r.points_per_eur) rateParts.push(`${r.points_per_eur} P/EUR`);
       if (r.points_absolute) rateParts.push(`${r.points_absolute} P absolut`);
       if (r.cashback_pct) rateParts.push(`${r.cashback_pct}% CB`);
-      if (r.cashback_absolute) rateParts.push(`${r.cashback.absolute}€ CB absolut`);
-      rates = `${cat}${r.program}: ${rateParts.join(", ")}${subcat}`;
+      if (r.cashback_absolute) rateParts.push(`${r.cashback_absolute}€ CB absolut`);
+      rates = `${rateTypeIcon} ${cat}${r.program}: ${rateParts.join(", ")}${subcat}`;
       if (shop.rates.length > 1) {
         rates += ` <span style='color:#888'>(+${shop.rates.length - 1} weitere, siehe Details)</span>`;
       }

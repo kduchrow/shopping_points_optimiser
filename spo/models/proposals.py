@@ -15,6 +15,7 @@ class Proposal(db.Model):
     program_id = db.Column(db.Integer, db.ForeignKey("bonus_programs.id"), nullable=True)
     proposed_points_per_eur = db.Column(db.Float, nullable=True)
     proposed_cashback_pct = db.Column(db.Float, nullable=True)
+    proposed_rate_type = db.Column(db.String, default="shop", nullable=False)
     proposed_name = db.Column(db.String, nullable=True)
     proposed_point_value_eur = db.Column(db.Float, nullable=True)
     proposed_coupon_type = db.Column(db.String, nullable=True)

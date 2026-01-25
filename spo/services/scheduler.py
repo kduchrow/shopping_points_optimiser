@@ -143,28 +143,33 @@ def init_scheduler(app):
     _scheduler = BackgroundScheduler(daemon=True)
 
     with app.app_context():
-        # Load all enabled scheduled jobs from database
-        scheduled_jobs = ScheduledJob.query.filter_by(enabled=True).all()
+        try:
+            # Load all enabled scheduled jobs from database
+            scheduled_jobs = ScheduledJob.query.filter_by(enabled=True).all()
 
-        for scheduled_job in scheduled_jobs:
-            try:
-                trigger = CronTrigger.from_crontab(scheduled_job.cron_expression)
-                _scheduler.add_job(
-                    func=_execute_scheduled_job,
-                    trigger=trigger,
-                    args=[scheduled_job.id],
-                    id=f"scheduled_job_{scheduled_job.id}",
-                    name=scheduled_job.job_name,
-                    replace_existing=True,
-                )
-                logger.info(
-                    f"Scheduled job '{scheduled_job.job_name}' "
-                    f"with cron '{scheduled_job.cron_expression}'"
-                )
-            except Exception as e:
-                logger.error(
-                    f"Failed to schedule job '{scheduled_job.job_name}': {e}", exc_info=True
-                )
+            for scheduled_job in scheduled_jobs:
+                try:
+                    trigger = CronTrigger.from_crontab(scheduled_job.cron_expression)
+                    _scheduler.add_job(
+                        func=_execute_scheduled_job,
+                        trigger=trigger,
+                        args=[scheduled_job.id],
+                        id=f"scheduled_job_{scheduled_job.id}",
+                        name=scheduled_job.job_name,
+                        replace_existing=True,
+                    )
+                    logger.info(
+                        f"Scheduled job '{scheduled_job.job_name}' "
+                        f"with cron '{scheduled_job.cron_expression}'"
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Failed to schedule job '{scheduled_job.job_name}': {e}", exc_info=True
+                    )
+        except Exception as e:
+            logger.warning(
+                f"Could not load scheduled jobs from database (tables may not exist yet): {e}"
+            )
 
     _scheduler.start()
     logger.info(f"Scheduler started with {len(_scheduler.get_jobs())} jobs")

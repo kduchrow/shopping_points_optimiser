@@ -50,6 +50,7 @@ class ShopProgramRate(db.Model):
     cashback_pct = db.Column(db.Float, default=None)  # cashback percentage
     cashback_absolute = db.Column(db.Float, default=None)  # absolute cashback amount in EUR
     rate_note = db.Column(db.String, nullable=True)  # Additional notes about the rate
+    rate_type = db.Column(db.String, default="shop", nullable=False)  # 'shop' or 'contract'
     # Normalized category reference (nullable)
     category_id = db.Column(db.Integer, db.ForeignKey("shop_categories.id"), nullable=True)
     category_obj = db.relationship("ShopCategory", backref="rates")
