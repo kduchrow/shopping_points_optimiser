@@ -2,8 +2,6 @@
  * Popup Script für Shopping Points Optimiser Extension
  */
 
-const API_BASE_URL = "https://shopping-optimiser.de/";
-
 // DOM Elemente - Mit Null-Checks
 const elements = {
   loading: document.getElementById("loading"),
@@ -56,6 +54,7 @@ function extractDomainUrl(url) {
 let currentTab = null;
 let currentUrl = null;
 let isLoggedIn = false;
+let shopSearchDebounce = null;
 
 /**
  * Zeigt einen View an und versteckt alle anderen
@@ -140,35 +139,113 @@ async function checkLoginStatus() {
 }
 
 /**
- * Lädt alle Shops für das Dropdown
+ * Sucht Shops basierend auf Suchbegriff (wie Index-Seite)
  */
-async function loadShopsForSelect() {
+async function searchShops(query) {
   try {
-    console.log("Loading shops list...");
-    const response = await fetch(`${API_BASE_URL}/api/shops`);
+    if (!query || query.length < 2) {
+      return [];
+    }
+    console.log("Searching shops with query:", query);
+    const response = await fetch(`${API_BASE_URL}/shop_names?q=${encodeURIComponent(query)}`);
 
     if (!response.ok) {
-      console.error(`Shops request failed with status: ${response.status}`);
-      const errorData = await handleFetchError(response);
-      throw new Error(errorData.error || "Shops konnten nicht geladen werden");
+      console.error(`Shop search failed with status: ${response.status}`);
+      return [];
     }
 
-    const data = await response.json();
-    const shops = data.shops || [];
-    console.log("Loaded shops:", shops.length);
+    const shops = await response.json();
+    console.log("Found shops:", shops.length);
+    return shops;
+  } catch (error) {
+    console.error("Error searching shops:", error);
+    return [];
+  }
+}
 
-    if (elements.shopSelect) {
-      elements.shopSelect.innerHTML = '<option value="">-- Shop auswählen --</option>';
+/**
+ * Initialisiert Shop-Suche mit Debouncing
+ */
+function setupShopSearch() {
+  if (!elements.shopSelect) return;
+
+  // Erstelle Datalist für Autocomplete
+  const datalistId = "shop-suggestions";
+  let datalist = document.getElementById(datalistId);
+  if (!datalist) {
+    datalist = document.createElement("datalist");
+    datalist.id = datalistId;
+    elements.shopSelect.parentElement.appendChild(datalist);
+  }
+
+  // Konvertiere Select zu Input mit Autocomplete
+  const searchInput = document.createElement("input");
+  searchInput.type = "text";
+  searchInput.id = "shop-search-input";
+  searchInput.className = elements.shopSelect.className;
+  searchInput.placeholder = "Shop suchen (mind. 2 Zeichen)...";
+  searchInput.setAttribute("list", datalistId);
+  searchInput.setAttribute("autocomplete", "off");
+  searchInput.required = true;
+
+  // Verstecke Original-Select, speichere aber die Referenz
+  const hiddenSelect = elements.shopSelect;
+  hiddenSelect.style.display = "none";
+  hiddenSelect.removeAttribute("required"); // Entferne required von verstecktem Select
+  hiddenSelect.parentElement.insertBefore(searchInput, hiddenSelect);
+
+  // Event-Listener für Suche
+  searchInput.addEventListener("input", async (e) => {
+    const query = e.target.value.trim();
+
+    // Prüfe ob ein Shop aus der Liste gewählt wurde
+    const option = Array.from(datalist.options).find((opt) => opt.value === query);
+    if (option && option.dataset.shopId) {
+      hiddenSelect.value = option.dataset.shopId;
+      console.log("Shop selected via input:", query, "ID:", option.dataset.shopId);
+      return; // Keine neue Suche nötig
+    }
+
+    // Debounce für Suche
+    if (shopSearchDebounce) {
+      clearTimeout(shopSearchDebounce);
+    }
+
+    shopSearchDebounce = setTimeout(async () => {
+      const shops = await searchShops(query);
+
+      // Update Datalist
+      datalist.innerHTML = "";
+      shops.forEach((shop) => {
+        const option = document.createElement("option");
+        option.value = shop.name;
+        option.dataset.shopId = shop.id;
+        datalist.appendChild(option);
+      });
+
+      // Update Hidden Select
+      hiddenSelect.innerHTML = '<option value="">-- Shop auswählen --</option>';
       shops.forEach((shop) => {
         const option = document.createElement("option");
         option.value = shop.id;
         option.textContent = shop.name;
-        elements.shopSelect.appendChild(option);
+        hiddenSelect.appendChild(option);
       });
+    }, 300);
+  });
+
+  // Event-Listener für Auswahl (Fallback)
+  searchInput.addEventListener("change", (e) => {
+    const selectedName = e.target.value;
+    // Finde die entsprechende Option im Datalist
+    const option = Array.from(datalist.options).find((opt) => opt.value === selectedName);
+    if (option && option.dataset.shopId) {
+      hiddenSelect.value = option.dataset.shopId;
+      console.log("Shop selected via change:", selectedName, "ID:", option.dataset.shopId);
     }
-  } catch (error) {
-    console.error("Error loading shops:", error);
-  }
+  });
+
+  console.log("Shop search initialized");
 }
 
 /**
@@ -303,8 +380,8 @@ async function initialize() {
 
       if (loggedIn) {
         console.log("User is logged in - showing form");
-        // Zeige Proposal-Formular
-        await loadShopsForSelect();
+        // Zeige Proposal-Formular mit Shop-Suche
+        setupShopSearch();
         if (elements.loginRequired) elements.loginRequired.classList.add("hidden");
         if (elements.createProposal) elements.createProposal.classList.remove("hidden");
       } else {

@@ -12,13 +12,42 @@ Eine Chrome/Chromium Extension für den Shopping Points Optimiser.
 
 ## Installation (Entwicklungsmodus)
 
-1. **Chrome/Chromium öffnen**
-2. **Extensions-Seite öffnen**:
+### Option 1: Von GitHub Release (.crx Datei)
+
+1. **Extension herunterladen**:
+
+   - Gehe zu [Releases](https://github.com/kduchrow/shopping_points_optimiser/releases)
+   - Lade die neueste `browser_extension.crx` Datei herunter
+
+2. **Chrome/Chromium öffnen** und Extensions-Seite öffnen:
+
    - Gehe zu `chrome://extensions/`
    - Oder: Menü → Weitere Tools → Erweiterungen
+
 3. **Entwicklermodus aktivieren**:
+
    - Schalte den Entwicklermodus oben rechts ein
-4. **Extension laden**:
+
+4. **Extension installieren**:
+   - Ziehe die `.crx` Datei per Drag & Drop auf die Extensions-Seite
+   - Oder: Klicke auf "Entpackte Erweiterung laden" und wähle den entpackten Ordner
+
+### Option 2: Aus Quellcode (Entwickler)
+
+1. **Repository klonen**:
+
+   ```bash
+   git clone https://github.com/kduchrow/shopping_points_optimiser.git
+   cd shopping_points_optimiser
+   ```
+
+2. **Chrome/Chromium öffnen**
+3. **Extensions-Seite öffnen**:
+   - Gehe zu `chrome://extensions/`
+   - Oder: Menü → Weitere Tools → Erweiterungen
+4. **Entwicklermodus aktivieren**:
+   - Schalte den Entwicklermodus oben rechts ein
+5. **Extension laden**:
    - Klicke auf "Entpackte Erweiterung laden"
    - Wähle den Ordner `browser_extension` aus diesem Repository
 

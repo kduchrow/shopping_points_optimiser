@@ -48,6 +48,11 @@ spo/static/
 .env.production
 .env.*.local
 
+# Browser Extension Build Artifacts
+*.crx
+*.pem
+browser_extension.zip
+
 # Testing
 .pytest_cache/
 .coverage
