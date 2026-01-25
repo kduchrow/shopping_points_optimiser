@@ -28,12 +28,19 @@ jobs:
         run: |
           npm install -g crx3
 
-      - name: Restore PEM key from secret
-        if: env.EXTENSION_PEM_B64 != ''
+      - name: Restore PEM key from secret (raw PEM)
+        if: ${{ secrets.EXTENSION_PEM != '' }}
         run: |
-          echo "$EXTENSION_PEM_B64" | base64 -d > key.pem
-        env:
-          EXTENSION_PEM_B64: ${{ secrets.EXTENSION_PEM_B64 }}
+          printf "%s" "${{ secrets.EXTENSION_PEM }}" > key.pem
+
+      - name: Restore PEM key from secret (base64)
+        if: ${{ secrets.EXTENSION_PEM_B64 != '' }}
+        run: |
+          printf "%s" "${{ secrets.EXTENSION_PEM_B64 }}" | base64 --decode --ignore-garbage > key.pem
+
+      - name: Validate key.pem exists
+        run: |
+          test -s key.pem || { echo "Missing key.pem. Set EXTENSION_PEM or EXTENSION_PEM_B64."; exit 1; }
 
       - name: Pack extension (crx + zip)
         run: |
@@ -42,8 +49,6 @@ jobs:
                --crx=browser_extension-${VERSION}.crx \
                --zip=browser_extension-${VERSION}.zip \
                ./browser_extension
-        env:
-          EXTENSION_PEM_B64: ${{ secrets.EXTENSION_PEM_B64 }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

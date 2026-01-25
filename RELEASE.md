@@ -16,9 +16,9 @@ Workflow: `.github/workflows/extension-release.yml`
 
 **Schlüssel-Handling (CRX):**
 
-- Lege den Base64-kodierten privaten Key als Secret `EXTENSION_PEM_B64` an.
-- Der Workflow schreibt daraus temporär `key.pem` im Runner (nicht im Repo).
-- `.pem` bleibt in `.gitignore`.
+- Variante A (empfohlen): Lege den privaten Schlüssel-Inhalt direkt als Secret `EXTENSION_PEM` (roh als Text, inkl. `-----BEGIN PRIVATE KEY-----` ... `-----END PRIVATE KEY-----`). Der Workflow schreibt daraus temporär `key.pem` im Runner (nicht im Repo).
+- Variante B: Falls nötig, als Base64 kodiert in `EXTENSION_PEM_B64`. Erzeuge die Base64 ohne Zeilenumbrüche, z. B. unter Linux/macOS: `base64 -w 0 key.pem` (Linux) oder `base64 key.pem | tr -d '\n'` (macOS). Der Workflow dekodiert robust mit `--ignore-garbage`.
+- `.pem` bleibt in `.gitignore` und wird nie ins Repo committet.
 
 **Ablauf Tag-basiert:**
 
