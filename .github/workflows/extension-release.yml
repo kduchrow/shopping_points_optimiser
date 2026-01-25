@@ -41,9 +41,14 @@ jobs:
         run: |
           printf "%s" "$EXTENSION_PEM_B64" | base64 --decode --ignore-garbage > key.pem
 
-      - name: Validate key.pem exists
+      - name: Validate key.pem exists and format
         run: |
           test -s key.pem || { echo "Missing key.pem. Set EXTENSION_PEM or EXTENSION_PEM_B64."; exit 1; }
+          if ! openssl pkey -in key.pem -pubout -out /tmp/pubkey.pem >/dev/null 2>&1; then
+            echo "key.pem is not a valid unencrypted PEM (RSA/PKCS#8)."
+            echo "Recreate the key: openssl pkcs8 -topk8 -nocrypt -in key.pem -out key_unencrypted.pem"
+            exit 1
+          fi
 
       - name: Pack extension (crx + zip)
         run: |
