@@ -1,147 +1,214 @@
-{% extends "base.html" %} {% block title %}Ergebnisse - Shopping Points Optimiser{% endblock %} {% block extra_css %}
+﻿{% extends "base.html" %}
+{% block title %}Ergebnisse - Shopping Points Optimiser{% endblock %}
+
+{% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/result.css') }}" />
-{% endblock %} {% block nav %}
+{% endblock %}
+
+{% block nav %}
 <nav class="top-nav">
-  <a class="nav-link" href="/">🏠 Startseite</a>
+  <a class="nav-link" href="/">Startseite</a>
 </nav>
-{% endblock %} {% block content %}
+{% endblock %}
+
+{% block content %}
 <div class="card wide">
-  <h1>📊 Ergebnisse</h1>
+  <h1>Ergebnisse</h1>
 
   <div class="info-box">
-    <p>🏪 <strong>Shop:</strong> {{ shop.name }}</p>
+    <p><strong>Shop:</strong> {{ shop.name }}</p>
     {% if mode == 'shopping' %}
       {% if amount is not none %}
-      <p>💵 <strong>Einkaufsbetrag:</strong> {{ amount }}€</p>
+      <p><strong>Einkaufsbetrag:</strong> {{ amount }} EUR</p>
       {% else %}
-      <p>ℹ️ <strong>Kein Betrag angegeben:</strong> Wir zeigen die verfügbaren Raten ohne Berechnung.</p>
+      <p><strong>Kein Betrag angegeben:</strong> Wir zeigen die verfügbaren Raten ohne Berechnung.</p>
+      {% endif %}
+      {% if current_user.is_authenticated and include_my_proposals %}
+      <p>Eigene Vorschläge werden angezeigt (nur für dich sichtbar).</p>
       {% endif %}
     {% elif mode == 'voucher' %}
-    <p>🎁 <strong>Gewünschter Gutschein:</strong> {{ voucher }}€</p>
+    <p><strong>Gewünschter Gutschein:</strong> {{ voucher }} EUR</p>
     {% endif %}
   </div>
 
   {% if mode == 'shopping' %}
-  {% if amount is not none %}
-  {% if has_coupons %}
-  <div class="coupons-section">
-    <h3>🎉 Verfügbare Sonderaktionen für diesen Shop</h3>
-    <form id="coupon-selection-form" method="post" action="/evaluate">
+    {% if has_coupons %}
+    <div class="coupons-section">
+      <h3>Verfügbare Sonderaktionen für diesen Shop</h3>
+      <form id="coupon-selection-form" method="post" action="/evaluate">
         <input type="hidden" name="shop" value="{{ shop.id }}" />
-        <input type="hidden" name="amount" value="{{ amount }}" />
+        {% if amount is not none %}<input type="hidden" name="amount" value="{{ amount }}" />{% endif %}
         <input type="hidden" name="mode" value="shopping" />
-      <div class="coupons-list" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 8px;">
-        {% for coupon in active_coupons %}
-        <div class="coupon-card" style="background: #f8fafc; border: 1px solid #e0e7ef; border-radius: 14px; padding: 18px 20px 32px 20px; min-width: 260px; max-width: 340px; box-shadow: 0 2px 8px #e0e7ef33; display: flex; flex-direction: column; align-items: flex-start; position: relative;">
-          <div style="width:100%; display:flex; flex-direction:column;">
-            <span style="font-weight:600; font-size:1.13em; color:#222;">{{ coupon.name }}</span>
-            <span style="display:block; font-size:1em; color:#444; margin-top:4px;">
-              {% if coupon.coupon_type == 'multiplier' %}🔢 <b>{{ coupon.value|int if coupon.value == coupon.value|int else coupon.value }}x</b> Multiplikator{% else %}💰 <b>{{ coupon.value|int if coupon.value == coupon.value|int else coupon.value }}%</b> Rabatt{% endif %}
-            </span>
-            <span style="font-size:0.95em; color:#666; margin-top:4px;">{{ coupon.description }}</span>
-            <div style="font-size:0.93em; color:#888; margin-top:8px; margin-bottom:10px;">
-              {% if coupon.shop and coupon.shop.name %}
-                📍 {{ coupon.shop.name }}
-              {% endif %}
-              <br />
-              {% if coupon.program and coupon.program.name %}
-                <span style="margin-left:8px;">Programm: {{ coupon.program.name }}</span>
-              {% endif %}
-            </div>
-          </div>
-          <div style="width:100%; display:flex; justify-content:center; align-items:center; margin-top:auto;">
-            <label for="coupon-{{ coupon.id }}" style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:1em;">
-              <span style="font-size:0.97em; color:#555;">Aktivieren</span>
-              <input type="checkbox" name="coupon_ids" value="{{ coupon.id }}" class="coupon-tickbox styled-tickbox" id="coupon-{{ coupon.id }}" {% if coupon.selected %}checked{% endif %} style="accent-color:#3b82f6; width:22px; height:22px; border-radius:12px; box-shadow:0 1px 4px #3b82f633;">
-            </label>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-      {% if active_coupons|length > 3 %}
-      <p class="text-small text-gray-light mt-8 text-center">← Scroll für mehr Coupons →</p>
-      {% endif %}
-    </form>
-  </div>
-
-  <div class="warning">
-    <strong>⚠️ Hinweis:</strong> Für diesen Shop sind Sonderaktionen verfügbar. Die Berechnungen berücksichtigen diese
-    automatisch.
-  </div>
-
-  <div class="mode-toggle" style="display: flex; align-items: center; gap: 16px;">
-    <style>
-      .toggle-switch-wrapper {
-        display: flex;
-        justify-content: center;
-        width: 100%;
-      }
-      .toggle-switch {
-        display: flex;
-        background: #e5e7eb;
-        border-radius: 999px;
-        padding: 3px;
-        box-shadow: 0 1px 4px #3b82f622;
-        position: relative;
-        width: fit-content;
-      }
-      .toggle-switch-btn {
-        border: none;
-        background: none;
-        padding: 8px 22px;
-        border-radius: 999px;
-        font-size: 1em;
-        font-weight: 500;
-        color: #444;
-        cursor: pointer;
-        transition: background 0.18s, color 0.18s;
-        z-index: 1;
-      }
-      .toggle-switch-btn.active {
-        background: #fff;
-        color: #2563eb;
-        box-shadow: 0 2px 8px #3b82f633;
-      }
-    </style>
-    <div class="toggle-switch-wrapper">
-      <div class="toggle-switch" id="modeToggle">
-        <button class="toggle-switch-btn active" id="toggle-base" onclick="toggleMode('base', event)">📊 Nach Basiswert</button>
-        <button class="toggle-switch-btn" id="toggle-coupon" onclick="toggleMode('coupon', event)">🎉 Mit Sonderaktionen</button>
-      </div>
-    </div>
-    <script>
-      function toggleMode(mode, event) {
-        document.getElementById('toggle-base').classList.remove('active');
-        document.getElementById('toggle-coupon').classList.remove('active');
-        if (mode === 'base') {
-          document.getElementById('toggle-base').classList.add('active');
-        } else {
-          document.getElementById('toggle-coupon').classList.add('active');
-        }
-        sortResults(mode, event);
-      }
-    </script>
-  </div>
-  {% endif %}
-
-  <h2>🏆 Beste Programme (geschätzter Gegenwert in €)</h2>
-  <ul class="results-list" id="results-list">
-    {% if grouped_results is defined %}
-      {% for prog in grouped_results %}
-        <li data-base-value="{{ prog.categories[0].euros }}" data-coupon-value="{% set best_coupon = (prog.categories | selectattr('coupon_info', 'defined') | selectattr('coupon_info.euros', 'defined') | map(attribute='coupon_info') | list) %}{% if best_coupon and best_coupon[0] %}{{ best_coupon[0].euros }}{% else %}{{ prog.categories[0].euros }}{% endif %}">
-          <div style="display: flex; align-items: flex-start; justify-content: space-between; width: 100%;">
-            <div style="flex: 1 1 auto;">
-              <div style="display: flex; align-items: flex-start; justify-content: space-between;">
-                <div class="program-name">{{ prog.program }}</div>
-                <div class="program-value" style="margin-left: 12px; white-space: nowrap; font-size: 1.15em; font-weight: 600;">{{ prog.best_value }}€{% if amount is not none %} ( {{ (amount - prog.best_value)|round(2) }}€ ){% endif %}</div>
-              </div>
-              <div class="program-details">
-                {% if prog.categories|length > 1 %}
-                  Beste Kategorie: {{ prog.best_value }}€
-                {% else %}
-                  Basiswert: {{ prog.categories[0].euros }}€
+        {% if include_my_proposals %}
+        <input type="hidden" name="include_my_proposals" value="on" />
+        {% endif %}
+        <div class="coupons-list" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 8px;">
+          {% for coupon in active_coupons %}
+          <div class="coupon-card" style="background: #f8fafc; border: 1px solid #e0e7ef; border-radius: 14px; padding: 18px 20px 32px 20px; min-width: 260px; max-width: 340px; box-shadow: 0 2px 8px #e0e7ef33; display: flex; flex-direction: column; align-items: flex-start; position: relative;">
+            <div style="width:100%; display:flex; flex-direction:column;">
+              <span style="font-weight:600; font-size:1.13em; color:#222;">{{ coupon.name }}</span>
+              <span style="display:block; font-size:1em; color:#444; margin-top:4px;">
+                {% if coupon.coupon_type == 'multiplier' %}<b>{{ coupon.value|int if coupon.value == coupon.value|int else coupon.value }}x</b> Multiplikator{% else %}<b>{{ coupon.value|int if coupon.value == coupon.value|int else coupon.value }}%</b> Rabatt{% endif %}
+              </span>
+              <span style="font-size:0.95em; color:#666; margin-top:4px;">{{ coupon.description }}</span>
+              <div style="font-size:0.93em; color:#888; margin-top:8px; margin-bottom:10px;">
+                {% if coupon.shop and coupon.shop.name %}
+                  {{ coupon.shop.name }}
+                {% endif %}
+                <br />
+                {% if coupon.program and coupon.program.name %}
+                  <span style="margin-left:8px;">Programm: {{ coupon.program.name }}</span>
+                {% endif %}
+                {% if coupon.is_proposal %}
+                  <br />
+                  <span style="display:inline-block; margin-top:4px; padding:3px 10px; border-radius:10px; background:#ecfdf3; color:#166534; border:1px solid #bbf7d0; font-size:12px; font-weight:500;">
+                    Dein Vorschlag · pending
+                  </span>
                 {% endif %}
               </div>
+            </div>
+            <div style="width:100%; display:flex; justify-content:center; align-items:center; margin-top:auto;">
+              <label for="coupon-{{ coupon.id }}" style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:1em;">
+                <span style="font-size:0.97em; color:#555;">Aktivieren</span>
+                <input type="checkbox" name="coupon_ids" value="{{ coupon.id }}" class="coupon-tickbox styled-tickbox" id="coupon-{{ coupon.id }}" {% if coupon.selected %}checked{% endif %} style="accent-color:#3b82f6; width:22px; height:22px; border-radius:12px; box-shadow:0 1px 4px #3b82f633;">
+              </label>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% if active_coupons|length > 3 %}
+        <p class="text-small text-gray-light mt-8 text-center">Scroll für mehr Coupons</p>
+        {% endif %}
+      </form>
+    </div>
+    {% endif %}
+
+    <div class="warning">
+      <strong>Hinweis:</strong> Für diesen Shop sind Sonderaktionen verfügbar.{% if amount is not none %} Die Berechnungen berücksichtigen diese automatisch.{% endif %}
+    </div>
+
+    {% if amount is not none %}
+    <div class="mode-toggle" style="display: flex; align-items: center; gap: 16px;">
+      <style>
+        .toggle-switch-wrapper { display: flex; justify-content: center; width: 100%; }
+        .toggle-switch { display: flex; background: #e5e7eb; border-radius: 999px; padding: 3px; box-shadow: 0 1px 4px #3b82f622; position: relative; width: fit-content; }
+        .toggle-switch-btn { border: none; background: none; padding: 8px 22px; border-radius: 999px; font-size: 1em; font-weight: 500; color: #444; cursor: pointer; transition: background 0.18s, color 0.18s; z-index: 1; }
+        .toggle-switch-btn.active { background: #fff; color: #2563eb; box-shadow: 0 2px 8px #3b82f633; }
+      </style>
+      <div class="toggle-switch-wrapper">
+        <div class="toggle-switch" id="modeToggle">
+          <button class="toggle-switch-btn active" id="toggle-base" onclick="toggleMode('base', event)">Nach Basiswert</button>
+          <button class="toggle-switch-btn" id="toggle-coupon" onclick="toggleMode('coupon', event)">Mit Sonderaktionen</button>
+        </div>
+      </div>
+      <script>
+        function toggleMode(mode, event) {
+          document.getElementById('toggle-base').classList.remove('active');
+          document.getElementById('toggle-coupon').classList.remove('active');
+          if (mode === 'base') {
+            document.getElementById('toggle-base').classList.add('active');
+          } else {
+            document.getElementById('toggle-coupon').classList.add('active');
+          }
+          sortResults(mode, event);
+        }
+      </script>
+    </div>
+
+    <h2>Beste Programme (geschätzter Gegenwert in EUR)</h2>
+    <ul class="results-list" id="results-list">
+      {% if grouped_results is defined %}
+        {% for prog in grouped_results %}
+          <li data-base-value="{{ prog.categories[0].euros }}" data-coupon-value="{% set best_coupon = (prog.categories | selectattr('coupon_info', 'defined') | selectattr('coupon_info.euros', 'defined') | map(attribute='coupon_info') | list) %}{% if best_coupon and best_coupon[0] %}{{ best_coupon[0].euros }}{% else %}{{ prog.categories[0].euros }}{% endif %}">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; width: 100%;">
+              <div style="flex: 1 1 auto;">
+                <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+                  <div class="program-name">{{ prog.program }}</div>
+                  <div class="program-value" style="margin-left: 12px; white-space: nowrap; font-size: 1.15em; font-weight: 600;">{{ prog.best_value }} EUR ( {{ (amount - prog.best_value)|round(2) }} EUR )</div>
+                </div>
+                <div class="program-details">
+                  {% if prog.categories|length > 1 %}
+                    Beste Kategorie: {{ prog.best_value }} EUR
+                  {% else %}
+                    Basiswert: {{ prog.categories[0].euros }} EUR
+                  {% endif %}
+                </div>
+                <div style="margin-top:8px;">
+                  <strong>Kategorien:</strong>
+                  <ul style="margin:6px 0 0 12px; padding:0; list-style: none;">
+                    {% for c in prog.categories %}
+                      <li style="padding:4px 0; border-bottom:1px solid #f3f4f6; display: flex; flex-direction: column; align-items: stretch;">
+                        <div style="display: flex; justify-content: flex-start;">
+                          <span style="font-weight:600; padding-right: 4px; padding-left: 4px; text-align: left; max-width: 320px; word-break: break-word;">{{ c.category or c.sub_category or 'Allgemein' }}</span>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; ">
+                          <span style="font-size:13px; color:#555; text-align: right; padding-right: 10px;">
+                            {% if c.cashback_absolute is defined and (c.cashback_absolute|float > 0.0 or c.cashback_absolute|int > 0) %}
+                              {{ c.cashback_absolute|round(2) }} EUR Cashback (absolut)
+                              {% if c.cashback_rate is defined and c.cashback_rate|float > 0.0 %}
+                                + {{ c.cashback_rate|round(2) }}% Cashback
+                              {% endif %}
+                               {{ c.euros|round(2) }} EUR
+                            {% elif c.cashback_rate is defined and c.cashback_rate|float > 0.0 %}
+                              {{ c.cashback_rate|round(2) }}% Cashback  {{ c.euros|round(2) }} EUR
+                            {% elif c.points_absolute is defined and c.points_absolute|float > 0.0 %}
+                              {{ c.points_absolute|round(2) }} Punkte (absolut)
+                              {% if c.points is defined and c.points|float > 0.0 %}
+                                + {{ c.points|round(2) }} Punkte
+                              {% endif %}
+                               {{ c.euros|round(2) }} EUR
+                            {% else %}
+                              {{ c.points }} Punkte  {{ c.euros|round(2) }} EUR
+                            {% endif %}
+                            {% if c.coupon_info %} (Aktion: {{ c.coupon_info.euros }} EUR){% endif %}
+                            {% if c.is_proposal %}
+                              <span style="display:inline-block; margin-left:8px; padding:2px 8px; border-radius:10px; background:#ecfdf3; color:#166534; border:1px solid #bbf7d0; font-size:12px;">
+                                Dein Vorschlag · pending
+                              </span>
+                            {% endif %}
+                          </span>
+                        </div>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </li>
+        {% endfor %}
+      {% else %}
+        {% for r in results %}
+        <li data-base-value="{{ r.euros }}" data-coupon-value="{% if r.coupon_info %}{{ r.coupon_info.euros }}{% else %}{{ r.euros }}{% endif %}">
+          <div class="flex-1">
+            <div class="program-name">{{ r.program }}</div>
+            <div class="program-details">Basiswert: {{ r.points }} Punkte  {{ r.euros }} EUR</div>
+            {% if r.coupon_info %}
+            <div class="coupon-info">
+              <strong>Mit Sonderaktion:</strong>
+              <span class="coupon-value">{{ r.coupon_info.euros }} EUR</span>
+              ({{ r.coupon_info.points }} Punkte)
+              {% if r.coupon_info.multipliers %}<br />{{ r.coupon_info.multipliers|join(', ') }}{% endif %}
+              {% if r.coupon_info.discounts %}<br />{{ r.coupon_info.discounts|join(', ') }}{% endif %}
+              {% if r.coupon_info.unknown_combinability %}<br /><em style="color: #ff6600">Kombinierbarkeit unbekannt - beide Werte angezeigt</em>{% endif %}
+            </div>
+            {% endif %}
+          </div>
+          <div class="program-value" id="value-{{ r.program|replace(' ', '-') }}">{{ r.euros }} EUR</div>
+        </li>
+        {% endfor %}
+      {% endif %}
+    </ul>
+    {% else %}
+    <div class="info-box">
+      Du hast keinen Betrag eingegeben. Hier siehst du die hinterlegten Punkte- und Cashback-Raten pro Programm.
+    </div>
+    <h2>Programme (Raten ohne Betrag)</h2>
+    <ul class="results-list" id="results-list">
+      {% for prog in grouped_results %}
+        <li>
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; width: 100%;">
+            <div style="flex: 1 1 auto;">
+              <div class="program-name">{{ prog.program }}</div>
               <div style="margin-top:8px;">
                 <strong>Kategorien:</strong>
                 <ul style="margin:6px 0 0 12px; padding:0; list-style: none;">
@@ -152,24 +219,20 @@
                       </div>
                       <div style="display: flex; justify-content: flex-end; ">
                         <span style="font-size:13px; color:#555; text-align: right; padding-right: 10px;">
-                          {% if c.cashback_absolute is defined and (c.cashback_absolute|float > 0.0 or c.cashback_absolute|int > 0) %}
-                            {{ c.cashback_absolute|round(2) }}€ Cashback (absolut)
-                            {% if c.cashback_rate is defined and c.cashback_rate|float > 0.0 %}
-                              + {{ c.cashback_rate|round(2) }}% Cashback
-                            {% endif %}
-                            → {{ c.euros|round(2) }}€
-                          {% elif c.cashback_rate is defined and c.cashback_rate|float > 0.0 %}
-                            {{ c.cashback_rate|round(2) }}% Cashback → {{ c.euros|round(2) }}€
-                          {% elif c.points_absolute is defined and c.points_absolute|float > 0.0 %}
-                            {{ c.points_absolute|round(2) }} Punkte (absolut)
-                            {% if c.points is defined and c.points|float > 0.0 %}
-                              + {{ c.points|round(2) }} Punkte
-                            {% endif %}
-                            → {{ c.euros|round(2) }}€
-                          {% else %}
-                            {{ c.points }} Punkte → {{ c.euros|round(2) }}€
+                          {% set has_points_per_eur = c.points_per_eur is not none %}
+                          {% set has_cashback_pct = c.cashback_pct is not none %}
+                          {% set has_points_abs = c.points_absolute is not none %}
+                          {% set has_cashback_abs = c.cashback_absolute is not none %}
+                          {% if has_points_per_eur %}{{ c.points_per_eur }} Punkte/EUR{% endif %}
+                          {% if has_cashback_pct %}{% if has_points_per_eur %} | {% endif %}{{ c.cashback_pct }}% Cashback{% endif %}
+                          {% if has_points_abs %}{% if has_points_per_eur or has_cashback_pct %} | {% endif %}{{ c.points_absolute }} Punkte (absolut){% endif %}
+                          {% if has_cashback_abs %}{% if has_points_per_eur or has_cashback_pct or has_points_abs %} | {% endif %}{{ c.cashback_absolute }} EUR Cashback (absolut){% endif %}
+                          {% if not (has_points_per_eur or has_cashback_pct or has_points_abs or has_cashback_abs) %}Siehe Admin für Details{% endif %}
+                          {% if c.is_proposal %}
+                            <span style="display:inline-block; margin-left:8px; padding:2px 8px; border-radius:10px; background:#ecfdf3; color:#166534; border:1px solid #bbf7d0; font-size:12px;">
+                              Dein Vorschlag · pending
+                            </span>
                           {% endif %}
-                          {% if c.coupon_info %} (Aktion: {{ c.coupon_info.euros }}€){% endif %}
                         </span>
                       </div>
                     </li>
@@ -180,135 +243,63 @@
           </div>
         </li>
       {% endfor %}
-    {% else %}
+    </ul>
+    {% endif %}
+  {% elif mode == 'voucher' %}
+    <h2>Benötigter Umsatz nach Programm</h2>
+    <ul class="results-list">
       {% for r in results %}
-      <li
-        data-base-value="{{ r.euros }}"
-        data-coupon-value="{% if r.coupon_info %}{{ r.coupon_info.euros }}{% else %}{{ r.euros }}{% endif %}"
-      >
-        <div class="flex-1">
+      <li>
+        <div>
           <div class="program-name">{{ r.program }}</div>
-          <div class="program-details">Basiswert: {{ r.points }} Punkte → {{ r.euros }}€</div>
-
-          {% if r.coupon_info %}
-          <div class="coupon-info">
-            <strong>🎉 Mit Sonderaktion:</strong>
-            <span class="coupon-value">{{ r.coupon_info.euros }}€</span>
-            ({{ r.coupon_info.points }} Punkte) {% if r.coupon_info.multipliers %}
-            <br />{{ r.coupon_info.multipliers|join(', ') }} {% endif %} {% if r.coupon_info.discounts %} <br />{{ r.coupon_info.discounts|join(', ') }} {% endif %} {% if r.coupon_info.unknown_combinability %} <br /><em style="color: #ff6600">⚠ Kombinierbarkeit unbekannt - Beide Werte angezeigt</em> {% endif %}
-          </div>
-          {% endif %}
+          <div class="program-details">{{ r.req_points }} Punkte benötigt</div>
         </div>
-        <div class="program-value" id="value-{{ r.program|replace(' ', '-') }}">{{ r.euros }}€</div>
+        <div class="program-value">{{ r.spend }} EUR</div>
       </li>
       {% endfor %}
-    {% endif %}
-  </ul>
-  {% else %}
-  <div class="info-box">
-    Du hast keinen Betrag eingegeben. Hier siehst du die hinterlegten Punkte- und Cashback-Raten pro Programm.
-  </div>
-  <h2>ℹ️ Programme (Raten ohne Betrag)</h2>
-  <ul class="results-list" id="results-list">
-    {% for prog in grouped_results %}
-      <li>
-        <div class="program-name">{{ prog.program }}</div>
-        <div style="margin-top:8px;">
-          <strong>Kategorien:</strong>
-          <ul style="margin:6px 0 0 12px; padding:0; list-style: none;">
-            {% for c in prog.categories %}
-              <li style="padding:4px 0; border-bottom:1px solid #f3f4f6; display: flex; flex-direction: column; align-items: stretch;">
-                <div style="display: flex; justify-content: flex-start;">
-                  <span style="font-weight:600; padding-right: 4px; padding-left: 4px; text-align: left; max-width: 320px; word-break: break-word;">{{ c.category or c.sub_category or 'Allgemein' }}</span>
-                </div>
-                <div style="display: flex; justify-content: flex-end; ">
-                  <span style="font-size:13px; color:#555; text-align: right; padding-right: 10px;">
-                    {% set has_points_per_eur = c.points_per_eur is not none %}
-                    {% set has_cashback_pct = c.cashback_pct is not none %}
-                    {% set has_points_abs = c.points_absolute is not none %}
-                    {% set has_cashback_abs = c.cashback_absolute is not none %}
-                    {% if has_points_per_eur %}
-                      {{ c.points_per_eur }} Punkte/EUR
-                    {% endif %}
-                    {% if has_cashback_pct %}
-                      {% if has_points_per_eur %} | {% endif %}
-                      {{ c.cashback_pct }}% Cashback
-                    {% endif %}
-                    {% if has_points_abs %}
-                      {% if has_points_per_eur or has_cashback_pct %} | {% endif %}
-                      {{ c.points_absolute }} Punkte (absolut)
-                    {% endif %}
-                    {% if has_cashback_abs %}
-                      {% if has_points_per_eur or has_cashback_pct or has_points_abs %} | {% endif %}
-                      {{ c.cashback_absolute }}€ Cashback (absolut)
-                    {% endif %}
-                    {% if not (has_points_per_eur or has_cashback_pct or has_points_abs or has_cashback_abs) %}
-                      Siehe Admin für Details
-                    {% endif %}
-                  </span>
-                </div>
-              </li>
-            {% endfor %}
-          </ul>
-        </div>
-      </li>
-    {% endfor %}
-  </ul>
-  {% endif %}
-  {% elif mode == 'voucher' %}
-  <h2>🎯 Benötigter Umsatz nach Programm</h2>
-  <ul class="results-list">
-    {% for r in results %}
-    <li>
-      <div>
-        <div class="program-name">{{ r.program }}</div>
-        <div class="program-details">{{ r.req_points }} Punkte benötigt</div>
-      </div>
-      <div class="program-value">{{ r.spend }}€</div>
-    </li>
-    {% endfor %}
-  </ul>
+    </ul>
   {% elif mode == 'contract' %}
-  <h2>✍️ Vertragsabschluss Bonuspunkte</h2>
-  <div class="info-box">
-    Bei Abschluss eines Vertrages mit <strong>{{ shop.name }}</strong> erhältst du folgende Bonuspunkte pro Programm:
-  </div>
-  <ul class="results-list">
-    {% for r in results %}
-    <li>
-      <div class="program-name">{{ r.program }}</div>
-    </li>
-    {% endfor %}
-  </ul>
-  <div class="info-box mt-20">
-    ℹ️ Die genauen Werte und Vergütungen findest du in der
-    <a href="/admin" class="text-decoration-underline"><strong>Admin-Seite</strong></a>
-    unter "Shops & Raten".
-  </div>
+    <h2>Vertragsabschluss Bonuspunkte</h2>
+    <div class="info-box">
+      Bei Abschluss eines Vertrages mit <strong>{{ shop.name }}</strong> erhältst du folgende Bonuspunkte pro Programm:
+    </div>
+    <ul class="results-list">
+      {% for r in results %}
+      <li>
+        <div class="program-name">{{ r.program }}</div>
+      </li>
+      {% endfor %}
+    </ul>
+    <div class="info-box mt-20">
+      Die genauen Werte und Vergütungen findest du in der
+      <a href="/admin" class="text-decoration-underline"><strong>Admin-Seite</strong></a>
+      unter "Shops & Raten".
+    </div>
   {% endif %}
 
   <div class="links-stack justify-center mt-30">
-    <a href="/" class="btn btn-inline btn-secondary">← Zurück zur Startseite</a>
-    <a href="/shop/{{ shop.id }}/suggest" class="btn btn-inline">✏️ Vorschlag einreichen</a>
+    <a href="/" class="btn btn-inline btn-secondary">Zurück zur Startseite</a>
+    <a href="/shop/{{ shop.id }}/suggest" class="btn btn-inline">Vorschlag einreichen</a>
   </div>
 </div>
-{% endblock %} {% block modals %}
-<!-- Modal for scraper proposals -->
+{% endblock %}
+
+{% block modals %}
 <div id="proposalModal" class="modal">
   <div class="modal-content">
     <span class="close" onclick="closeProposalModal()">&times;</span>
-    <h2>🤖 Scraper-Vorschlag</h2>
+    <h2>Scraper-Vorschlag</h2>
     <p>Für den Shop <strong id="modalShopName"></strong> wurde automatisch ein Vorschlag erstellt:</p>
     <p id="modalReason"></p>
-    <p>
-      <a id="modalSourceLink" href="#" target="_blank">📄 Quelle anzeigen</a>
-    </p>
+    <p><a id="modalSourceLink" href="#" target="_blank">Quelle anzeigen</a></p>
     <div class="modal-buttons">
-      <button id="reviewBtn" class="modal-btn primary">✏️ Vorschlag reviewen</button>
-      <button onclick="closeProposalModal()" class="modal-btn secondary">✕ Schließen</button>
+      <button id="reviewBtn" class="modal-btn primary">Vorschlag reviewen</button>
+      <button onclick="closeProposalModal()" class="modal-btn secondary">Schließen</button>
     </div>
   </div>
 </div>
-{% endblock %} {% block scripts %}
+{% endblock %}
+
+{% block scripts %}
 <script src="{{ url_for('static', filename='js/result.js') }}"></script>
 {% endblock %}

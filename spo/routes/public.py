@@ -5,6 +5,7 @@ from spo.extensions import db
 from spo.models import (
     BonusProgram,
     Coupon,
+    Proposal,
     Shop,
     ShopMain,
     ShopMetadataProposal,
@@ -41,6 +42,7 @@ def register_public(app):
         # Handle calculation logic for selected shop
         shop_id = request.form.get("shop", type=int)
         raw_amount = (request.form.get("amount") or "").strip()
+        include_my_proposals = request.form.get("include_my_proposals") == "on"
         try:
             amount = float(raw_amount) if raw_amount else None
         except (TypeError, ValueError):
@@ -55,6 +57,44 @@ def register_public(app):
             shop_coupons = Coupon.query.filter(
                 or_(Coupon.shop_id == shop.id, Coupon.shop_id.is_(None))
             ).all()
+
+            # Show own pending coupon proposals
+            if current_user.is_authenticated and include_my_proposals:
+                from types import SimpleNamespace
+
+                coupon_proposals = Proposal.query.filter(
+                    Proposal.user_id == current_user.id,
+                    Proposal.shop_id == shop.id,
+                    Proposal.proposal_type == "coupon_add",
+                    Proposal.status == "pending",
+                ).all()
+
+                for p in coupon_proposals:
+                    # Only include proposals that define coupon details
+                    if p.proposed_coupon_type is None or p.proposed_coupon_value is None:
+                        continue
+
+                    # Create pseudo-coupon from proposal
+                    pseudo_coupon = SimpleNamespace(
+                        id=f"proposal-{p.id}",
+                        name=f"{p.proposed_coupon_description or 'Dein Coupon-Vorschlag'}",
+                        coupon_type=p.proposed_coupon_type,
+                        value=p.proposed_coupon_value,
+                        description=p.proposed_coupon_description or "",
+                        shop_id=shop.id,
+                        shop=shop,
+                        program_id=p.program_id,
+                        program=(
+                            db.session.get(BonusProgram, p.program_id) if p.program_id else None
+                        ),
+                        valid_to=p.proposed_coupon_valid_to,
+                        combinable=p.proposed_coupon_combinable,
+                        selected=False,
+                        is_proposal=True,
+                        proposal_status=p.status,
+                    )
+                    shop_coupons.append(pseudo_coupon)
+
         if not shop:
             return redirect(url_for("index"))
         # Use all sibling shops for this ShopMain to ensure all rates (e.g. Payback) are included
@@ -62,6 +102,39 @@ def register_public(app):
         rates = ShopProgramRate.query.filter(
             ShopProgramRate.shop_id.in_(shop_ids), ShopProgramRate.valid_to.is_(None)
         ).all()
+
+        # Show own pending proposals for this shop only to the submitting user
+        if current_user.is_authenticated and include_my_proposals:
+            user_proposals = Proposal.query.filter(
+                Proposal.user_id == current_user.id,
+                Proposal.shop_id == shop.id,
+                Proposal.proposal_type == "rate_change",
+                Proposal.program_id.isnot(None),
+                Proposal.status == "pending",
+            ).all()
+            from types import SimpleNamespace
+
+            for p in user_proposals:
+                # Only include proposals that define a numeric rate
+                if p.proposed_points_per_eur is None and p.proposed_cashback_pct is None:
+                    continue
+                rates.append(
+                    SimpleNamespace(
+                        id=f"proposal-{p.id}",
+                        shop_id=shop.id,
+                        program_id=p.program_id,
+                        points_per_eur=p.proposed_points_per_eur or 0.0,
+                        points_absolute=None,
+                        cashback_pct=p.proposed_cashback_pct or 0.0,
+                        cashback_absolute=None,
+                        rate_note="Dein Vorschlag (wartet auf Freigabe)",
+                        rate_type=p.proposed_rate_type or "shop",
+                        category_obj=None,
+                        valid_to=None,
+                        is_proposal=True,
+                        proposal_status=p.status,
+                    )
+                )
         has_coupons = bool(shop_coupons)
         # Get selected coupon IDs from form (may be multiple)
         selected_coupon_ids = request.form.getlist("coupon_ids")
@@ -129,6 +202,8 @@ def register_public(app):
                         "cashback_pct": rate.cashback_pct,
                         "cashback_absolute": rate.cashback_absolute,
                         "rate_type": getattr(rate, "rate_type", None),
+                        "is_proposal": getattr(rate, "is_proposal", False),
+                        "proposal_status": getattr(rate, "proposal_status", None),
                     }
                     prog["categories"].append(entry)
                 programs_list = sorted(program_map.values(), key=lambda p: p["program"])
@@ -138,9 +213,10 @@ def register_public(app):
                     shop=shop,
                     amount=None,
                     grouped_results=programs_list,
-                    has_coupons=False,
-                    active_coupons=[],
+                    has_coupons=has_coupons,
+                    active_coupons=shop_coupons,
                     combine_coupons=False,
+                    include_my_proposals=include_my_proposals,
                 )
 
             program_map = {}
@@ -201,7 +277,8 @@ def register_public(app):
                     except Exception:
                         category_name = None
                 prog = program_map.setdefault(
-                    program.name, {"program": program.name, "best_value": 0.0, "categories": []}
+                    program.name,
+                    {"program": program.name, "best_value": 0.0, "categories": []},
                 )
                 entry = {
                     "rate_id": rate.id,
@@ -214,6 +291,8 @@ def register_public(app):
                     "cashback_absolute": base_cashback_abs,
                     "euros": round(base_euros, 2),
                     "coupon_info": coupon_info,
+                    "is_proposal": getattr(rate, "is_proposal", False),
+                    "proposal_status": getattr(rate, "proposal_status", None),
                 }
                 prog["categories"].append(entry)
                 value_for_sort = coupon_info["euros"] if coupon_info else entry["euros"]
@@ -233,6 +312,7 @@ def register_public(app):
                     has_coupons=has_coupons,
                     active_coupons=shop_coupons,
                     combine_coupons=False,
+                    include_my_proposals=include_my_proposals,
                 )
                 # Extract only the results-list HTML
                 from bs4 import BeautifulSoup
@@ -249,6 +329,7 @@ def register_public(app):
                 has_coupons=has_coupons,
                 active_coupons=shop_coupons,
                 combine_coupons=False,
+                include_my_proposals=include_my_proposals,
             )
         # VOUCHER MODE COMMENTED OUT
         # elif mode == "voucher":
