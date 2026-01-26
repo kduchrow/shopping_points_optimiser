@@ -1,4 +1,4 @@
-from flask import flash, redirect, render_template, request, url_for
+from flask import flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
 
 from spo.extensions import db
@@ -48,6 +48,15 @@ def register_public(app):
         except (TypeError, ValueError):
             amount = None
         mode = request.form.get("mode", default="shopping")
+
+        # Speichere die Evaluierungs-Parameter in der Session für "Zurück zu Ergebnissen"
+        session["last_evaluation"] = {
+            "shop": shop_id,
+            "amount": amount,
+            "mode": mode,
+            "include_my_proposals": include_my_proposals,
+        }
+        session.modified = True
         shop = db.session.get(Shop, shop_id) if shop_id else None
         shop_coupons = []
         if shop:
@@ -400,6 +409,17 @@ def register_public(app):
                 )
             return render_template("result.html", mode="contract", shop=shop, results=results)
 
+    @app.route("/suggest-success/<int:shop_id>", methods=["GET"])
+    @login_required
+    def suggest_shop_success(shop_id):
+        shop = Shop.query.get_or_404(shop_id)
+        last_eval = session.get("last_evaluation")
+        return render_template(
+            "suggest_shop_success.html",
+            shop=shop,
+            last_evaluation=last_eval,
+        )
+
     @app.route("/shop/<int:shop_id>/suggest", methods=["GET", "POST"])
     @login_required
     def suggest_shop(shop_id):
@@ -498,7 +518,8 @@ def register_public(app):
 
             if message:
                 flash(message, "success")
-                return redirect(url_for("suggest_shop", shop_id=shop_id))
+                # Speichere erfolgreichen Redirect zurück zu den Ergebnissen
+                return redirect(url_for("suggest_shop_success", shop_id=shop_id))
 
         shops = Shop.query.order_by(Shop.name).all()
         programs = BonusProgram.query.order_by(BonusProgram.name).all()
