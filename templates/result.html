@@ -32,7 +32,7 @@
   </div>
 
   {% if mode == 'shopping' %}
-    {% if has_coupons %}
+    {% if has_coupons and amount is not none %}
     <div class="coupons-section">
       <h3>Verfügbare Sonderaktionen für diesen Shop</h3>
       <form id="coupon-selection-form" method="post" action="/evaluate">
