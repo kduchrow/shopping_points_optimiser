@@ -1025,6 +1025,52 @@ function splitShopVariants() {
     });
 }
 
+function moveVariantsToExistingShop() {
+  if (!currentShopMainId) {
+    alert("Kein Shop ausgewählt");
+    return;
+  }
+
+  if (selectedVariantIds.size === 0) {
+    alert("Bitte wähle mindestens eine Variante aus");
+    return;
+  }
+
+  const targetShopMainId = document.getElementById("target-shop-main-id").value.trim();
+  if (!targetShopMainId) {
+    alert("Bitte Ziel-ShopMain ID angeben");
+    return;
+  }
+
+  const confirmMsg = `${selectedVariantIds.size} Variante(n) in bestehenden Shop ${targetShopMainId} verschieben?`;
+  if (!confirm(confirmMsg)) {
+    return;
+  }
+
+  fetch(`/admin/shops/${currentShopMainId}/move_variants`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      variant_ids: Array.from(selectedVariantIds),
+      target_shop_main_id: targetShopMainId,
+    }),
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.success) {
+        alert("Varianten erfolgreich verschoben!");
+        document.getElementById("shop-variant-details").style.display = "none";
+        document.getElementById("target-shop-main-id").value = "";
+        selectedVariantIds.clear();
+      } else {
+        alert("Error: " + data.error);
+      }
+    })
+    .catch((err) => {
+      alert("Error: " + err.message);
+    });
+}
+
 function deleteShop() {
   if (!currentShopMainId) {
     alert("Kein Shop ausgewählt");

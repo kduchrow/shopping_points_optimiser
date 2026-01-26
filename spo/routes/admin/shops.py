@@ -377,6 +377,66 @@ def register_admin_shops(app):
         except Exception as e:  # pragma: no cover
             return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
+    @app.route("/admin/shops/<shop_main_id>/move_variants", methods=["POST"])
+    @login_required
+    def move_variants(shop_main_id):
+        """Move selected variants to an existing ShopMain (reassign)."""
+        if current_user.role != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+
+        data = request.get_json(silent=True) or {}
+        variant_ids = data.get("variant_ids", [])
+        target_shop_main_id = data.get("target_shop_main_id")
+
+        if not variant_ids:
+            return jsonify({"error": "No variants selected"}), 400
+
+        if not target_shop_main_id:
+            return jsonify({"error": "Target shop main id required"}), 400
+
+        if str(target_shop_main_id) == str(shop_main_id):
+            return jsonify({"error": "Target shop must be different"}), 400
+
+        source_shop = db.session.get(ShopMain, shop_main_id)
+        if not source_shop:
+            return jsonify({"error": "Source shop not found"}), 404
+
+        target_shop = db.session.get(ShopMain, target_shop_main_id)
+        if not target_shop:
+            return jsonify({"error": "Target shop not found"}), 404
+
+        variants_to_move = []
+        for variant_id in variant_ids:
+            variant = db.session.get(ShopVariant, variant_id)
+            if not variant:
+                return jsonify({"error": f"ShopVariant {variant_id} not found"}), 404
+            if variant.shop_main_id != shop_main_id:
+                return (
+                    jsonify({"error": f"ShopVariant {variant_id} does not belong to source shop"}),
+                    400,
+                )
+            variants_to_move.append(variant)
+
+        # Move variants
+        for variant in variants_to_move:
+            variant.shop_main_id = target_shop_main_id
+
+        # If source shop has no remaining variants, mark as merged
+        remaining_variants = (
+            db.session.query(ShopVariant).filter(ShopVariant.shop_main_id == shop_main_id).count()
+        )
+        if remaining_variants == 0:
+            source_shop.status = "merged"
+            source_shop.merged_into_id = target_shop_main_id
+        source_shop.updated_at = datetime.now(UTC)
+        source_shop.updated_by_user_id = current_user.id
+        target_shop.updated_at = datetime.now(UTC)
+        target_shop.updated_by_user_id = current_user.id
+
+        db.session.commit()
+
+        return jsonify({"success": True})
+
     @app.route("/admin/shops/<shop_main_id>/delete", methods=["POST"])
     @login_required
     def delete_shop(shop_main_id):

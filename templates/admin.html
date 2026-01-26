@@ -185,8 +185,8 @@
         <div id="shop-variant-details" style="display: none;">
           <h4 id="selected-shop-name" style="margin-bottom: 16px;"></h4>
           <div id="variant-selection-container"></div>
-          <div style="margin-top: 16px; display: flex; gap: 16px; align-items: flex-start;">
-            <div>
+          <div style="margin-top: 16px; display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap;">
+            <div style="min-width: 320px;">
               <input
                 id="new-shop-name"
                 type="text"
@@ -195,6 +195,17 @@
               />
               <button class="btn btn-warning" onclick="splitShopVariants()">
                 Ausgewählte Varianten in neuen Shop splitten
+              </button>
+            </div>
+            <div style="min-width: 320px;">
+              <input
+                id="target-shop-main-id"
+                type="text"
+                placeholder="Ziel-ShopMain ID (UUID)"
+                style="padding: 8px; width: 300px; margin-right: 12px;"
+              />
+              <button class="btn btn-primary" onclick="moveVariantsToExistingShop()">
+                Varianten zu bestehendem Shop verschieben
               </button>
             </div>
             <button
