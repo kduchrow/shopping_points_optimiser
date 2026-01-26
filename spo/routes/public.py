@@ -36,7 +36,11 @@ def register_public(app):
 
     @app.route("/", methods=["GET"])
     def index():
-        return render_template("index.html")
+        # Check if user has favorite programs
+        has_favorites = False
+        if current_user.is_authenticated:
+            has_favorites = UserFavoriteProgram.query.filter_by(user_id=current_user.id).count() > 0
+        return render_template("index.html", has_favorites=has_favorites)
 
     @app.route("/evaluate", methods=["POST"])
     def evaluate():
