@@ -81,7 +81,11 @@ def register_admin_shops(app):
             page = 1
             per_page = 50
 
-        mains_query = db.session.query(ShopMain).order_by(ShopMain.canonical_name)
+        mains_query = (
+            db.session.query(ShopMain)
+            .filter(ShopMain.status != "deleted")
+            .order_by(ShopMain.canonical_name)
+        )
         if query:
             mains_query = mains_query.filter(ShopMain.canonical_name_lower.ilike(f"%{query}%"))
 
