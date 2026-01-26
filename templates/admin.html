@@ -30,7 +30,7 @@
       <button class="tab-button active" data-tab="tab-scrapers" type="button" aria-controls="tab-scrapers">Scrapers</button>
       <button class="tab-button" data-tab="tab-shops" type="button" aria-controls="tab-shops">Shops</button>
       <button class="tab-button" data-tab="tab-users" type="button" aria-controls="tab-users">Users</button>
-      <button class="tab-button" data-tab="tab-merges" type="button" aria-controls="tab-merges">Shop Merges</button>
+      <button class="tab-button" data-tab="tab-merges" type="button" aria-controls="tab-merges">Shops bearbeiten</button>
       <button class="tab-button" data-tab="tab-metadata" type="button" aria-controls="tab-metadata">Metadaten</button>
       <button class="tab-button" data-tab="tab-rates" type="button" aria-controls="tab-rates">Rate Review</button>
       <button class="tab-button" data-tab="tab-notifications" type="button" aria-controls="tab-notifications">Notifications <span id="notification-badge" class="notification-badge" style="display: none">0</span></button>
@@ -159,8 +159,44 @@
     </div>
     <div id="tab-merges" class="tab-content">
       <div class="admin-card">
-        <h2 class="section-title">Shop Merges</h2>
+        <h2 class="section-title">Shops bearbeiten</h2>
+
+        <h3>Merge Proposals</h3>
         <div id="merge-proposals-list"></div>
+
+        <hr style="margin: 32px 0;" />
+
+        <h3>Shop Varianten Verwalten</h3>
+        <p style="color: #666; margin-bottom: 16px;">
+          Wähle einen Shop aus, um dessen Varianten zu sehen und zu bearbeiten.
+        </p>
+
+        <div style="margin-bottom: 24px;">
+          <input
+            id="shop-variant-search"
+            type="text"
+            placeholder="Suche Shop..."
+            class="shop-search-input"
+            style="width: 400px; margin-bottom: 12px;"
+          />
+          <div id="shop-variant-list" style="max-height: 400px; overflow-y: auto;"></div>
+        </div>
+
+        <div id="shop-variant-details" style="display: none;">
+          <h4 id="selected-shop-name" style="margin-bottom: 16px;"></h4>
+          <div id="variant-selection-container"></div>
+          <div style="margin-top: 16px;">
+            <input
+              id="new-shop-name"
+              type="text"
+              placeholder="Name für neuen Shop..."
+              style="padding: 8px; width: 300px; margin-right: 12px;"
+            />
+            <button class="btn btn-warning" onclick="splitShopVariants()">
+              Ausgewählte Varianten in neuen Shop splitten
+            </button>
+          </div>
+        </div>
       </div>
     </div>
     <div id="tab-metadata" class="tab-content">

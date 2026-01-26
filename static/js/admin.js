@@ -881,12 +881,159 @@ function setupTabDelegation() {
   }
 }
 
+// Shop Variant Management
+let currentShopMainId = null;
+let selectedVariantIds = new Set();
+
+function loadShopVariantSearch() {
+  const searchInput = document.getElementById("shop-variant-search");
+  if (!searchInput) return;
+
+  searchInput.addEventListener("input", (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    searchShopMains(query);
+  });
+}
+
+function searchShopMains(query) {
+  // Fetch shops from existing API or create a new one
+  // For simplicity, we'll use the existing shop list endpoint
+  fetch(`/shop_names?q=${encodeURIComponent(query)}`)
+    .then((r) => r.json())
+    .then((shops) => {
+      const list = document.getElementById("shop-variant-list");
+      if (!list) return;
+
+      list.innerHTML = "";
+
+      if (!shops.length) {
+        list.innerHTML = '<div style="padding: 12px; color: #999;">Keine Shops gefunden</div>';
+        return;
+      }
+
+      shops.forEach((shop) => {
+        const div = document.createElement("div");
+        div.className = "shop-variant-item";
+        div.style.cssText =
+          "padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s;";
+        div.innerHTML = `<strong>${shop.name}</strong>`;
+        div.addEventListener("mouseenter", () => (div.style.background = "#f5f5f5"));
+        div.addEventListener("mouseleave", () => (div.style.background = ""));
+        div.addEventListener("click", () => loadShopVariants(shop.id));
+        list.appendChild(div);
+      });
+    });
+}
+
+function loadShopVariants(shopId) {
+  fetch(`/admin/shops/${shopId}/details`)
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.error) {
+        alert("Error: " + data.error);
+        return;
+      }
+
+      currentShopMainId = data.main.id;
+      selectedVariantIds.clear();
+
+      document.getElementById("selected-shop-name").textContent = `Shop: ${data.main.canonical_name}`;
+      document.getElementById("shop-variant-details").style.display = "block";
+
+      const container = document.getElementById("variant-selection-container");
+      container.innerHTML = "";
+
+      if (!data.main.variants || data.main.variants.length === 0) {
+        container.innerHTML = '<p style="color: #999;">Keine Varianten vorhanden</p>';
+        return;
+      }
+
+      container.innerHTML = "<h5>Varianten:</h5>";
+      data.main.variants.forEach((variant) => {
+        const div = document.createElement("div");
+        div.style.cssText = "padding: 8px; margin: 4px 0; border: 1px solid #ddd; border-radius: 4px;";
+        div.innerHTML = `
+          <label style="display: flex; align-items: center; cursor: pointer;">
+            <input
+              type="checkbox"
+              data-variant-id="${variant.id}"
+              style="margin-right: 8px; width: 18px; height: 18px;"
+            />
+            <div>
+              <strong>${variant.source_name}</strong>
+              <span style="color: #666; font-size: 12px;">(${variant.source})</span>
+            </div>
+          </label>
+        `;
+        const checkbox = div.querySelector("input[type=checkbox]");
+        checkbox.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            selectedVariantIds.add(parseInt(e.target.dataset.variantId));
+          } else {
+            selectedVariantIds.delete(parseInt(e.target.dataset.variantId));
+          }
+        });
+        container.appendChild(div);
+      });
+    })
+    .catch((err) => {
+      alert("Error loading shop details: " + err.message);
+    });
+}
+
+function splitShopVariants() {
+  if (!currentShopMainId) {
+    alert("Bitte wähle zuerst einen Shop aus");
+    return;
+  }
+
+  if (selectedVariantIds.size === 0) {
+    alert("Bitte wähle mindestens eine Variante aus");
+    return;
+  }
+
+  const newShopName = document.getElementById("new-shop-name").value.trim();
+  if (!newShopName) {
+    alert("Bitte gib einen Namen für den neuen Shop ein");
+    return;
+  }
+
+  if (!confirm(`${selectedVariantIds.size} Variante(n) in neuen Shop "${newShopName}" verschieben?`)) {
+    return;
+  }
+
+  fetch(`/admin/shops/${currentShopMainId}/split`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      variant_ids: Array.from(selectedVariantIds),
+      new_shop_name: newShopName,
+    }),
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.success) {
+        alert(`Shop erfolgreich gesplittet! Neuer Shop ID: ${data.new_shop_main_id}`);
+        document.getElementById("shop-variant-details").style.display = "none";
+        document.getElementById("new-shop-name").value = "";
+        selectedVariantIds.clear();
+      } else {
+        alert("Error: " + data.error);
+      }
+    })
+    .catch((err) => {
+      alert("Error: " + err.message);
+    });
+}
+
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     initAdminPage();
     setupTabDelegation();
+    loadShopVariantSearch();
   });
 } else {
   initAdminPage();
   setupTabDelegation();
+  loadShopVariantSearch();
 }

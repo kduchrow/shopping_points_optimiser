@@ -21,7 +21,7 @@ from spo.models import (
     ShopVariant,
     User,
 )
-from spo.services.dedup import merge_shops
+from spo.services.dedup import merge_shops, split_shop_variants
 from spo.services.notifications import (
     notify_merge_approved,
     notify_merge_rejected,
@@ -343,6 +343,36 @@ def register_admin_shops(app):
 
         return jsonify({"success": True})
 
+    @app.route("/admin/shops/<shop_main_id>/split", methods=["POST"])
+    @login_required
+    def split_shop(shop_main_id):
+        """Split variants from a ShopMain into a new ShopMain."""
+        if current_user.role != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+
+        data = request.get_json(silent=True) or {}
+        variant_ids = data.get("variant_ids", [])
+        new_shop_name = data.get("new_shop_name", "").strip()
+
+        if not variant_ids:
+            return jsonify({"error": "No variants selected"}), 400
+
+        if not new_shop_name:
+            return jsonify({"error": "New shop name required"}), 400
+
+        try:
+            new_shop_main_id = split_shop_variants(
+                shop_main_id=shop_main_id,
+                variant_ids=variant_ids,
+                new_shop_name=new_shop_name,
+                user_id=current_user.id,
+            )
+            return jsonify({"success": True, "new_shop_main_id": new_shop_main_id})
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        except Exception as e:  # pragma: no cover
+            return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
     @app.route("/admin/shops/<shop_main_id>/details", methods=["GET"])
     @login_required
     def admin_shop_details(shop_main_id):
@@ -388,8 +418,31 @@ def register_admin_shops(app):
 
             shops.append({"shop_id": shop.id, "name": shop.name, "rates": rate_list})
 
+        # Get variants for this ShopMain
+        variants = []
+        for variant in main.variants:
+            variants.append(
+                {
+                    "id": variant.id,
+                    "source": variant.source,
+                    "source_name": variant.source_name,
+                    "source_id": variant.source_id,
+                    "confidence_score": variant.confidence_score,
+                }
+            )
+
         return jsonify(
-            {"shop_main_id": main.id, "canonical_name": main.canonical_name, "shops": shops}
+            {
+                "main": {
+                    "id": main.id,
+                    "canonical_name": main.canonical_name,
+                    "website": main.website,
+                    "logo_url": main.logo_url,
+                    "status": main.status,
+                    "variants": variants,
+                },
+                "shops": shops,
+            }
         )
 
     @app.route("/admin/variants/rescore", methods=["POST"])
