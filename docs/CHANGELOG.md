@@ -4,6 +4,28 @@ All notable changes to Shopping Points Optimiser will be documented in this file
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.3.1] - 2026-01-26
+
+### Added
+- **Shop Management**: Split functionality to separate incorrectly merged shops (e.g. "Zalando" vs "Launch by Zalando")
+- **Shop Management**: Move variants between ShopMains
+- **Shop Management**: Soft delete for ShopMains with status change
+- **User Preferences**: Favorite bonus programs for authenticated users
+- **UI Enhancement**: Filter results by favorite bonus programs on home page
+- **Warnings**: Visual warning when filtering by favorites with hidden programs count
+
+### Changed
+- Admin "Shops" tab renamed to "Shops auflisten"
+- Admin tabs "Shops auflisten" and "Shops bearbeiten" placed adjacent
+- Deleted shops automatically filtered out from admin search
+- Favorites filter checkbox auto-enabled if user has saved favorites
+
+### Migration
+- Added `user_favorite_programs` table with unique constraint on (user_id, program_id)
+- Run: `python -m alembic upgrade head` to apply new schema
+
+---
+
 ## [0.2.3] - 2026-01-08
 
 ### Added
