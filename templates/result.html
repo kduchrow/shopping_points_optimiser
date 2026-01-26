@@ -42,7 +42,7 @@
         {% if include_my_proposals %}
         <input type="hidden" name="include_my_proposals" value="on" />
         {% endif %}
-        <div class="coupons-list" style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 8px;">
+        <div class="coupons-list" style="display: flex; flex-wrap: nowrap; gap: 16px; margin-bottom: 8px; overflow-x: auto; padding-bottom: 12px;">
           {% for coupon in active_coupons %}
           <div class="coupon-card" style="background: #f8fafc; border: 1px solid #e0e7ef; border-radius: 14px; padding: 18px 20px 32px 20px; min-width: 260px; max-width: 340px; box-shadow: 0 2px 8px #e0e7ef33; display: flex; flex-direction: column; align-items: flex-start; position: relative;">
             <div style="width:100%; display:flex; flex-direction:column;">
@@ -69,8 +69,10 @@
             </div>
             <div style="width:100%; display:flex; justify-content:center; align-items:center; margin-top:auto;">
               <label for="coupon-{{ coupon.id }}" style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:1em;">
+                {% if amount is not none %}
                 <span style="font-size:0.97em; color:#555;">Aktivieren</span>
                 <input type="checkbox" name="coupon_ids" value="{{ coupon.id }}" class="coupon-tickbox styled-tickbox" id="coupon-{{ coupon.id }}" {% if coupon.selected %}checked{% endif %} style="accent-color:#3b82f6; width:22px; height:22px; border-radius:12px; box-shadow:0 1px 4px #3b82f633;">
+                {% endif %}
               </label>
             </div>
           </div>
