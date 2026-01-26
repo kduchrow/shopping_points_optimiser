@@ -136,9 +136,15 @@ def register_public(app):
                     )
                 )
         has_coupons = bool(shop_coupons)
-        # Get selected coupon IDs from form (may be multiple)
+        # Get selected coupon IDs from form (may be multiple, includes both "123" and "proposal-123" formats)
         selected_coupon_ids = request.form.getlist("coupon_ids")
-        selected_coupon_ids = set(int(cid) for cid in selected_coupon_ids if cid.isdigit())
+        selected_coupon_ids_set = set()
+        for cid in selected_coupon_ids:
+            if cid.startswith("proposal-"):
+                selected_coupon_ids_set.add(cid)  # Keep as string for proposals
+            elif cid.isdigit():
+                selected_coupon_ids_set.add(int(cid))  # Convert to int for regular coupons
+        selected_coupon_ids = selected_coupon_ids_set
         # Only set default best coupon selection on initial page load (not AJAX)
         if not selected_coupon_ids and request.headers.get("X-Requested-With") != "XMLHttpRequest":
             # For each program, select the best coupon (prefer multiplier, then highest value),
