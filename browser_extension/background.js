@@ -118,8 +118,12 @@ async function updateBadge(tabId, url) {
   }
 }
 
-// Event Listener: Tab-Updates
+// Event Listener: Tab-Updates (fires on loads and URL changes)
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.url) {
+    updateBadge(tabId, changeInfo.url);
+    return;
+  }
   if (changeInfo.status === "complete" && tab.url) {
     updateBadge(tabId, tab.url);
   }
@@ -132,6 +136,15 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
     updateBadge(activeInfo.tabId, tab.url);
   }
 });
+
+// Event Listener: SPA-Navigation (history API changes without full reload)
+if (chrome.webNavigation && chrome.webNavigation.onHistoryStateUpdated) {
+  chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
+    if (details.tabId && details.url) {
+      updateBadge(details.tabId, details.url);
+    }
+  });
+}
 
 // Event Listener: Extension Installation
 chrome.runtime.onInstalled.addListener(() => {

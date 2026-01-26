@@ -2,10 +2,12 @@
 
 from flask import jsonify, request
 from flask_login import current_user
+from sqlalchemy import or_
 
 from spo.extensions import db
 from spo.models.proposals import Proposal
 from spo.models.shops import Shop, ShopMain, ShopProgramRate
+from spo.models.user_preferences import UserFavoriteProgram
 
 
 def register_api_routes(app):
@@ -44,9 +46,13 @@ def register_api_routes(app):
             }
 
             # Add alternative URLs from approved URL proposals
-            proposals = Proposal.query.filter_by(
-                shop_id=shop.id, proposal_type="url", status="approved"
-            ).all()
+            proposals_query = Proposal.query.filter_by(shop_id=shop.id, proposal_type="url")
+            if current_user.is_authenticated:
+                proposals = proposals_query.filter(
+                    or_(Proposal.status == "approved", Proposal.user_id == current_user.id)
+                ).all()
+            else:
+                proposals = proposals_query.filter_by(status="approved").all()
 
             for proposal in proposals:
                 if proposal.source_url and proposal.source_url not in shop_data["alternative_urls"]:
@@ -134,6 +140,13 @@ def register_api_routes(app):
     @app.route("/api/user/status", methods=["GET"])
     def api_user_status():
         """Check if user is logged in."""
+        favorite_ids = []
+        if current_user.is_authenticated:
+            favorite_ids = [
+                fav.program_id
+                for fav in UserFavoriteProgram.query.filter_by(user_id=current_user.id).all()
+            ]
+
         return jsonify(
             {
                 "logged_in": current_user.is_authenticated,
@@ -141,6 +154,8 @@ def register_api_routes(app):
                 "is_admin": (
                     current_user.role == "admin" if current_user.is_authenticated else False
                 ),
+                "favorite_program_ids": favorite_ids,
+                "has_favorites": bool(favorite_ids),
             }
         )
 
@@ -181,8 +196,8 @@ def register_api_routes(app):
             shop_id=shop_id,
             source_url=url,
             user_id=current_user.id,
-            status="approved",  # Auto-approve for browser extension
-            approved_by_system=True,
+            status="pending",  # Follow standard approval flow
+            approved_by_system=False,
             source="browser_extension",
         )
 

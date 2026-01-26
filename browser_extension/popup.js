@@ -31,6 +31,9 @@ const elements = {
 
   // Error Elements
   btnRetry: document.getElementById("btn-retry"),
+  authStatusText: document.getElementById("auth-status-text"),
+  favoritesToggle: document.getElementById("favorites-toggle"),
+  btnBackToMain: document.getElementById("btn-back-to-main"),
 };
 
 /**
@@ -55,6 +58,30 @@ let currentTab = null;
 let currentUrl = null;
 let isLoggedIn = false;
 let shopSearchDebounce = null;
+let authInfo = { loggedIn: false, username: null, isAdmin: false };
+let favoriteProgramIds = [];
+let favoritesEnabled = false;
+let currentShopPrograms = null;
+let proposalPrograms = null;
+
+function updateAuthStatusDisplay() {
+  if (!elements.authStatusText) return;
+  if (authInfo.loggedIn) {
+    const role = authInfo.isAdmin ? "Admin" : "User";
+    const name = authInfo.username || "Unbekannt";
+    elements.authStatusText.textContent = `Angemeldet als ${name} (${role})`;
+  } else {
+    elements.authStatusText.textContent = "Nicht angemeldet";
+  }
+}
+
+function applyFavoritesDefaults() {
+  favoritesEnabled = authInfo.loggedIn && favoriteProgramIds.length > 0;
+  if (elements.favoritesToggle) {
+    elements.favoritesToggle.checked = favoritesEnabled;
+    elements.favoritesToggle.disabled = !authInfo.loggedIn;
+  }
+}
 
 /**
  * Zeigt einen View an und versteckt alle anderen
@@ -129,11 +156,24 @@ async function checkLoginStatus() {
     }
 
     const data = await response.json();
-    isLoggedIn = data.logged_in || false;
-    console.log("Login status:", isLoggedIn);
-    return isLoggedIn;
+    authInfo = {
+      loggedIn: data.logged_in || false,
+      username: data.username || null,
+      isAdmin: data.is_admin || false,
+    };
+    favoriteProgramIds = Array.isArray(data.favorite_program_ids) ? data.favorite_program_ids : [];
+    isLoggedIn = authInfo.loggedIn;
+    updateAuthStatusDisplay();
+    applyFavoritesDefaults();
+    console.log("Login status:", authInfo);
+    return authInfo.loggedIn;
   } catch (error) {
     console.error("Error checking login status:", error);
+    authInfo = { loggedIn: false, username: null, isAdmin: false };
+    isLoggedIn = false;
+    favoriteProgramIds = [];
+    updateAuthStatusDisplay();
+    applyFavoritesDefaults();
     return false;
   }
 }
@@ -318,20 +358,39 @@ function displayRates(programs, bestRateElement, ratesListElement) {
     return;
   }
 
-  if (programs.length === 0) {
+  const favoritesActive = Boolean(elements.favoritesToggle?.checked) && favoriteProgramIds.length > 0;
+  const filteredPrograms = favoritesActive
+    ? programs.filter((p) => favoriteProgramIds.includes(p.program_id))
+    : programs;
+
+  if (filteredPrograms.length === 0) {
+    if (favoritesActive) {
+      bestRateElement.innerHTML = "<p>Keine Favoriten-Rates verfügbar</p>";
+      ratesListElement.innerHTML = "<p>Keine Favoriten-Rates verfügbar</p>";
+      return;
+    }
     bestRateElement.innerHTML = "<p>Keine Rates verfügbar</p>";
     ratesListElement.innerHTML = "<p>Keine Rates verfügbar</p>";
     return;
   }
 
   // Best program is already first (sorted by API)
-  const bestProgram = programs[0];
+  const bestProgram = filteredPrograms[0];
 
   // Zeige bestes Programm
   bestRateElement.innerHTML = renderProgramCard(bestProgram);
 
   // Zeige alle Programme
-  ratesListElement.innerHTML = programs.map((program) => renderProgramCard(program)).join("");
+  ratesListElement.innerHTML = filteredPrograms.map((program) => renderProgramCard(program)).join("");
+}
+
+function rerenderWithFavorites() {
+  if (currentShopPrograms) {
+    displayRates(currentShopPrograms, elements.bestRateContent, elements.ratesList);
+  }
+  if (proposalPrograms) {
+    displayRates(proposalPrograms, elements.proposalBestRate, elements.proposalRatesList);
+  }
 }
 
 /**
@@ -352,6 +411,8 @@ async function initialize() {
     currentUrl = currentTab.url;
     console.log("Current URL:", currentUrl);
 
+    const loggedIn = await checkLoginStatus();
+
     // Hole erkannten Shop aus Storage
     const result = await chrome.storage.local.get([`shop_${currentTab.id}`]);
     const matchedShop = result[`shop_${currentTab.id}`];
@@ -364,6 +425,7 @@ async function initialize() {
 
       // Lade Programme mit Rates
       const programs = await loadRates(matchedShop.id);
+      currentShopPrograms = programs;
       displayRates(programs, elements.bestRateContent, elements.ratesList);
 
       showView("shop-found");
@@ -374,9 +436,6 @@ async function initialize() {
       const domainUrl = extractDomainUrl(currentUrl);
       console.log("Domain URL for proposal:", domainUrl);
       if (elements.urlInput) elements.urlInput.value = domainUrl;
-
-      // Prüfe Login-Status
-      const loggedIn = await checkLoginStatus();
 
       if (loggedIn) {
         console.log("User is logged in - showing form");
@@ -396,6 +455,14 @@ async function initialize() {
   } catch (error) {
     console.error("Initialization error:", error);
     showError("Fehler beim Laden der Daten. Bitte überprüfe deine Verbindung.");
+  }
+
+  if (elements.favoritesToggle && !elements.favoritesToggle.dataset.bound) {
+    elements.favoritesToggle.dataset.bound = "true";
+    elements.favoritesToggle.addEventListener("change", () => {
+      favoritesEnabled = elements.favoritesToggle.checked;
+      rerenderWithFavorites();
+    });
   }
 }
 
@@ -513,6 +580,7 @@ if (elements.proposalForm) {
 
       // Lade Programme mit Rates für den vorgeschlagenen Shop
       const programs = await loadRates(shopId);
+      proposalPrograms = programs;
       displayRates(programs, elements.proposalBestRate, elements.proposalRatesList);
 
       // Zeige Success View
@@ -524,11 +592,39 @@ if (elements.proposalForm) {
       }
       showView("shop-not-found");
 
-      // Aktualisiere Cache im Background Script
-      chrome.runtime.sendMessage({ action: "refreshCache" });
+      // Leere die alte Storage für diesen Tab
+      chrome.storage.local.remove([`shop_${currentTab.id}`]);
+      console.log("Cleared old shop detection from storage");
+
+      // Aktualisiere Cache und triggere Neu-Erkennung
+      console.log("Refreshing cache and re-detecting shop...");
+      chrome.runtime.sendMessage({ action: "refreshCache" }, async (response) => {
+        console.log("Cache refreshed", response);
+        // Warte kurz, dann aktualisiere Badge für diese URL
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        console.log("Updating badge for current URL...");
+        // Sende Message an Background Script um Badge zu aktualisieren
+        chrome.runtime.sendMessage({ action: "matchShop", url: currentUrl }, (response) => {
+          if (response && response.shop) {
+            console.log("Shop matched:", response.shop.name);
+            // Aktualisiere Badge
+            chrome.action.setBadgeText({ tabId: currentTab.id, text: "!" });
+            chrome.action.setBadgeBackgroundColor({ tabId: currentTab.id, color: "#4CAF50" });
+            // Speichere Shop im Storage
+            chrome.storage.local.set({ [`shop_${currentTab.id}`]: response.shop });
+          }
+        });
+      });
     } catch (error) {
       showError("Fehler beim Erstellen des Vorschlags. Bitte versuche es erneut.");
     }
+  });
+}
+
+if (elements.btnBackToMain) {
+  elements.btnBackToMain.addEventListener("click", () => {
+    // Schließe das Popup
+    window.close();
   });
 }
 

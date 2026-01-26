@@ -9,7 +9,19 @@
   <body>
     <div class="container">
       <div class="header">
-        <h1>🎯 Shopping Points Optimiser</h1>
+        <div class="header-left">
+          <h1>🎯 Shopping Points Optimiser</h1>
+          <div class="auth-status">
+            <span id="auth-status-text">Nicht angemeldet</span>
+          </div>
+        </div>
+        <div class="header-right">
+          <label class="toggle" title="Nur Favoriten anzeigen">
+            <span class="toggle-label">Favoriten</span>
+            <input type="checkbox" id="favorites-toggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
       </div>
 
       <!-- Loading State -->
@@ -86,6 +98,8 @@
             <h3>📊 Alle Bonusprogramme</h3>
             <div id="proposal-rates-list"></div>
           </div>
+
+          <button id="btn-back-to-main" class="btn btn-primary">Fertig</button>
         </div>
       </div>
 
