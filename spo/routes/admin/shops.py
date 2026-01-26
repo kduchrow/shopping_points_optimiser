@@ -21,7 +21,7 @@ from spo.models import (
     ShopVariant,
     User,
 )
-from spo.services.dedup import merge_shops
+from spo.services.dedup import merge_shops, split_shop_variants
 from spo.services.notifications import (
     notify_merge_approved,
     notify_merge_rejected,
@@ -81,7 +81,11 @@ def register_admin_shops(app):
             page = 1
             per_page = 50
 
-        mains_query = db.session.query(ShopMain).order_by(ShopMain.canonical_name)
+        mains_query = (
+            db.session.query(ShopMain)
+            .filter(ShopMain.status != "deleted")
+            .order_by(ShopMain.canonical_name)
+        )
         if query:
             mains_query = mains_query.filter(ShopMain.canonical_name_lower.ilike(f"%{query}%"))
 
@@ -343,6 +347,116 @@ def register_admin_shops(app):
 
         return jsonify({"success": True})
 
+    @app.route("/admin/shops/<shop_main_id>/split", methods=["POST"])
+    @login_required
+    def split_shop(shop_main_id):
+        """Split variants from a ShopMain into a new ShopMain."""
+        if current_user.role != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+
+        data = request.get_json(silent=True) or {}
+        variant_ids = data.get("variant_ids", [])
+        new_shop_name = data.get("new_shop_name", "").strip()
+
+        if not variant_ids:
+            return jsonify({"error": "No variants selected"}), 400
+
+        if not new_shop_name:
+            return jsonify({"error": "New shop name required"}), 400
+
+        try:
+            new_shop_main_id = split_shop_variants(
+                shop_main_id=shop_main_id,
+                variant_ids=variant_ids,
+                new_shop_name=new_shop_name,
+                user_id=current_user.id,
+            )
+            return jsonify({"success": True, "new_shop_main_id": new_shop_main_id})
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        except Exception as e:  # pragma: no cover
+            return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+    @app.route("/admin/shops/<shop_main_id>/move_variants", methods=["POST"])
+    @login_required
+    def move_variants(shop_main_id):
+        """Move selected variants to an existing ShopMain (reassign)."""
+        if current_user.role != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+
+        data = request.get_json(silent=True) or {}
+        variant_ids = data.get("variant_ids", [])
+        target_shop_main_id = data.get("target_shop_main_id")
+
+        if not variant_ids:
+            return jsonify({"error": "No variants selected"}), 400
+
+        if not target_shop_main_id:
+            return jsonify({"error": "Target shop main id required"}), 400
+
+        if str(target_shop_main_id) == str(shop_main_id):
+            return jsonify({"error": "Target shop must be different"}), 400
+
+        source_shop = db.session.get(ShopMain, shop_main_id)
+        if not source_shop:
+            return jsonify({"error": "Source shop not found"}), 404
+
+        target_shop = db.session.get(ShopMain, target_shop_main_id)
+        if not target_shop:
+            return jsonify({"error": "Target shop not found"}), 404
+
+        variants_to_move = []
+        for variant_id in variant_ids:
+            variant = db.session.get(ShopVariant, variant_id)
+            if not variant:
+                return jsonify({"error": f"ShopVariant {variant_id} not found"}), 404
+            if variant.shop_main_id != shop_main_id:
+                return (
+                    jsonify({"error": f"ShopVariant {variant_id} does not belong to source shop"}),
+                    400,
+                )
+            variants_to_move.append(variant)
+
+        # Move variants
+        for variant in variants_to_move:
+            variant.shop_main_id = target_shop_main_id
+
+        # If source shop has no remaining variants, mark as merged
+        remaining_variants = (
+            db.session.query(ShopVariant).filter(ShopVariant.shop_main_id == shop_main_id).count()
+        )
+        if remaining_variants == 0:
+            source_shop.status = "merged"
+            source_shop.merged_into_id = target_shop_main_id
+        source_shop.updated_at = datetime.now(UTC)
+        source_shop.updated_by_user_id = current_user.id
+        target_shop.updated_at = datetime.now(UTC)
+        target_shop.updated_by_user_id = current_user.id
+
+        db.session.commit()
+
+        return jsonify({"success": True})
+
+    @app.route("/admin/shops/<shop_main_id>/delete", methods=["POST"])
+    @login_required
+    def delete_shop(shop_main_id):
+        """Soft delete a ShopMain by setting status to 'deleted'."""
+        if current_user.role != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+
+        shop_main = db.session.get(ShopMain, shop_main_id)
+        if not shop_main:
+            return jsonify({"error": "Shop not found"}), 404
+
+        # Soft delete: set status to 'deleted'
+        shop_main.status = "deleted"
+        shop_main.updated_at = datetime.now(UTC)
+        shop_main.updated_by_user_id = current_user.id
+
+        db.session.commit()
+
+        return jsonify({"success": True})
+
     @app.route("/admin/shops/<shop_main_id>/details", methods=["GET"])
     @login_required
     def admin_shop_details(shop_main_id):
@@ -388,8 +502,31 @@ def register_admin_shops(app):
 
             shops.append({"shop_id": shop.id, "name": shop.name, "rates": rate_list})
 
+        # Get variants for this ShopMain
+        variants = []
+        for variant in main.variants:
+            variants.append(
+                {
+                    "id": variant.id,
+                    "source": variant.source,
+                    "source_name": variant.source_name,
+                    "source_id": variant.source_id,
+                    "confidence_score": variant.confidence_score,
+                }
+            )
+
         return jsonify(
-            {"shop_main_id": main.id, "canonical_name": main.canonical_name, "shops": shops}
+            {
+                "main": {
+                    "id": main.id,
+                    "canonical_name": main.canonical_name,
+                    "website": main.website,
+                    "logo_url": main.logo_url,
+                    "status": main.status,
+                    "variants": variants,
+                },
+                "shops": shops,
+            }
         )
 
     @app.route("/admin/variants/rescore", methods=["POST"])

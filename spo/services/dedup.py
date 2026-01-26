@@ -271,3 +271,74 @@ def run_deduplication(
         job.set_progress(100, 100)
 
     return {"merged_count": merged_count, "duplicates_found": len(duplicates), "errors": errors}
+
+
+def split_shop_variants(
+    shop_main_id: str, variant_ids: list[int], new_shop_name: str, user_id: int
+) -> str:
+    """Split variants from a ShopMain into a new ShopMain.
+
+    Args:
+        shop_main_id: ID of the source ShopMain
+        variant_ids: List of ShopVariant IDs to move to the new ShopMain
+        new_shop_name: Name for the new ShopMain
+        user_id: User ID performing the split
+
+    Returns:
+        ID of the newly created ShopMain
+    """
+
+    source_shop = db.session.get(ShopMain, shop_main_id)
+    if not source_shop:
+        raise ValueError(f"ShopMain {shop_main_id} not found")
+
+    # Validate that all variants belong to the source shop
+    variants_to_move = []
+    for variant_id in variant_ids:
+        variant = db.session.get(ShopVariant, variant_id)
+        if not variant:
+            raise ValueError(f"ShopVariant {variant_id} not found")
+        if variant.shop_main_id != shop_main_id:
+            raise ValueError(f"ShopVariant {variant_id} does not belong to ShopMain {shop_main_id}")
+        variants_to_move.append(variant)
+
+    if not variants_to_move:
+        raise ValueError("No variants to split")
+
+    # Create new ShopMain
+    new_shop_main = ShopMain(
+        id=str(uuid.uuid4()),
+        canonical_name=new_shop_name,
+        canonical_name_lower=new_shop_name.lower(),
+        website=None,
+        logo_url=None,
+        status="active",
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+        updated_by_user_id=user_id,
+    )
+    db.session.add(new_shop_main)
+
+    # Move variants to new ShopMain
+    for variant in variants_to_move:
+        variant.shop_main_id = new_shop_main.id
+
+    # Check if source ShopMain has any remaining variants
+    remaining_variants = (
+        db.session.query(ShopVariant).filter(ShopVariant.shop_main_id == shop_main_id).count()
+    )
+
+    # If no variants remain, mark source ShopMain as merged/deleted
+    if remaining_variants == 0:
+        source_shop.status = "merged"
+        source_shop.merged_into_id = new_shop_main.id
+        source_shop.updated_at = datetime.now(UTC)
+        source_shop.updated_by_user_id = user_id
+
+    # Note: Shop entries remain with the source ShopMain
+    # If needed, admin can manually reassign Shop entries later
+    # or we can add logic to automatically create new Shop entries
+
+    db.session.commit()
+
+    return new_shop_main.id

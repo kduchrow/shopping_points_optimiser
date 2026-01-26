@@ -881,12 +881,243 @@ function setupTabDelegation() {
   }
 }
 
+// Shop Variant Management
+let currentShopMainId = null;
+let selectedVariantIds = new Set();
+
+function loadShopVariantSearch() {
+  const searchInput = document.getElementById("shop-variant-search");
+  if (!searchInput) return;
+
+  searchInput.addEventListener("input", (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    searchShopMains(query);
+  });
+}
+
+function searchShopMains(query) {
+  // Use admin shops overview to get ShopMain data
+  fetch(`/admin/shops_overview?q=${encodeURIComponent(query)}&per_page=20`)
+    .then((r) => r.json())
+    .then((data) => {
+      const list = document.getElementById("shop-variant-list");
+      if (!list) return;
+
+      list.innerHTML = "";
+
+      if (!data.shops || !data.shops.length) {
+        list.innerHTML = '<div style="padding: 12px; color: #999;">Keine Shops gefunden</div>';
+        return;
+      }
+
+      data.shops.forEach((shop) => {
+        const div = document.createElement("div");
+        div.className = "shop-variant-item";
+        div.style.cssText =
+          "padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s;";
+        div.innerHTML = `<strong>${shop.name}</strong> <span style="color: #999; font-size: 12px;">(${shop.variants.length} Varianten)</span>`;
+        div.addEventListener("mouseenter", () => (div.style.background = "#f5f5f5"));
+        div.addEventListener("mouseleave", () => (div.style.background = ""));
+        div.addEventListener("click", () => loadShopVariants(shop.id));
+        list.appendChild(div);
+      });
+    });
+}
+
+function loadShopVariants(shopId) {
+  fetch(`/admin/shops/${shopId}/details`)
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.error) {
+        alert("Error: " + data.error);
+        return;
+      }
+
+      currentShopMainId = data.main.id;
+      selectedVariantIds.clear();
+
+      document.getElementById("selected-shop-name").textContent = `Shop: ${data.main.canonical_name}`;
+      const idEl = document.getElementById("selected-shop-id");
+      if (idEl) {
+        idEl.textContent = `ID: ${data.main.id}`;
+      }
+      document.getElementById("shop-variant-details").style.display = "block";
+
+      const container = document.getElementById("variant-selection-container");
+      container.innerHTML = "";
+
+      if (!data.main.variants || data.main.variants.length === 0) {
+        container.innerHTML = '<p style="color: #999;">Keine Varianten vorhanden</p>';
+        return;
+      }
+
+      container.innerHTML = "<h5>Varianten:</h5>";
+      data.main.variants.forEach((variant) => {
+        const div = document.createElement("div");
+        div.style.cssText = "padding: 8px; margin: 4px 0; border: 1px solid #ddd; border-radius: 4px;";
+        div.innerHTML = `
+          <label style="display: flex; align-items: center; cursor: pointer;">
+            <input
+              type="checkbox"
+              data-variant-id="${variant.id}"
+              style="margin-right: 8px; width: 18px; height: 18px;"
+            />
+            <div>
+              <strong>${variant.source_name}</strong>
+              <span style="color: #666; font-size: 12px;">(${variant.source})</span>
+            </div>
+          </label>
+        `;
+        const checkbox = div.querySelector("input[type=checkbox]");
+        checkbox.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            selectedVariantIds.add(parseInt(e.target.dataset.variantId));
+          } else {
+            selectedVariantIds.delete(parseInt(e.target.dataset.variantId));
+          }
+        });
+        container.appendChild(div);
+      });
+    })
+    .catch((err) => {
+      alert("Error loading shop details: " + err.message);
+    });
+}
+
+function splitShopVariants() {
+  if (!currentShopMainId) {
+    alert("Bitte wähle zuerst einen Shop aus");
+    return;
+  }
+
+  if (selectedVariantIds.size === 0) {
+    alert("Bitte wähle mindestens eine Variante aus");
+    return;
+  }
+
+  const newShopName = document.getElementById("new-shop-name").value.trim();
+  if (!newShopName) {
+    alert("Bitte gib einen Namen für den neuen Shop ein");
+    return;
+  }
+
+  if (!confirm(`${selectedVariantIds.size} Variante(n) in neuen Shop "${newShopName}" verschieben?`)) {
+    return;
+  }
+
+  fetch(`/admin/shops/${currentShopMainId}/split`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      variant_ids: Array.from(selectedVariantIds),
+      new_shop_name: newShopName,
+    }),
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.success) {
+        alert(`Shop erfolgreich gesplittet! Neuer Shop ID: ${data.new_shop_main_id}`);
+        document.getElementById("shop-variant-details").style.display = "none";
+        document.getElementById("new-shop-name").value = "";
+        selectedVariantIds.clear();
+      } else {
+        alert("Error: " + data.error);
+      }
+    })
+    .catch((err) => {
+      alert("Error: " + err.message);
+    });
+}
+
+function moveVariantsToExistingShop() {
+  if (!currentShopMainId) {
+    alert("Kein Shop ausgewählt");
+    return;
+  }
+
+  if (selectedVariantIds.size === 0) {
+    alert("Bitte wähle mindestens eine Variante aus");
+    return;
+  }
+
+  const targetShopMainId = document.getElementById("target-shop-main-id").value.trim();
+  if (!targetShopMainId) {
+    alert("Bitte Ziel-ShopMain ID angeben");
+    return;
+  }
+
+  const confirmMsg = `${selectedVariantIds.size} Variante(n) in bestehenden Shop ${targetShopMainId} verschieben?`;
+  if (!confirm(confirmMsg)) {
+    return;
+  }
+
+  fetch(`/admin/shops/${currentShopMainId}/move_variants`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      variant_ids: Array.from(selectedVariantIds),
+      target_shop_main_id: targetShopMainId,
+    }),
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.success) {
+        alert("Varianten erfolgreich verschoben!");
+        document.getElementById("shop-variant-details").style.display = "none";
+        document.getElementById("target-shop-main-id").value = "";
+        selectedVariantIds.clear();
+      } else {
+        alert("Error: " + data.error);
+      }
+    })
+    .catch((err) => {
+      alert("Error: " + err.message);
+    });
+}
+
+function deleteShop() {
+  if (!currentShopMainId) {
+    alert("Kein Shop ausgewählt");
+    return;
+  }
+
+  const shopName = document.getElementById("selected-shop-name").textContent;
+  if (
+    !confirm(
+      `Shop "${shopName}" wirklich löschen?\n\nDer Shop wird auf Status 'deleted' gesetzt und ist nicht mehr sichtbar.`,
+    )
+  ) {
+    return;
+  }
+
+  fetch(`/admin/shops/${currentShopMainId}/delete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.success) {
+        alert("Shop erfolgreich gelöscht!");
+        document.getElementById("shop-variant-details").style.display = "none";
+        document.getElementById("shop-variant-search").value = "";
+        currentShopMainId = null;
+      } else {
+        alert("Error: " + data.error);
+      }
+    })
+    .catch((err) => {
+      alert("Error: " + err.message);
+    });
+}
+
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     initAdminPage();
     setupTabDelegation();
+    loadShopVariantSearch();
   });
 } else {
   initAdminPage();
   setupTabDelegation();
+  loadShopVariantSearch();
 }
