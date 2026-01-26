@@ -937,6 +937,10 @@ function loadShopVariants(shopId) {
       selectedVariantIds.clear();
 
       document.getElementById("selected-shop-name").textContent = `Shop: ${data.main.canonical_name}`;
+      const idEl = document.getElementById("selected-shop-id");
+      if (idEl) {
+        idEl.textContent = `ID: ${data.main.id}`;
+      }
       document.getElementById("shop-variant-details").style.display = "block";
 
       const container = document.getElementById("variant-selection-container");
