@@ -373,6 +373,26 @@ def register_admin_shops(app):
         except Exception as e:  # pragma: no cover
             return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
+    @app.route("/admin/shops/<shop_main_id>/delete", methods=["POST"])
+    @login_required
+    def delete_shop(shop_main_id):
+        """Soft delete a ShopMain by setting status to 'deleted'."""
+        if current_user.role != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+
+        shop_main = db.session.get(ShopMain, shop_main_id)
+        if not shop_main:
+            return jsonify({"error": "Shop not found"}), 404
+
+        # Soft delete: set status to 'deleted'
+        shop_main.status = "deleted"
+        shop_main.updated_at = datetime.now(UTC)
+        shop_main.updated_by_user_id = current_user.id
+
+        db.session.commit()
+
+        return jsonify({"success": True})
+
     @app.route("/admin/shops/<shop_main_id>/details", methods=["GET"])
     @login_required
     def admin_shop_details(shop_main_id):

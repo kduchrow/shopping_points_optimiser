@@ -1025,6 +1025,41 @@ function splitShopVariants() {
     });
 }
 
+function deleteShop() {
+  if (!currentShopMainId) {
+    alert("Kein Shop ausgewählt");
+    return;
+  }
+
+  const shopName = document.getElementById("selected-shop-name").textContent;
+  if (
+    !confirm(
+      `Shop "${shopName}" wirklich löschen?\n\nDer Shop wird auf Status 'deleted' gesetzt und ist nicht mehr sichtbar.`,
+    )
+  ) {
+    return;
+  }
+
+  fetch(`/admin/shops/${currentShopMainId}/delete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.success) {
+        alert("Shop erfolgreich gelöscht!");
+        document.getElementById("shop-variant-details").style.display = "none";
+        document.getElementById("shop-variant-search").value = "";
+        currentShopMainId = null;
+      } else {
+        alert("Error: " + data.error);
+      }
+    })
+    .catch((err) => {
+      alert("Error: " + err.message);
+    });
+}
+
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     initAdminPage();
