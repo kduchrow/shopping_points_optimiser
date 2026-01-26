@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Vorschlag eingereicht - Shopping Points Optimiser{% endblock %}
+
+{% block nav %}
+<nav class="top-nav">
+  <a class="nav-link" href="/">🏠 Startseite</a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="card medium">
+  <div style="text-align: center; padding: 40px 20px;">
+    <h1 style="color: #10b981; margin-bottom: 16px;">✅ Vorschlag eingereicht!</h1>
+    <p style="font-size: 1.1em; color: #666; margin-bottom: 32px;">
+      Danke für deinen Beitrag zur Verbesserung unserer Datenbank. Dein Vorschlag für <strong>{{ shop.name }}</strong> wurde erfolgreich eingereicht.
+    </p>
+
+    {% if last_evaluation %}
+    <div style="margin-bottom: 32px;">
+      <p style="color: #888; margin-bottom: 16px;">Möchtest du deine Ergebnisse mit den aktualisierten Daten sehen?</p>
+      <form method="post" action="/evaluate" style="display: inline;">
+        <input type="hidden" name="shop" value="{{ last_evaluation.shop }}" />
+        {% if last_evaluation.amount %}<input type="hidden" name="amount" value="{{ last_evaluation.amount }}" />{% endif %}
+        <input type="hidden" name="mode" value="{{ last_evaluation.mode or 'shopping' }}" />
+        {% if last_evaluation.include_my_proposals %}<input type="hidden" name="include_my_proposals" value="on" />{% endif %}
+        <button type="submit" class="btn btn-success">Zurück zu den Ergebnissen</button>
+      </form>
+    </div>
+    {% else %}
+    <a href="/evaluate" class="btn btn-secondary" style="margin-bottom: 32px;">Zurück zur Berechnung</a>
+    {% endif %}
+
+    <a href="/" class="btn btn-inline btn-secondary">Zur Startseite</a>
+  </div>
+</div>
+{% endblock %}
