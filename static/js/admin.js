@@ -896,27 +896,26 @@ function loadShopVariantSearch() {
 }
 
 function searchShopMains(query) {
-  // Fetch shops from existing API or create a new one
-  // For simplicity, we'll use the existing shop list endpoint
-  fetch(`/shop_names?q=${encodeURIComponent(query)}`)
+  // Use admin shops overview to get ShopMain data
+  fetch(`/admin/shops_overview?q=${encodeURIComponent(query)}&per_page=20`)
     .then((r) => r.json())
-    .then((shops) => {
+    .then((data) => {
       const list = document.getElementById("shop-variant-list");
       if (!list) return;
 
       list.innerHTML = "";
 
-      if (!shops.length) {
+      if (!data.shops || !data.shops.length) {
         list.innerHTML = '<div style="padding: 12px; color: #999;">Keine Shops gefunden</div>';
         return;
       }
 
-      shops.forEach((shop) => {
+      data.shops.forEach((shop) => {
         const div = document.createElement("div");
         div.className = "shop-variant-item";
         div.style.cssText =
           "padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s;";
-        div.innerHTML = `<strong>${shop.name}</strong>`;
+        div.innerHTML = `<strong>${shop.name}</strong> <span style="color: #999; font-size: 12px;">(${shop.variants.length} Varianten)</span>`;
         div.addEventListener("mouseenter", () => (div.style.background = "#f5f5f5"));
         div.addEventListener("mouseleave", () => (div.style.background = ""));
         div.addEventListener("click", () => loadShopVariants(shop.id));
