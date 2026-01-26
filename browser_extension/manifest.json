@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Shopping Points Optimiser",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Zeigt die besten Bonusprogramme für den aktuellen Shop an",
   "permissions": ["activeTab", "storage", "webNavigation"],
   "host_permissions": ["http://localhost:5000/*", "https://*.shopping-optimiser.de/*"],
