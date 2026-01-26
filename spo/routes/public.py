@@ -10,6 +10,7 @@ from spo.models import (
     ShopMain,
     ShopMetadataProposal,
     ShopProgramRate,
+    UserFavoriteProgram,
 )
 from spo.utils import ensure_variant_for_shop
 
@@ -35,7 +36,11 @@ def register_public(app):
 
     @app.route("/", methods=["GET"])
     def index():
-        return render_template("index.html")
+        # Check if user has favorite programs
+        has_favorites = False
+        if current_user.is_authenticated:
+            has_favorites = UserFavoriteProgram.query.filter_by(user_id=current_user.id).count() > 0
+        return render_template("index.html", has_favorites=has_favorites)
 
     @app.route("/evaluate", methods=["POST"])
     def evaluate():
@@ -43,11 +48,20 @@ def register_public(app):
         shop_id = request.form.get("shop", type=int)
         raw_amount = (request.form.get("amount") or "").strip()
         include_my_proposals = request.form.get("include_my_proposals") == "on"
+        favorites_only = request.form.get("favorites_only") == "on"
         try:
             amount = float(raw_amount) if raw_amount else None
         except (TypeError, ValueError):
             amount = None
         mode = request.form.get("mode", default="shopping")
+
+        # Get user's favorite program IDs if filter is active
+        favorite_program_ids = set()
+        if current_user.is_authenticated and favorites_only:
+            favorite_program_ids = set(
+                fav.program_id
+                for fav in UserFavoriteProgram.query.filter_by(user_id=current_user.id).all()
+            )
 
         # Speichere die Evaluierungs-Parameter in der Session für "Zurück zu Ergebnissen"
         session["last_evaluation"] = {
@@ -55,6 +69,7 @@ def register_public(app):
             "amount": amount,
             "mode": mode,
             "include_my_proposals": include_my_proposals,
+            "favorites_only": favorites_only,
         }
         session.modified = True
         shop = db.session.get(Shop, shop_id) if shop_id else None
@@ -189,6 +204,14 @@ def register_public(app):
             selected_coupon_ids = best_coupons
         if mode == "shopping":
             shopping_rates = [r for r in rates if getattr(r, "rate_type", "shop") != "contract"]
+
+            # Filter by favorites if requested
+            all_rates_count = len(shopping_rates)
+            if favorites_only and favorite_program_ids:
+                shopping_rates = [r for r in shopping_rates if r.program_id in favorite_program_ids]
+            filtered_count = len(shopping_rates)
+            hidden_programs_count = all_rates_count - filtered_count
+
             # Mark selected coupons for template
             for c in shop_coupons:
                 c.selected = c.id in selected_coupon_ids
@@ -232,6 +255,8 @@ def register_public(app):
                     active_coupons=shop_coupons,
                     combine_coupons=False,
                     include_my_proposals=include_my_proposals,
+                    favorites_only=favorites_only,
+                    hidden_programs_count=hidden_programs_count,
                 )
 
             program_map = {}
@@ -328,6 +353,8 @@ def register_public(app):
                     active_coupons=shop_coupons,
                     combine_coupons=False,
                     include_my_proposals=include_my_proposals,
+                    favorites_only=favorites_only,
+                    hidden_programs_count=hidden_programs_count,
                 )
                 # Extract only the results-list HTML
                 from bs4 import BeautifulSoup
@@ -345,6 +372,8 @@ def register_public(app):
                 active_coupons=shop_coupons,
                 combine_coupons=False,
                 include_my_proposals=include_my_proposals,
+                favorites_only=favorites_only,
+                hidden_programs_count=hidden_programs_count,
             )
         # VOUCHER MODE COMMENTED OUT
         # elif mode == "voucher":

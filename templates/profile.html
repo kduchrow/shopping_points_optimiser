@@ -40,6 +40,31 @@
     </div>
   </div>
 
+  <h2>⭐ Meine Bonusprogramme</h2>
+  <div class="profile-section">
+    <p style="color: #666; margin-bottom: 16px;">
+      Wähle deine Bonusprogramme aus. Auf der Startseite kannst du dann filtern,
+      um nur Ergebnisse für deine favorisierten Programme zu sehen.
+    </p>
+    <div id="favorite-programs-container">
+      {% for program in all_programs %}
+      <label class="program-checkbox">
+        <input
+          type="checkbox"
+          name="program"
+          value="{{ program.id }}"
+          {% if program.id in favorite_program_ids %}checked{% endif %}
+        />
+        <span>{{ program.name }}</span>
+      </label>
+      {% endfor %}
+    </div>
+    <button id="save-favorites-btn" class="btn btn-primary" style="margin-top: 16px;">
+      Favoriten speichern
+    </button>
+    <span id="save-status" style="margin-left: 12px; color: #666;"></span>
+  </div>
+
   {% if current_user.role == 'viewer' or current_user.role == 'user' %}
   <h2>📢 Contributor werden</h2>
   {% if contributor_request %}
@@ -74,4 +99,37 @@
   <p class="empty-message">Sie haben noch keine Vorschläge eingereicht.</p>
   {% endif %} {% endif %}
 </div>
+
+<script>
+document.getElementById('save-favorites-btn').addEventListener('click', function() {
+  const checkboxes = document.querySelectorAll('input[name="program"]:checked');
+  const programIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+  const statusEl = document.getElementById('save-status');
+
+  statusEl.textContent = 'Speichere...';
+  statusEl.style.color = '#666';
+
+  fetch('/profile/favorite-programs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ program_ids: programIds })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      statusEl.textContent = `✓ ${data.count} Programme gespeichert`;
+      statusEl.style.color = '#28a745';
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    } else {
+      statusEl.textContent = '✗ Fehler beim Speichern';
+      statusEl.style.color = '#dc3545';
+    }
+  })
+  .catch(err => {
+    statusEl.textContent = '✗ Fehler: ' + err.message;
+    statusEl.style.color = '#dc3545';
+  });
+});
+</script>
+
 {% endblock %}

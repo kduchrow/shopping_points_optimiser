@@ -11,6 +11,7 @@ from .proposals import (
     ShopMetadataProposal,
 )
 from .shops import Shop, ShopCategory, ShopMain, ShopProgramRate, ShopVariant
+from .user_preferences import UserFavoriteProgram
 
 __all__ = [
     "utcnow",
@@ -33,4 +34,5 @@ __all__ = [
     "RateComment",
     "ShopMergeProposal",
     "ShopMetadataProposal",
+    "UserFavoriteProgram",
 ]
