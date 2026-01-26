@@ -323,6 +323,18 @@ def split_shop_variants(
     for variant in variants_to_move:
         variant.shop_main_id = new_shop_main.id
 
+    # Check if source ShopMain has any remaining variants
+    remaining_variants = (
+        db.session.query(ShopVariant).filter(ShopVariant.shop_main_id == shop_main_id).count()
+    )
+
+    # If no variants remain, mark source ShopMain as merged/deleted
+    if remaining_variants == 0:
+        source_shop.status = "merged"
+        source_shop.merged_into_id = new_shop_main.id
+        source_shop.updated_at = datetime.now(UTC)
+        source_shop.updated_by_user_id = user_id
+
     # Note: Shop entries remain with the source ShopMain
     # If needed, admin can manually reassign Shop entries later
     # or we can add logic to automatically create new Shop entries
