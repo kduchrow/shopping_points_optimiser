@@ -118,6 +118,30 @@
     </div>
 
     <h2>Beste Programme (geschätzter Gegenwert in EUR)</h2>
+
+    {% if favorites_only and hidden_programs_count and hidden_programs_count > 0 %}
+    <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 10px; padding: 16px; margin-bottom: 20px; display: flex; gap: 12px; align-items: flex-start;">
+      <div style="font-size: 20px;">⚠️</div>
+      <div style="flex: 1;">
+        <strong>{{ hidden_programs_count }} Bonusprogramm(e) ausgeblendet</strong>
+        <p style="margin: 6px 0 0 0; color: #856404; font-size: 0.95em;">
+          Du hast den Filter "Nur favorisierte Programme" aktiviert. Es gibt noch {{ hidden_programs_count }} weitere Programme,
+          die du nicht als Favorit markiert hast.
+        </p>
+        <form method="post" action="/evaluate" style="margin-top: 10px;">
+          <input type="hidden" name="shop" value="{{ shop.id }}" />
+          {% if amount is not none %}<input type="hidden" name="amount" value="{{ amount }}" />{% endif %}
+          <input type="hidden" name="mode" value="shopping" />
+          {% if include_my_proposals %}<input type="hidden" name="include_my_proposals" value="on" />{% endif %}
+          <!-- favorites_only is NOT sent, so it defaults to off -->
+          <button type="submit" class="btn btn-sm" style="background: #ffc107; color: #333; padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+            📊 Alle {{ (grouped_results|length) + hidden_programs_count }} Programme anzeigen
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
     <ul class="results-list" id="results-list">
       {% if grouped_results is defined %}
         {% for prog in grouped_results %}

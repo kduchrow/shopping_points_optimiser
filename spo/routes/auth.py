@@ -1,8 +1,8 @@
-from flask import flash, redirect, render_template, request, url_for
+from flask import flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
 from spo.extensions import db
-from spo.models import ContributorRequest, Proposal, User
+from spo.models import BonusProgram, ContributorRequest, Proposal, User, UserFavoriteProgram
 
 
 def register_auth(app):
@@ -66,8 +66,20 @@ def register_auth(app):
     def profile():
         contributor_request = ContributorRequest.query.filter_by(user_id=current_user.id).first()
         proposals = Proposal.query.filter_by(user_id=current_user.id).all()
+
+        # Get all available bonus programs and user's favorites
+        all_programs = BonusProgram.query.order_by(BonusProgram.name).all()
+        favorite_program_ids = [
+            fav.program_id
+            for fav in UserFavoriteProgram.query.filter_by(user_id=current_user.id).all()
+        ]
+
         return render_template(
-            "profile.html", contributor_request=contributor_request, proposals=proposals
+            "profile.html",
+            contributor_request=contributor_request,
+            proposals=proposals,
+            all_programs=all_programs,
+            favorite_program_ids=favorite_program_ids,
         )
 
     @app.route("/request-contributor", methods=["POST"])
@@ -90,5 +102,27 @@ def register_auth(app):
 
         flash("Contributor-Anfrage eingereicht. Warten Sie auf Admin-Bestätigung.", "success")
         return redirect(url_for("profile"))
+
+    @app.route("/profile/favorite-programs", methods=["POST"])
+    @login_required
+    def update_favorite_programs():
+        """Update user's favorite bonus programs."""
+        data = request.get_json(silent=True) or {}
+        program_ids = data.get("program_ids", [])
+
+        # Validate program IDs
+        if not isinstance(program_ids, list):
+            return jsonify({"error": "Invalid data format"}), 400
+
+        # Delete existing favorites
+        UserFavoriteProgram.query.filter_by(user_id=current_user.id).delete()
+
+        # Add new favorites
+        for program_id in program_ids:
+            favorite = UserFavoriteProgram(user_id=current_user.id, program_id=program_id)
+            db.session.add(favorite)
+
+        db.session.commit()
+        return jsonify({"success": True, "count": len(program_ids)})
 
     return app
