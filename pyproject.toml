@@ -1,9 +1,10 @@
 [build-system]
-requires = ["setuptools>=65", "setuptools-scm[toml]>=7"]
+requires = ["setuptools>=65"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "shopping-points-optimiser"
+version = "0.3.1"
 description = "Shopping Points Optimizer - maximize cashback and bonus points"
 readme = "README.md"
 license = { text = "MIT" }
@@ -19,21 +20,18 @@ dependencies = [
     "psycopg2-binary>=2.9",
     "gunicorn>=20.0",
 ]
-dynamic = ["version"]
 
 [project.urls]
 Homepage = "https://shopping-optimiser.de"
 Repository = "https://github.com/kduchrow/shopping_points_optimiser.git"
 Documentation = "https://github.com/kduchrow/shopping_points_optimiser"
 
-[tool.setuptools.dynamic]
-version = { attr = "spo.version.__version__" }
+[tool.setuptools]
+packages = ["spo"]
 
 [tool.black]
 line-length = 100
 target-version = ["py311"]
-
-[tool.isort]
 profile = "black"
 line_length = 100
 
