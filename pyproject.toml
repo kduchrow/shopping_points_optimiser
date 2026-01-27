@@ -1,3 +1,34 @@
+[build-system]
+requires = ["setuptools>=65", "setuptools-scm[toml]>=7"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shopping-points-optimiser"
+description = "Shopping Points Optimizer - maximize cashback and bonus points"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "Flask>=3.0",
+    "Flask-SQLAlchemy>=3.1",
+    "Flask-Login>=0.6",
+    "requests>=2.30",
+    "beautifulsoup4>=4.12",
+    "playwright>=1.40",
+    "alembic>=1.12",
+    "psycopg2-binary>=2.9",
+    "gunicorn>=20.0",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://shopping-optimiser.de"
+Repository = "https://github.com/kduchrow/shopping_points_optimiser.git"
+Documentation = "https://github.com/kduchrow/shopping_points_optimiser"
+
+[tool.setuptools.dynamic]
+version = { attr = "spo.version.__version__" }
+
 [tool.black]
 line-length = 100
 target-version = ["py311"]
