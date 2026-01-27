@@ -1,30 +1,23 @@
 # 🛍️ Shopping Points Optimiser
 
-Enterprise-ready shopping rewards optimization platform with intelligent shop deduplication, automated scraping, and community-driven rate management.
+Find the best bonus programs and cashback for your online shopping.
+
+**Website:** [shopping-optimiser.de](https://shopping-optimiser.de)
 
 [![CI Pipeline](https://github.com/kduchrow/shopping_points_optimiser/actions/workflows/ci.yml/badge.svg)](https://github.com/kduchrow/shopping_points_optimiser/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/kduchrow/shopping_points_optimiser/branch/main/graph/badge.svg)](https://codecov.io/gh/kduchrow/shopping_points_optimiser)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## ✨ Features
+## ✨ Core Features
 
-- 🤖 **Automated Scrapers** - Miles & More, Payback integration
-- 🔗 **Smart Shop Deduplication** - AI-powered duplicate detection (98% accuracy)
-- 📊 **Rate Management** - Community-driven rate updates with approval workflow
-- 🔔 **Notification System** - Real-time notifications for proposals and reviews
-- 👥 **User Roles** - Admin, Contributor, User, Viewer
-- 🎯 **Modern Admin UI** - Tab-based interface with live progress tracking
-- 🐘 **PostgreSQL Database** - Production-ready with Alembic migrations
-- 🚀 **CI/CD Pipeline** - Automated testing, linting, and security checks
-- 🪝 **Pre-commit Hooks** - Code quality enforcement with ruff, black, isort
+- 🛒 **Shop Matching** - Recognizes 1000+ online retailers
+- 💰 **Rate Comparison** - Compares bonus programs (Payback, Miles & More, Shoop, TopCashback, etc.)
+- 🤖 **Automated Rates** - Scrapers keep rates fresh
+- 👥 **Community Driven** - Users propose and vote on rate updates
+- 🌐 **Browser Extension** - Shopping assistant for Chrome/Edge (v1.0.2)
+- ⭐ **Favorites** - Save your preferred bonus programs
+- 🔐 **User Accounts** - Track proposals and rate history
 
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Python 3.11+
-- Docker & Docker Compose (for PostgreSQL)
-- Git
+## 🚀 Getting Started
 
 ### Installation
 
@@ -33,152 +26,66 @@ Enterprise-ready shopping rewards optimization platform with intelligent shop de
 git clone https://github.com/kduchrow/shopping_points_optimiser.git
 cd shopping_points_optimiser
 
-# Create virtual environment
+# Create virtual environment & install
 python -m venv .venv
 .venv\Scripts\activate  # Windows
-source .venv/bin/activate  # Linux/Mac
-
-# Install dependencies
 pip install -r requirements.txt
-pip install -r requirements-dev.txt  # For development
 
-# Set up environment variables
+# Copy environment
 cp .env.example .env
-# Edit .env with your configuration
 
-# Start PostgreSQL with Docker
-docker-compose up -d db
-
-# Run database migrations
-python -m alembic upgrade head
-
-# Seed initial data (optional)
-python scripts/seed_db.py
-```
-
-### Development Setup
-
-```bash
-# Install pre-commit hooks
-pre-commit install
-
-# Run pre-commit on all files
-pre-commit run --all-files
-```
-
-### Run Application
-
-**Development:**
-
-```bash
+# Start services
+docker-compose up -d
 python app.py
 ```
 
-**Production (Docker):**
+Access at: **http://localhost:5000**
+
+### Browser Extension
+
+Install from [browser_extension/](browser_extension/README.md) directory (Chrome/Edge).
+
+## 📖 Documentation
+
+- **[QUICKSTART](docs/QUICKSTART.md)** - Setup & first steps
+- **[DEPLOYMENT](docs/DEPLOYMENT.md)** - Production deployment
+- **[CHANGELOG](docs/CHANGELOG.md)** - Version history
+- **[Browser Extension](browser_extension/README.md)** - Extension guide
+
+## 🏗️ Architecture
+
+| Component             | Purpose                                       |
+| --------------------- | --------------------------------------------- |
+| **Flask API**         | Web application & REST endpoints              |
+| **PostgreSQL**        | Primary data store with migrations (Alembic)  |
+| **Scrapers**          | Automated bonus program rate collection       |
+| **Background Jobs**   | Queue processing for scrapers & notifications |
+| **Browser Extension** | Client-side shop recognition & rate lookup    |
+
+## 👨‍💻 Development
 
 ```bash
-docker-compose up
+# Install dev tools
+pip install -r requirements-dev.txt
+
+# Pre-commit hooks
+pre-commit install
+
+# Run tests
+pytest tests/
+
+# Format code
+black .
+ruff check --fix .
 ```
 
-Access at: **http://127.0.0.1:5000**
+## 📝 License
 
-### Default Credentials
+MIT – See [LICENSE](LICENSE) for details.
 
-| Username    | Password   | Role        |
-| ----------- | ---------- | ----------- |
-| admin       | admin123   | Admin       |
-| contributor | contrib123 | Contributor |
-| testuser    | user123    | User        |
-| viewer      | viewer123  | Viewer      |
+---
 
-## 📁 Project Structure
-
-```
-shopping_points_optimiser/
-├── app.py                  # Main Flask application
-├── spo/                    # Main application package
-│   ├── __init__.py        # Flask app factory
-│   ├── version.py         # Version management
-│   ├── extensions.py      # Flask extensions
-│   ├── models.py          # Database models
-│   └── routes/            # Route blueprints
-├── migrations/            # Alembic database migrations
-├── notifications.py       # Notification system
-├── shop_dedup.py         # Shop deduplication logic
-├── job_queue.py          # Background job processing
-├── requirements.txt      # Python dependencies
-├── requirements-dev.txt  # Development dependencies
-├── docker-compose.yml    # Docker configuration
-├── .pre-commit-config.yaml  # Pre-commit hooks
-├── pyproject.toml        # Tool configuration
-│
-├── bonus_programs/       # Bonus program implementations
-│   ├── miles_and_more.py
-│   ├── payback.py
-│   └── shoop.py
-│
-├── scrapers/            # Web scrapers
-│   ├── base.py
-│   ├── miles_and_more_scraper.py
-│   └── payback_scraper_js.py
-│
-├── templates/           # HTML templates
-│   ├── base.html       # Base template with navigation & footer
-│   ├── admin.html      # Modern admin interface
-│   └── ...
-│
-├── static/             # Static assets
-│   ├── css/           # Stylesheets
-│   │   ├── main.css   # Main styles + utilities
-│   │   ├── admin.css  # Admin-specific styles
-│   │   └── result.css # Results page styles
-│   └── js/            # JavaScript files
-│
-├── scripts/            # Utility scripts
-│   ├── migrate_sqlite_to_postgres.py  # Migration script
-│   └── ...
-│
-├── tests/             # Test files
-│   ├── demo_admin.py
-│   ├── test_notifications.py
-│   └── ...
-│
-└── docs/              # Documentation
-    ├── CHANGELOG.md
-    ├── QUICKSTART.md
-    ├── MIGRATION_SQLITE_TO_POSTGRES.md
-    ├── PRE_COMMIT_SETUP.md
-    └── ...
-```
-
-## 🎯 Core Concepts
-
-### Shop Deduplication
-
-Automatically merges duplicate shops across different sources:
-
-- **≥98% similarity** → Auto-merge
-- **70-98% similarity** → Community review required
-- **<70% similarity** → Separate shops
-
-Example: `Amazon` (Miles & More) + `amazon` (Payback) → **Auto-merged**
-
-### Approval Workflow
-
-1. User/Scraper submits proposal
-2. Community reviews and votes
-3. Admin approves/rejects with feedback
-4. User receives notification
-
-### Notification Types
-
-- `PROPOSAL_REJECTED` - Proposal was rejected with reason
-- `PROPOSAL_APPROVED` - Proposal was approved
-- `RATE_COMMENT` - New comment on your rate
-- `MERGE_REJECTED` - Shop merge rejected
-- `MERGE_APPROVED` - Shop merge approved
-
-## 🔧 Configuration
+**For questions or feedback:** [shopping-optimiser.de](https://shopping-optimiser.de)
 
 ### Environment Variables
 
@@ -435,6 +342,11 @@ See `.github/workflows/deploy.yml` and `docker-compose.prod.override.yml` for im
 - [x] Merge proposals and community approval workflow
 - [x] Admin rescore functionality for shop variants
 - [x] Container-only test execution
+- [x] Browser Extension with shop recognition (v1.0.2)
+- [x] Favorites feature for users
+- [x] URL proposal approval workflow
+- [x] User authentication & role-based access
+- [x] Rate history and deduplication
 
 ### 🔄 In Progress
 
@@ -447,19 +359,13 @@ See `.github/workflows/deploy.yml` and `docker-compose.prod.override.yml` for im
 
 **Cashback-Plattformen (🔴 CRITICAL):**
 
-- [ ] **Shoop Scraper** (M) - Deutsche Cashback-Plattform, hohe Partnerverfügbarkeit
-- [ ] **TopCashback Scraper** (M) - Europäische Plattform mit vielen Shops
+- [x] **Payback Scraper** - Deutsche Cashback-Plattform
+- [x] **Miles & More Scraper** - Lufthansa Miles Program
+- [x] **Shoop Scraper** - Deutsche Cashback-Plattform
+- [x] **TopCashback Scraper** - Europäische Plattform
 - [ ] **iGraal Scraper** (M) - Französische Alternative, deutsche Nutzer
 - [ ] **Cashback-Vergleich pro Shop** (L) - Eine Shop-Seite zeigt alle Cashback-Wege
 - [ ] **Automatischer Cashback-Rate-Update** (S) - Tägliche/wöchentliche Syncs
-
-**Shop-Eigene Bonusprogramme (🔴 HIGH):**
-
-- [ ] REWE Bonus Scraper (M)
-- [ ] MediaMarkt Club Scraper (M)
-- [ ] IKEA Family Scraper (M)
-- [ ] DeutschlandCard Integration (M)
-- [ ] Webmiles Integration (M)
 
 #### 🎟️ Coupon-Features (High Priority)
 
