@@ -63,13 +63,61 @@ Install from [browser_extension/](browser_extension/README.md) directory (Chrome
 
 ## 🏗️ Architecture
 
-| Component             | Purpose                                       |
-| --------------------- | --------------------------------------------- |
-| **Flask API**         | Web application & REST endpoints              |
-| **PostgreSQL**        | Primary data store with migrations (Alembic)  |
-| **Scrapers**          | Automated bonus program rate collection       |
-| **Background Jobs**   | Queue processing for scrapers & notifications |
-| **Browser Extension** | Client-side shop recognition & rate lookup    |
+The application uses a **worker-based scraper architecture** to efficiently manage bonus program rate collection:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    WORKER-BASED ARCHITECTURE                        │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  APP CONTAINER (v0.3.1)           WORKER CONTAINER (v0.1.0)        │
+│  ┌──────────────────────────┐     ┌──────────────────────────┐     │
+│  │  Flask + Gunicorn        │     │  Playwright + RQ         │     │
+│  │  (lightweight, no Py)    │     │  (all scrapers)          │     │
+│  │                          │     │                          │     │
+│  │  REST API Endpoints:     │     │  Scraper Workers:        │     │
+│  • POST /api/scrape-jobs │────→│  • Payback (REST API)    │     │
+│  • POST /api/scrape-res. │     │  • Shoop (REST API)      │     │
+│  │  • [other routes]        │     │  • TopCashback (Crawl)   │     │
+│  │                          │←────│  • Miles&More (Playwright)│    │
+│  └──────────────────────────┘     └──────────────────────────┘     │
+│           ↓                                 ↑                        │
+│      PostgreSQL                       Redis Queue                   │
+│      (ingests results)           (job distribution)                 │
+│                                                                      │
+├─────────────────────────────────────────────────────────────────────┤
+│  KEY FEATURES:                                                       │
+│  ✅ Unified Scraper Format: [{name, rates[], source_id}]           │
+│  ✅ Batch Processing: 50 shops/request (prevents timeouts)         │
+│  ✅ Timeouts: 120s (reasonable for batch operations)               │
+│  ✅ Independent Versioning: App & Worker versions separate          │
+│  ✅ API-First Design: Workers communicate via REST, not DB access  │
+│  ✅ Scalable: Add more workers for parallel scraping               │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Services
+
+| Component             | Purpose                                      | Version |
+| --------------------- | -------------------------------------------- | ------- |
+| **Flask API**         | Web application & REST endpoints             | 0.3.1   |
+| **PostgreSQL**        | Primary data store with migrations (Alembic) | 16      |
+| **Redis Queue**       | Job distribution & worker communication      | 7       |
+| **Scraper Workers**   | Automated bonus program rate collection      | 0.1.0   |
+| **Browser Extension** | Client-side shop recognition & rate lookup   | 1.0.2   |
+
+### Scraper Technologies
+
+Each bonus program scraper uses the most efficient approach:
+
+| Scraper         | Technology | Data Source                           | Speed  |
+| --------------- | ---------- | ------------------------------------- | ------ |
+| **Payback**     | REST API   | Official API                          | ⚡⚡⚡ |
+| **Shoop**       | REST API   | Official API (categories & merchants) | ⚡⚡⚡ |
+| **TopCashback** | HTML Crawl | Website category pages                | ⚡⚡   |
+| **Miles&More**  | Playwright | Cloudflare-protected site             | ⚡     |
+
+**Note:** All scrapers run in the worker container. The main app stays lightweight (no Playwright).
 
 ## 👨‍💻 Development
 
