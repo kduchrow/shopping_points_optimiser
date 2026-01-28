@@ -26,7 +26,7 @@ def test_admin_rescore_variants(client, admin_user):
 
         v1 = ShopVariant(
             shop_main_id=main.id,
-            source="PaybackScraperJS",
+            source="PaybackScraper",
             source_name="mediamarkt online shop",
             confidence_score=70.0,
         )

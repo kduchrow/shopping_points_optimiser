@@ -15,11 +15,19 @@ dependencies = [
     "Flask-Login>=0.6",
     "requests>=2.30",
     "beautifulsoup4>=4.12",
-    "playwright>=1.40",
     "alembic>=1.12",
     "psycopg2-binary>=2.9",
     "gunicorn>=20.0",
+    "redis>=5.0",
+    "rq>=1.16",
 ]
+
+[project.optional-dependencies]
+playwright = ["playwright>=1.40"]
+
+# Worker version (scrapers have independent release cycle)
+[tool.shopping-points]
+worker-version = "0.1.0"
 
 [project.urls]
 Homepage = "https://shopping-optimiser.de"

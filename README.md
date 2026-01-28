@@ -31,6 +31,10 @@ python -m venv .venv
 .venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 
+# Optional: Install worker dependencies (Playwright for Miles&More)
+# pip install -r requirements-worker.txt
+# playwright install chromium
+
 # Copy environment
 cp .env.example .env
 
@@ -40,6 +44,11 @@ python app.py
 ```
 
 Access at: **http://localhost:5000**
+
+### Scraper Worker (optional)
+
+Scrapers run in a separate worker container and report results via the API.
+Ensure `SCRAPER_API_TOKEN` is set in your `.env`. The worker uses Redis via `REDIS_URL`.
 
 ### Browser Extension
 

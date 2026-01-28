@@ -18,10 +18,13 @@ psycopg2-binary==2.9.11
 # Web Scraping
 requests==2.32.5
 beautifulsoup4==4.14.3
-playwright==1.57.0
 
 # Scheduling
 APScheduler==3.11.2
+
+# Queue / Workers
+redis==5.0.8
+rq==1.16.2
 
 # Utilities
 click==8.3.1

@@ -285,12 +285,13 @@ class TestTopCashbackIntegration:
 
     @pytest.mark.integration
     def test_scrape_and_register(self, app):
-        """Test the full scrape_and_register function."""
+        """Test enqueuing TopCashback scraper job via worker queue."""
         with app.app_context():
-            from bonus_programs import topcashback
+            from spo.services.scrape_queue import enqueue_scrape_job
 
-            # Should not raise any exceptions
-            result = topcashback.scrape_and_register(job=None)
+            # Enqueue the job (should not raise any exceptions)
+            job_id = enqueue_scrape_job("topcashback", requested_by="test")
 
-            # Should return a number (even if 0)
-            assert isinstance(result, int)
+            # Should return a valid job ID (string/uuid)
+            assert isinstance(job_id, str)
+            assert len(job_id) > 0

@@ -62,7 +62,6 @@ class ShoopScraper(BaseScraper):
                 "rates": rates,
                 "source_id": str(m.get("id")),
             }
-            self.register_to_db(shop_data)
             results.append(shop_data)
         return results
 

@@ -47,7 +47,9 @@ cd /app && python -m alembic upgrade head
 
 echo "🚀 Starting gunicorn..."
 # Make Gunicorn workers configurable via env (default 1)
+# Configure Gunicorn workers and timeout via env
 : "${GUNICORN_WORKERS:=1}"
+: "${GUNICORN_TIMEOUT:=120}"
 # Gunicorn config for Traefik: log to stdout/stderr, trust proxy headers
 GUNICORN_CMD_ARGS="--access-logfile - --error-logfile -"
-exec gunicorn --bind 0.0.0.0:5000 --workers "$GUNICORN_WORKERS" --worker-class sync --timeout 60 --forwarded-allow-ips="*" $GUNICORN_CMD_ARGS app:app
+exec gunicorn --bind 0.0.0.0:5000 --workers "$GUNICORN_WORKERS" --worker-class sync --timeout "$GUNICORN_TIMEOUT" --forwarded-allow-ips="*" $GUNICORN_CMD_ARGS app:app

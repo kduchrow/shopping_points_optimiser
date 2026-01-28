@@ -1,8 +1,9 @@
-# noqa: E402
 import logging
 import os
 import sys
 from abc import ABC, abstractmethod
+
+from sqlalchemy.exc import IntegrityError
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -31,8 +32,12 @@ class BaseScraper(ABC):
         """Register shop and rates to database using ShopMain + ShopVariant deduplication"""
 
         # Get or create ShopMain with automatic deduplication
+        source_name = data.get("source") or self.__class__.__name__
+        source_id = data.get("source_id")
+        if source_id is not None:
+            source_id = str(source_id)
         shop_main, is_new, confidence = get_or_create_shop_main(
-            shop_name=data["name"], source=self.__class__.__name__, source_id=data.get("source_id")
+            shop_name=data["name"], source=source_name, source_id=source_id
         )
 
         # Prevent duplicate ShopVariant insert (defensive, in case dedup logic missed)
@@ -40,20 +45,23 @@ class BaseScraper(ABC):
 
         existing_variant = ShopVariant.query.filter_by(
             shop_main_id=shop_main.id,
-            source=self.__class__.__name__,
-            source_id=data.get("source_id"),
+            source=source_name,
+            source_id=source_id,
         ).first()
         if not existing_variant:
             # Only create ShopVariant if not present
             variant = ShopVariant(
                 shop_main_id=shop_main.id,
-                source=self.__class__.__name__,
+                source=source_name,
                 source_name=data["name"],
-                source_id=data.get("source_id"),
+                source_id=source_id,
                 confidence_score=confidence,
             )
-            db.session.add(variant)
-            db.session.commit()
+            try:
+                db.session.add(variant)
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
 
         # For backward compatibility, get or create legacy Shop table entry
         shop = Shop.query.filter_by(shop_main_id=shop_main.id).first()

@@ -1,0 +1,30 @@
+FROM python:3.11-slim
+
+ARG FLASK_ENV=production
+
+ENV FLASK_ENV=${FLASK_ENV}
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app:$PYTHONPATH
+ENV PATH=/root/.local/bin:$PATH
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+COPY requirements-worker.txt .
+RUN pip install --user --no-cache-dir -r requirements-worker.txt \
+    && python -m playwright install-deps chromium \
+    && python -m playwright install chromium
+
+COPY . .
+RUN pip install --no-cache-dir -e .
+
+CMD ["rq", "worker", "scraper"]

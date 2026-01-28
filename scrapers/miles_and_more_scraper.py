@@ -44,6 +44,113 @@ class MilesAndMoreScraper:
         self.system_user = user
         return user
 
+    def fetch(self):
+        """Fetch partner data without writing to the database."""
+        try:
+            from playwright.sync_api import sync_playwright  # noqa: E402
+        except ImportError:
+            print("[!] Playwright not installed. Install with: pip install playwright")
+            return []
+
+        results = []
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/121.0.0.0 Safari/537.36"
+                ),
+                locale="de-DE",
+                timezone_id="Europe/Berlin",
+                viewport={"width": 1366, "height": 768},
+                java_script_enabled=True,
+                extra_http_headers={
+                    "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
+                },
+            )
+            context.add_init_script(
+                "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
+            )
+            page = context.new_page()
+
+            try:
+                page.goto(self.base_url, wait_until="networkidle", timeout=45000)
+                page.wait_for_timeout(1500)
+                self._accept_cookies(page)
+                page.wait_for_timeout(1500)
+                page.wait_for_selector('a[href*="/partners/"]', timeout=60000, state="attached")
+
+                last_height = page.evaluate("document.body.scrollHeight")
+                scroll_count = 0
+                max_scrolls = 40
+                while scroll_count < max_scrolls:
+                    page.evaluate("window.scrollBy(0, window.innerHeight)")
+                    time.sleep(1)
+                    new_height = page.evaluate("document.body.scrollHeight")
+                    if new_height == last_height:
+                        break
+                    last_height = new_height
+                    scroll_count += 1
+
+                partner_links = page.locator('a[href*="/partners/"]').all()
+                if not partner_links:
+                    partner_links = page.locator(
+                        'a.partner-tile, a[href*="/program/partners/"]'
+                    ).all()
+
+                partner_urls = []
+                for link in partner_links:
+                    try:
+                        href = link.get_attribute("href")
+                        if href and "/partners/" in href:
+                            shop_name = link.text_content().strip()
+                            if shop_name and not shop_name.startswith("/"):
+                                partner_urls.append(
+                                    {
+                                        "name": shop_name,
+                                        "url": (
+                                            href
+                                            if href.startswith("http")
+                                            else f"https://www.miles-and-more.com{href}"
+                                        ),
+                                    }
+                                )
+                    except Exception:
+                        continue
+
+                for partner in partner_urls:
+                    page.goto(partner["url"], wait_until="networkidle", timeout=15000)
+                    time.sleep(0.5)
+                    points_per_eur = self._extract_points_rate(page.content())
+                    cashback_pct = 0.0
+                    rate_note = None
+                    if points_per_eur is None:
+                        points_per_eur = 0.5
+                        rate_note = "fallback_points_per_eur"
+
+                    results.append(
+                        {
+                            "name": partner["name"],
+                            "source_id": partner["url"],
+                            "rates": [
+                                {
+                                    "program": "MilesAndMore",
+                                    "points_per_eur": points_per_eur,
+                                    "cashback_pct": cashback_pct,
+                                    "point_value_eur": 0.01,
+                                    "rate_note": rate_note,
+                                    "rate_type": "shop",
+                                }
+                            ],
+                        }
+                    )
+            finally:
+                browser.close()
+
+        return results
+
     def scrape(self):
         """
         Scrape Miles & More partners
