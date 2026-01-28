@@ -16,9 +16,25 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image_name: ghcr.io/${{ github.repository_owner }}/shopping-points-app
+      app_version: ${{ steps.get_version.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Get version from pyproject.toml
+        id: get_version
+        run: |
+          VERSION=$(python -c "import re; \
+            content = open('pyproject.toml').read(); \
+            match = re.search(r'version\s*=\s*[\"'\'']([^\"'\'']+)[\"'\'']', content); \
+            print(match.group(1))")
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "📦 Building version: ${VERSION}"
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -32,7 +48,9 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/shopping-points-app:latest
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/shopping-points-app:latest
+            ghcr.io/${{ github.repository_owner }}/shopping-points-app:${{ steps.get_version.outputs.version }}
 
   deploy:
     needs: build-and-push
