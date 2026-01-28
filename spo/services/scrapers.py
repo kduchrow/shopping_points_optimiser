@@ -90,12 +90,20 @@ def scrape_topcashback(job):
         job.set_progress(10, 100)
         db.session.add(ScrapeLog(message="TopCashback scraper started"))
         db.session.commit()
-        job.add_message("Scrape partner data...")
+        job.add_message("Fetche Partner von TopCashback...")
         job.set_progress(30, 100)
 
         ensure_program("TopCashback", point_value_eur=0.01)
         scraper = TopCashbackScraper()
-        added = scraper.scrape()
+        shops_data = scraper.fetch()
+
+        job.add_message("Registriere Daten in Datenbank...")
+        job.set_progress(70, 100)
+
+        added = 0
+        for shop_data in shops_data:
+            scraper.register_to_db(shop_data)
+            added += 1
 
         job.add_message(f"Fertig: {added} Partner registriert")
         db.session.add(ScrapeLog(message=f"TopCashback scraper finished, {added} partners"))
