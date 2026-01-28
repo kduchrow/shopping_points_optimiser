@@ -191,3 +191,99 @@ docker compose exec app alembic upgrade head --sql
 - **Template Updates:** Enhanced contract results display in `result.html`
 - **Migration:** Auto-generated via `alembic revision --autogenerate -m "Add rate_type to ShopProgramRate"`
 - **Fix Applied:** Modified migration to handle existing data by adding column as nullable, updating rows, then making non-nullable
+
+---
+
+## Version Management & Bumping Workflow
+
+**Single Source of Truth Principle:** Version is defined ONLY in pyproject.toml. All other locations (code, Docker, dev env) read from or sync with this single source.
+
+### Version Locations (Read-Only except pyproject.toml)
+
+- **pyproject.toml** \[project] version = "0.3.1"\ **SINGLE SOURCE OF TRUTH**
+- **spo/version.py** Reads from pyproject.toml via importlib.metadata.version()
+- **.env** Synced from pyproject.toml via scripts/sync_version.py
+- **docker-build.sh/ps1** Reads from pyproject.toml for production/CI builds
+- **docker-compose.yml** Uses \ fallback
+
+### Version Bump Workflow (3 Simple Steps)
+
+**Step 1: Edit pyproject.toml**
+
+\\\ oml
+[project]
+version = "0.3.2" # Change ONLY here
+\\\
+
+**Step 2: Sync to .env for Local Development**
+
+\\\powershell
+python scripts/sync_version.py
+\\\
+
+Output:
+\\\
+ Found version in pyproject.toml: 0.3.2
+Updated C:\...\shopping_points_optimiser\.env with version 0.3.2
+\\\
+
+**Step 3: Verify in Docker**
+
+\\\powershell
+docker compose down
+docker compose up -d
+docker compose exec app python -c "from spo.version import **version**; print(**version**)"
+
+# Expected output: 0.3.2 (NOT 0.3.2-dev)
+
+\\\
+
+If output shows "-dev", the package wasn't installed in Docker:
+
+- Ensure pip install -e . is in Dockerfile (after dependencies)
+- Rebuild: docker compose build app
+
+### Important Notes
+
+1. **Never manually edit .env version** - It's auto-synced, changes will be overwritten
+2. **Always run sync script** before testing locally - python scripts/sync_version.py
+3. **Commit pyproject.toml + .env together** after sync - They must stay in sync
+4. **Production/CI uses pyproject.toml directly** - docker-build.sh reads it automatically
+5. **The "-dev" fallback only triggers if package not installed** - This is caught during Docker build
+
+### Commit Message Template for Version Bumps
+
+\\\
+chore: bump version to 0.3.2
+
+- Updated pyproject.toml [project] version
+- Synced to .env via scripts/sync_version.py
+- Verified version in Docker container: 0.3.2
+  \\\
+
+### Common Version Bump Issues
+
+**Problem:** Version shows as "0.3.1-dev" in container
+
+- **Cause:** \importlib.metadata.version()\ failed, using fallback
+- **Fix:** Ensure Dockerfile has \pip install -e .\ after dependencies
+- **Rebuild:** \docker compose build app\
+
+**Problem:** .env not updated after editing pyproject.toml
+
+- **Cause:** Forgot to run sync script
+- **Fix:** \python scripts/sync_version.py\
+
+**Problem:** docker-compose.yml shows different version than APP_VERSION
+
+- **Cause:** Fallback \:latest\ tag in use
+- **Fix:** Ensure \docker compose build app\ ran after pyproject.toml change
+- **Or:** Manually set: \docker build -t shopping-points-optimiser:0.3.2 .\
+
+#### 2026-01-28: Single Source of Truth for Version Management
+
+- **refactored:** Version management to follow best practices (DRY principle)
+- **created:** \scripts/sync_version.py\ to auto-sync version from pyproject.toml to .env
+- **updated:** Dockerfile to install package with \pip install -e .\ for importlib.metadata support
+- **removed:** Hardcoded version from .env (git-tracked)
+- **documented:** Version bump workflow in this agent file
