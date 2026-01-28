@@ -1,11 +1,13 @@
 from flask import current_app
 
-import bonus_programs.miles_and_more as mam
 import scrapers.example_scraper as exs_scraper
 import scrapers.payback_scraper_js as pb_scraper
 import scrapers.shoop_scraper as sh_scraper
+from scrapers.miles_and_more_scraper import MilesAndMoreScraper
+from scrapers.topcashback_scraper import TopCashbackScraper
 from spo.extensions import db
 from spo.models import ScrapeLog, Shop
+from spo.services.bonus_programs import ensure_program
 
 
 def scrape_example(job):
@@ -66,7 +68,15 @@ def scrape_miles_and_more(job):
         db.session.commit()
         job.add_message("Scrape partner data...")
         job.set_progress(30, 100)
-        added = mam.scrape_and_register(job)
+
+        ensure_program("MilesAndMore", point_value_eur=0.01)
+        scraper = MilesAndMoreScraper()
+        added, updated, errors = scraper.scrape()
+
+        if job:
+            for err in errors:
+                job.add_message(f"Fehler beim Scrapen: {err}")
+
         job.add_message(f"Fertig: {added} Partner registriert")
         db.session.add(ScrapeLog(message=f"M&M scraper finished, {added} partners"))
         db.session.commit()
@@ -76,15 +86,17 @@ def scrape_miles_and_more(job):
 
 def scrape_topcashback(job):
     with current_app.app_context():
-        import bonus_programs.topcashback as tc
-
         job.add_message("Starte TopCashback-Scraper...")
         job.set_progress(10, 100)
         db.session.add(ScrapeLog(message="TopCashback scraper started"))
         db.session.commit()
         job.add_message("Scrape partner data...")
         job.set_progress(30, 100)
-        added = tc.scrape_and_register(job)
+
+        ensure_program("TopCashback", point_value_eur=0.01)
+        scraper = TopCashbackScraper()
+        added = scraper.scrape()
+
         job.add_message(f"Fertig: {added} Partner registriert")
         db.session.add(ScrapeLog(message=f"TopCashback scraper finished, {added} partners"))
         db.session.commit()

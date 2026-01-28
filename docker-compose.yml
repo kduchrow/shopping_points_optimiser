@@ -27,10 +27,10 @@ services:
       dockerfile: Dockerfile
       args:
         FLASK_ENV: ${FLASK_ENV:-production}
-        APP_VERSION: ${APP_VERSION}
+        APP_VERSION: ${APP_VERSION:-latest}
         BUILD_DATE: ${BUILD_DATE:-unknown}
         VCS_REF: ${VCS_REF:-unknown}
-    image: shopping-points-optimiser:${APP_VERSION}
+    image: shopping-points-optimiser:${APP_VERSION:-latest}
     container_name: app
     restart: unless-stopped
     depends_on:
