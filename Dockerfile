@@ -102,6 +102,10 @@ RUN python -m playwright install-deps chromium && \
 # Copy application code
 COPY . .
 
+# Install the package in editable mode so importlib.metadata can find the version
+# Do this AFTER dependencies are installed to avoid reinstalling them
+RUN pip install --no-cache-dir -e .
+
 # Copy and set permissions for entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
