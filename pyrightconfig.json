@@ -9,7 +9,9 @@
     ".pytest_cache",
     ".ruff_cache",
     "migrations/**",
-    "scripts/db_upgrade.py"
+    "scripts/db_upgrade.py",
+    "scripts/reset_db.py",
+    "scrapers/miles_and_more_scraper.py"
   ],
   "reportMissingImports": true,
   "reportMissingTypeStubs": false,
