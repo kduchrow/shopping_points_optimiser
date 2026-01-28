@@ -31,15 +31,17 @@ services:
       - MONITOR_PLUG_ID=main-plug
       - GUNICORN_WORKERS=4
       - GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT:-120}
-
-  scraper-worker:
-    image: "${WORKER_IMAGE_NAME}"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.spo.rule=Host(`${DOMAIN_NAME}`)"
       - "traefik.http.routers.spo.entrypoints=websecure"
       - "traefik.http.routers.spo.tls.certresolver=myresolver"
       - "traefik.http.services.spo.loadbalancer.server.port=5000"
+    networks:
+      - spo-network
+
+  scraper-worker:
+    image: "${WORKER_IMAGE_NAME}"
     networks:
       - spo-network
 
