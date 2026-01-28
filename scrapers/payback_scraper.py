@@ -104,13 +104,13 @@ class PaybackScraper(BaseScraper):
             if partner_data.get("detailsUrl"):
                 rate["details_url"] = partner_data["detailsUrl"]
 
-            results.append({"name": name, "rate": rate})
+            # Standardized format: shop with rates array
+            results.append(
+                {
+                    "name": name,
+                    "rates": [rate],
+                    "source_id": partner_id,
+                }
+            )
 
-        debug = {
-            "status_code": resp.status_code,
-            "api_url": self.API_URL,
-            "partners_count": len(partners),
-            "results_count": len(results),
-        }
-
-        return results, debug
+        return results

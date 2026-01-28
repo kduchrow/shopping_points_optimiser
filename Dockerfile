@@ -16,7 +16,7 @@ ENV APP_VERSION=${APP_VERSION} \
 
 WORKDIR /tmp
 
-# Install build dependencies (Playwright, compilers, DB headers)
+# Install build dependencies (compilers, DB headers)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
@@ -37,10 +37,6 @@ RUN if [ "$FLASK_ENV" = "development" ]; then \
     fi; \
 fi
 
-# Install Playwright and Chromium dependencies in builder
-RUN pip install --user --no-cache-dir playwright && \
-    python -m playwright install-deps chromium && \
-    python -m playwright install chromium
 
 # --- Final stage: production image ---
 FROM python:3.11-slim
@@ -84,10 +80,6 @@ RUN if [ "$FLASK_ENV" = "development" ]; then \
         pip install --user --no-cache-dir -r requirements-dev.txt; \
     fi; \
 fi
-# Install Playwright and Chromium dependencies in final image
-RUN pip install --no-cache-dir playwright && \
-    python -m playwright install-deps chromium && \
-    python -m playwright install chromium
 
 ENV PATH=/root/.local/bin:$PATH
 ENV PYTHONUNBUFFERED=1
@@ -95,12 +87,13 @@ ENV PYTHONPATH=/app:$PYTHONPATH
 # Gunicorn workers configurable via env
 ENV GUNICORN_WORKERS=1
 
-# Install Playwright browser binaries and system deps (Chromium)
-RUN python -m playwright install-deps chromium && \
-    python -m playwright install chromium
 
 # Copy application code
 COPY . .
+
+# Install the package in editable mode so importlib.metadata can find the version
+# Do this AFTER dependencies are installed to avoid reinstalling them
+RUN pip install --no-cache-dir -e .
 
 # Copy and set permissions for entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh

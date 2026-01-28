@@ -1,5 +1,5 @@
 from scrapers.base import BaseScraper
-from scrapers.payback_scraper_js import PaybackScraperJS
+from scrapers.payback_scraper import PaybackScraper
 from spo.models import Shop, ShopMain, ShopProgramRate
 
 
@@ -49,7 +49,7 @@ def test_base_scraper_registers_and_updates_rates(app):
 
 
 def test_payback_numeric_parsing():
-    scraper = PaybackScraperJS()
+    scraper = PaybackScraper()
 
     pct = scraper._extract_numeric("2,5 % Cashback")
     per_eur = scraper._extract_numeric("1 Punkt je 2 €")
@@ -59,4 +59,5 @@ def test_payback_numeric_parsing():
     assert pct == {"cashback_pct": 2.5}
     assert round(per_eur["points_per_eur"], 2) == 0.5
     assert simple["points_per_eur"] == 5.0
-    assert completion == {}
+    # Completion points are now correctly extracted as points_per_eur
+    assert completion == {"points_per_eur": 555.0}

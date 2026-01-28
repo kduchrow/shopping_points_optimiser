@@ -1,13 +1,18 @@
-"""API endpoints for browser extension."""
+"""API endpoints for browser extension and scraper workers."""
+
+import os
 
 from flask import jsonify, request
 from flask_login import current_user
 from sqlalchemy import or_
 
 from spo.extensions import db
+from spo.models import ScrapeLog
 from spo.models.proposals import Proposal
 from spo.models.shops import Shop, ShopMain, ShopProgramRate
 from spo.models.user_preferences import UserFavoriteProgram
+from spo.services.scrape_ingest import ingest_scrape_results
+from spo.services.scrape_queue import enqueue_scrape_job
 
 
 def register_api_routes(app):
@@ -214,3 +219,46 @@ def register_api_routes(app):
             ),
             201,
         )
+
+    def _scraper_token_valid() -> bool:
+        expected = os.environ.get("SCRAPER_API_TOKEN")
+        if not expected:
+            return False
+        provided = request.headers.get("X-Scraper-Token")
+        return provided == expected
+
+    @app.route("/api/scrape-jobs", methods=["POST"])
+    def api_enqueue_scrape_job():
+        if not _scraper_token_valid():
+            return jsonify({"error": "Unauthorized"}), 401
+
+        data = request.get_json(silent=True) or {}
+        program = data.get("program")
+        if not program:
+            return jsonify({"error": "program is required"}), 400
+
+        job_id = enqueue_scrape_job(program, requested_by="api")
+        return jsonify({"job_id": job_id})
+
+    @app.route("/api/scrape-results", methods=["POST"])
+    def api_ingest_scrape_results():
+        if not _scraper_token_valid():
+            return jsonify({"error": "Unauthorized"}), 401
+
+        data = request.get_json(silent=True) or {}
+        program = data.get("program")
+        shops = data.get("shops")
+        run_id = data.get("run_id")
+
+        if not program or shops is None:
+            return jsonify({"error": "program and shops are required"}), 400
+        if not isinstance(shops, list):
+            return jsonify({"error": "shops must be a list"}), 400
+
+        ingested = ingest_scrape_results(shops, source=program)
+        db.session.add(
+            ScrapeLog(message=f"Scraper ingest: {program} ({ingested} shops, run_id={run_id})")
+        )
+        db.session.commit()
+
+        return jsonify({"ingested": ingested, "run_id": run_id, "program": program})

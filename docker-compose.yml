@@ -21,21 +21,32 @@ services:
     networks:
       - spo-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - spo-network
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         FLASK_ENV: ${FLASK_ENV:-production}
-        APP_VERSION: ${APP_VERSION:-0.3.1}
+        APP_VERSION: ${APP_VERSION:-latest}
         BUILD_DATE: ${BUILD_DATE:-unknown}
         VCS_REF: ${VCS_REF:-unknown}
-    image: shopping-points-optimiser:${APP_VERSION:-0.3.1}
+    image: ${IMAGE_NAME:-shopping-points-optimiser:${APP_VERSION:-latest}}
     container_name: app
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     ports:
       - "5000:5000"
     environment:
@@ -45,6 +56,10 @@ services:
       - DEBUG=${DEBUG:-False}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - GITHUB_REPO_URL=${GITHUB_REPO_URL:-https://github.com/kduchrow/shopping_points_optimiser}
+      - GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT:-120}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - SCRAPER_QUEUE_NAME=${SCRAPER_QUEUE_NAME:-scraper}
+      - SCRAPER_API_TOKEN=${SCRAPER_API_TOKEN}
     volumes:
       - spo-logs:/app/logs
     networks:
@@ -58,6 +73,28 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  scraper-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    image: ${WORKER_IMAGE_NAME:-shopping-points-optimiser-worker:latest}
+    container_name: scraper-worker
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_started
+    environment:
+      - RQ_REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - SCRAPER_QUEUE_NAME=${SCRAPER_QUEUE_NAME:-scraper}
+      - SCRAPER_API_BASE_URL=${SCRAPER_API_BASE_URL:-http://app:5000}
+      - SCRAPER_API_TOKEN=${SCRAPER_API_TOKEN}
+      - SCRAPER_API_TIMEOUT=${SCRAPER_API_TIMEOUT:-120}
+      - SCRAPER_BATCH_SIZE=${SCRAPER_BATCH_SIZE:-50}
+    command: rq worker ${SCRAPER_QUEUE_NAME:-scraper}
+    networks:
+      - spo-network
 
 volumes:
   pgdata:

@@ -1,0 +1,4 @@
+# Worker-only dependencies (scrapers + browser automation)
+# Install on worker containers only
+
+playwright==1.57.0
