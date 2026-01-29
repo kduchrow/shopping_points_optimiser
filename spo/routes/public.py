@@ -40,7 +40,20 @@ def register_public(app):
         has_favorites = False
         if current_user.is_authenticated:
             has_favorites = UserFavoriteProgram.query.filter_by(user_id=current_user.id).count() > 0
-        return render_template("index.html", has_favorites=has_favorites)
+
+        # Get platform statistics
+
+        num_programs = BonusProgram.query.count()
+        num_shops = ShopMain.query.filter_by(status="active").count()
+        num_rates = ShopProgramRate.query.count()
+
+        return render_template(
+            "index.html",
+            has_favorites=has_favorites,
+            num_programs=num_programs,
+            num_shops=num_shops,
+            num_rates=num_rates,
+        )
 
     @app.route("/evaluate", methods=["POST"])
     def evaluate():
