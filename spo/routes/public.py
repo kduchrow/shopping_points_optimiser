@@ -74,7 +74,7 @@ def register_public(app):
             days = int(hours / 24)
 
             if minutes < 60:
-                last_update_text = f"vor {minutes} Min." if minutes > 0 else "gerade eben"
+                last_update_text = f"vor {minutes} Min." if minutes > 0 else "< 1 Min."
             elif hours < 24:
                 last_update_text = f"vor {hours} Std."
             elif days < 30:
