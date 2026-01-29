@@ -11,6 +11,32 @@
   <p style="color: rgba(255,255,255,0.9); margin-top: 12px; margin-bottom: 0;">
     ✨ <strong>Kostenlos, datenschutzfreundlich & ohne versteckte Gebühren</strong>
   </p>
+
+  <!-- Platform Statistics -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2);">
+    <div style="text-align: center;">
+      <div style="font-size: 2em; font-weight: bold; color: white;">{{ num_programs }}</div>
+      <div style="font-size: 0.9em; color: rgba(255,255,255,0.85);">Bonusprogramme</div>
+    </div>
+    <div style="text-align: center;">
+      <div style="font-size: 2em; font-weight: bold; color: white;">{{ num_shops }}</div>
+      <div style="font-size: 0.9em; color: rgba(255,255,255,0.85);">Shops</div>
+    </div>
+    <div style="text-align: center;">
+      <div style="font-size: 2em; font-weight: bold; color: white;">{{ num_rates }}</div>
+      <div style="font-size: 0.9em; color: rgba(255,255,255,0.85);">Raten erfasst</div>
+    </div>
+    <div style="text-align: center;">
+      <div style="font-size: 2em; font-weight: bold; color: white;">{{ num_proposals }}</div>
+      <div style="font-size: 0.9em; color: rgba(255,255,255,0.85);">Community-Beiträge</div>
+    </div>
+    {% if last_update_text %}
+    <div style="text-align: center;">
+      <div style="font-size: 2em; font-weight: bold; color: white;">{{ last_update_text }}</div>
+      <div style="font-size: 0.9em; color: rgba(255,255,255,0.85);">Letzte Aktualisierung</div>
+    </div>
+    {% endif %}
+  </div>
 </div>
 
 <!-- Form Card -->

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="container" style="max-width: 800px;">
+    <h1>Impressum</h1>
+
+    <p>
+      <strong>{{ config.IMPRINT_NAME }}</strong><br>
+      {{ config.IMPRINT_ADDRESS }}<br>
+      {{ config.IMPRINT_POSTAL_CODE }} {{ config.IMPRINT_CITY }}<br>
+      {{ config.IMPRINT_COUNTRY }}
+    </p>
+
+    {% if config.IMPRINT_REPRESENTATIVE %}
+      <p>
+        Vertreten durch: {{ config.IMPRINT_REPRESENTATIVE }}
+      </p>
+    {% endif %}
+
+    <p>
+      E-Mail: <a href="mailto:{{ config.IMPRINT_EMAIL }}">{{ config.IMPRINT_EMAIL }}</a><br>
+      {% if config.IMPRINT_PHONE %}
+        Telefon: {{ config.IMPRINT_PHONE }}<br>
+      {% endif %}
+      {% if config.IMPRINT_VAT_ID %}
+        USt-IdNr.: {{ config.IMPRINT_VAT_ID }}
+      {% endif %}
+    </p>
+
+    {% if config.IMPRINT_ADDITIONAL_TEXT %}
+      <hr>
+      <p>{{ config.IMPRINT_ADDITIONAL_TEXT | safe }}</p>
+    {% endif %}
+  </div>
+{% endblock %}
