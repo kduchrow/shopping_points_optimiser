@@ -1,3 +1,5 @@
+from datetime import UTC
+
 from flask import flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
 
@@ -48,6 +50,8 @@ def register_public(app):
         num_rates = ShopProgramRate.query.count()
 
         # Get last update (most recent rate creation)
+        from datetime import datetime
+
         from sqlalchemy import func
 
         last_rate_update = (
@@ -55,6 +59,28 @@ def register_public(app):
             .filter(ShopProgramRate.valid_from.isnot(None))
             .scalar()
         )
+
+        # Format as relative time
+        last_update_text = None
+        if last_rate_update:
+            now = datetime.now(UTC)
+            # Make last_rate_update timezone-aware if it isn't
+            if last_rate_update.tzinfo is None:
+                last_rate_update = last_rate_update.replace(tzinfo=UTC)
+
+            delta = now - last_rate_update
+            minutes = int(delta.total_seconds() / 60)
+            hours = int(minutes / 60)
+            days = int(hours / 24)
+
+            if minutes < 60:
+                last_update_text = f"vor {minutes} Min." if minutes > 0 else "gerade eben"
+            elif hours < 24:
+                last_update_text = f"vor {hours} Std."
+            elif days < 30:
+                last_update_text = f"vor {days} Tag{'en' if days > 1 else ''}"
+            else:
+                last_update_text = last_rate_update.strftime("%d.%m.%Y")
 
         # Get number of community proposals (all types)
         num_proposals = Proposal.query.count()
@@ -65,7 +91,7 @@ def register_public(app):
             num_programs=num_programs,
             num_shops=num_shops,
             num_rates=num_rates,
-            last_rate_update=last_rate_update,
+            last_update_text=last_update_text,
             num_proposals=num_proposals,
         )
 
