@@ -26,6 +26,16 @@
       <div style="font-size: 2em; font-weight: bold; color: white;">{{ num_rates }}</div>
       <div style="font-size: 0.9em; color: rgba(255,255,255,0.85);">Raten erfasst</div>
     </div>
+    <div style="text-align: center;">
+      <div style="font-size: 2em; font-weight: bold; color: white;">{{ num_proposals }}</div>
+      <div style="font-size: 0.9em; color: rgba(255,255,255,0.85);">Community-Beiträge</div>
+    </div>
+    {% if last_rate_update %}
+    <div style="text-align: center;">
+      <div style="font-size: 1.3em; font-weight: bold; color: white;">{{ last_rate_update.strftime('%d.%m.%Y') }}</div>
+      <div style="font-size: 0.9em; color: rgba(255,255,255,0.85);">Letzte Aktualisierung</div>
+    </div>
+    {% endif %}
   </div>
 </div>
 

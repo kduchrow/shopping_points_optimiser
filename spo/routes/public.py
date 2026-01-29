@@ -47,12 +47,26 @@ def register_public(app):
         num_shops = ShopMain.query.filter_by(status="active").count()
         num_rates = ShopProgramRate.query.count()
 
+        # Get last update (most recent rate creation)
+        from sqlalchemy import func
+
+        last_rate_update = (
+            db.session.query(func.max(ShopProgramRate.created_at))
+            .filter(ShopProgramRate.created_at.isnot(None))
+            .scalar()
+        )
+
+        # Get number of community proposals (all types)
+        num_proposals = Proposal.query.count()
+
         return render_template(
             "index.html",
             has_favorites=has_favorites,
             num_programs=num_programs,
             num_shops=num_shops,
             num_rates=num_rates,
+            last_rate_update=last_rate_update,
+            num_proposals=num_proposals,
         )
 
     @app.route("/evaluate", methods=["POST"])
