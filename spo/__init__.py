@@ -56,6 +56,7 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
     from spo.routes.admin.scheduler import register_admin_scheduler
     from spo.routes.api import register_api_routes
     from spo.routes.auth import register_auth
+    from spo.routes.legal import register_legal
     from spo.routes.notifications import register_notifications
     from spo.routes.proposals import register_proposals
     from spo.routes.public import register_public
@@ -66,6 +67,26 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
     app.config["DEBUG"] = os.environ.get("DEBUG", "False").lower() == "true"
     app.config["APP_VERSION"] = __version__
     app.config["GITHUB_REPO_URL"] = os.environ.get("GITHUB_REPO_URL", DEFAULT_GITHUB_URL)
+    app.config["IMPRINT_NAME"] = os.environ.get("IMPRINT_NAME", "")
+    app.config["IMPRINT_ADDRESS"] = os.environ.get("IMPRINT_ADDRESS", "")
+    app.config["IMPRINT_POSTAL_CODE"] = os.environ.get("IMPRINT_POSTAL_CODE", "")
+    app.config["IMPRINT_CITY"] = os.environ.get("IMPRINT_CITY", "")
+    app.config["IMPRINT_COUNTRY"] = os.environ.get("IMPRINT_COUNTRY", "")
+    app.config["IMPRINT_EMAIL"] = os.environ.get("IMPRINT_EMAIL", "")
+    app.config["IMPRINT_PHONE"] = os.environ.get("IMPRINT_PHONE", "")
+    app.config["IMPRINT_VAT_ID"] = os.environ.get("IMPRINT_VAT_ID", "")
+    app.config["IMPRINT_REPRESENTATIVE"] = os.environ.get("IMPRINT_REPRESENTATIVE", "")
+    app.config["IMPRINT_ADDITIONAL_TEXT"] = os.environ.get("IMPRINT_ADDITIONAL_TEXT", "")
+    app.config["PRIVACY_CONTROLLER_NAME"] = os.environ.get("PRIVACY_CONTROLLER_NAME", "")
+    app.config["PRIVACY_CONTROLLER_ADDRESS"] = os.environ.get("PRIVACY_CONTROLLER_ADDRESS", "")
+    app.config["PRIVACY_CONTROLLER_POSTAL_CODE"] = os.environ.get(
+        "PRIVACY_CONTROLLER_POSTAL_CODE", ""
+    )
+    app.config["PRIVACY_CONTROLLER_CITY"] = os.environ.get("PRIVACY_CONTROLLER_CITY", "")
+    app.config["PRIVACY_CONTROLLER_COUNTRY"] = os.environ.get("PRIVACY_CONTROLLER_COUNTRY", "")
+    app.config["PRIVACY_CONTACT_EMAIL"] = os.environ.get("PRIVACY_CONTACT_EMAIL", "")
+    app.config["PRIVACY_CONTACT_PHONE"] = os.environ.get("PRIVACY_CONTACT_PHONE", "")
+    app.config["PRIVACY_ADDITIONAL_TEXT"] = os.environ.get("PRIVACY_ADDITIONAL_TEXT", "")
 
     db.init_app(app)
     login_manager.init_app(app)
@@ -111,6 +132,7 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
     register_admin(app)
     register_admin_scheduler(app)
     register_notifications(app)
+    register_legal(app)
     register_api_routes(app)
 
     # Register job types (always, even if scheduler isn't started)

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="container" style="max-width: 800px;">
+    <h1>Datenschutzerklärung</h1>
+
+    <p>
+      Verantwortlicher im Sinne der DSGVO:
+    </p>
+    <p>
+      <strong>{{ config.PRIVACY_CONTROLLER_NAME }}</strong><br>
+      {{ config.PRIVACY_CONTROLLER_ADDRESS }}<br>
+      {{ config.PRIVACY_CONTROLLER_POSTAL_CODE }} {{ config.PRIVACY_CONTROLLER_CITY }}<br>
+      {{ config.PRIVACY_CONTROLLER_COUNTRY }}
+    </p>
+
+    <p>
+      Kontakt: <a href="mailto:{{ config.PRIVACY_CONTACT_EMAIL }}">{{ config.PRIVACY_CONTACT_EMAIL }}</a>
+      {% if config.PRIVACY_CONTACT_PHONE %}<br>Telefon: {{ config.PRIVACY_CONTACT_PHONE }}{% endif %}
+    </p>
+
+    {% if config.PRIVACY_ADDITIONAL_TEXT %}
+      <hr>
+      <p>{{ config.PRIVACY_ADDITIONAL_TEXT | safe }}</p>
+    {% endif %}
+  </div>
+{% endblock %}
