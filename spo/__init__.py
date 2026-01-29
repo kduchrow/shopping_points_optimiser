@@ -87,6 +87,18 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
     app.config["PRIVACY_CONTACT_EMAIL"] = os.environ.get("PRIVACY_CONTACT_EMAIL", "")
     app.config["PRIVACY_CONTACT_PHONE"] = os.environ.get("PRIVACY_CONTACT_PHONE", "")
     app.config["PRIVACY_ADDITIONAL_TEXT"] = os.environ.get("PRIVACY_ADDITIONAL_TEXT", "")
+    app.config["PRIVACY_HOSTING_PROVIDER"] = os.environ.get("PRIVACY_HOSTING_PROVIDER", "")
+    app.config["PRIVACY_HOSTING_ADDRESS"] = os.environ.get("PRIVACY_HOSTING_ADDRESS", "")
+    app.config["PRIVACY_HOSTING_CITY"] = os.environ.get("PRIVACY_HOSTING_CITY", "")
+    app.config["PRIVACY_HOSTING_COUNTRY"] = os.environ.get("PRIVACY_HOSTING_COUNTRY", "")
+    app.config["PRIVACY_EMAIL_PROVIDER"] = os.environ.get("PRIVACY_EMAIL_PROVIDER", "")
+    app.config["PRIVACY_SUPERVISORY_AUTHORITY"] = os.environ.get(
+        "PRIVACY_SUPERVISORY_AUTHORITY", ""
+    )
+    app.config["PRIVACY_SUPERVISORY_ADDRESS"] = os.environ.get("PRIVACY_SUPERVISORY_ADDRESS", "")
+    app.config["PRIVACY_SUPERVISORY_CITY"] = os.environ.get("PRIVACY_SUPERVISORY_CITY", "")
+    app.config["PRIVACY_SUPERVISORY_URL"] = os.environ.get("PRIVACY_SUPERVISORY_URL", "")
+    app.config["PRIVACY_POLICY_DATE"] = os.environ.get("PRIVACY_POLICY_DATE", "")
 
     db.init_app(app)
     login_manager.init_app(app)
