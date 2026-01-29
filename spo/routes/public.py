@@ -51,8 +51,8 @@ def register_public(app):
         from sqlalchemy import func
 
         last_rate_update = (
-            db.session.query(func.max(ShopProgramRate.created_at))
-            .filter(ShopProgramRate.created_at.isnot(None))
+            db.session.query(func.max(ShopProgramRate.valid_from))
+            .filter(ShopProgramRate.valid_from.isnot(None))
             .scalar()
         )
 
