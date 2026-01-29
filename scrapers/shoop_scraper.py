@@ -52,7 +52,7 @@ class ShoopScraper(BaseScraper):
                         "points_absolute": points_absolute,
                         "cashback_pct": cashback_pct,
                         "cashback_absolute": cashback_absolute,
-                        "point_value_eur": 0.008,
+                        "point_value_eur": 0,
                         "category": r.get("text") or None,
                         "rate_note": note,
                     }

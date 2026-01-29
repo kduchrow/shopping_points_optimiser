@@ -207,7 +207,7 @@ class TopCashbackScraper(BaseScraper):
                                         "program": "TopCashback",
                                         "cashback_pct": rate_val,
                                         "points_per_eur": 0.0,
-                                        "point_value_eur": 0.01,
+                                        "point_value_eur": 0,
                                         "category": category_field,
                                     }
                                     if subcat_text:
@@ -224,7 +224,7 @@ class TopCashbackScraper(BaseScraper):
                                 "program": "TopCashback",
                                 "cashback_pct": rate_val,
                                 "points_per_eur": 0.0,
-                                "point_value_eur": 0.01,
+                                "point_value_eur": 0,
                                 "category": category_name,
                             }
                         )

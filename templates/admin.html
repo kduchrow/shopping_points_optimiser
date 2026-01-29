@@ -28,6 +28,7 @@
   <div class="md-tabs">
     <div class="tab-nav">
       <button class="tab-button active" data-tab="tab-scrapers" type="button" aria-controls="tab-scrapers">Scrapers</button>
+      <button class="tab-button" data-tab="tab-programs" type="button" aria-controls="tab-programs">Bonusprogramme</button>
       <button class="tab-button" data-tab="tab-shops" type="button" aria-controls="tab-shops">Shops auflisten</button>
       <button class="tab-button" data-tab="tab-merges" type="button" aria-controls="tab-merges">Shops bearbeiten</button>
       <button class="tab-button" data-tab="tab-users" type="button" aria-controls="tab-users">Users</button>
@@ -60,6 +61,30 @@
               <span id="job-status" class="job-status">READY</span>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+    <div id="tab-programs" class="tab-content">
+      <div class="admin-card">
+        <h2 class="section-title">Bonusprogramme Management</h2>
+        <div class="programs-section">
+          <h3>Neue Programm hinzufügen</h3>
+          <form action="/admin/add_program" method="POST" class="program-form">
+            <div class="form-group">
+              <label for="program-name">Programm Name:</label>
+              <input type="text" id="program-name" name="name" required placeholder="z.B. Miles & More" />
+            </div>
+            <div class="form-group">
+              <label for="program-value">Punkwertigkeit (€):</label>
+              <input type="number" id="program-value" name="point_value_eur" step="0.001" min="0" value="0.01" required />
+            </div>
+            <button type="submit" class="btn btn-success">➕ Programm hinzufügen</button>
+          </form>
+        </div>
+        <hr />
+        <div class="programs-section">
+          <h3>Bestehende Programme</h3>
+          <div id="programs-list"></div>
         </div>
       </div>
     </div>
@@ -259,7 +284,44 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
 <script>
+// Bonusprogramme laden
+function loadBonusPrograms() {
+  const programsList = document.getElementById('programs-list');
+  const programs = {{ programs|tojson }};
+
+  if (!programs || programs.length === 0) {
+    programsList.innerHTML = '<p class="empty-state">Keine Bonusprogramme vorhanden.</p>';
+    return;
+  }
+
+  let html = '<table class="admin-table"><thead><tr><th>ID</th><th>Programm & Wertigkeit</th><th>Aktionen</th></tr></thead><tbody>';
+
+  programs.forEach(program => {
+    html += `
+      <tr>
+        <td>${program.id}</td>
+        <td>
+          <form action="/admin/program/${program.id}" method="POST" class="program-edit-form">
+            <input type="text" name="name" value="${program.name}" required placeholder="Name" />
+            <input type="number" name="point_value_eur" step="0.001" min="0" value="${program.point_value_eur}" required placeholder="€0.00" />
+            <button type="submit" class="btn btn-sm btn-primary">💾</button>
+          </form>
+        </td>
+        <td>
+          <form action="/admin/program/${program.id}/delete" method="POST" class="inline-form" style="display:inline;" onsubmit="return confirm('Programm "${program.name}" wirklich löschen?');">
+            <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+          </form>
+        </td>
+      </tr>
+    `;
+  });
+
+  html += '</tbody></table>';
+  programsList.innerHTML = html;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+  loadBonusPrograms();
   var showBtn = document.getElementById('show-create-job-form');
   var form = document.getElementById('create-job-form');
   var cancelBtn = document.getElementById('cancel-create-job');

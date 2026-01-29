@@ -110,11 +110,38 @@
   text-shadow: 0 2px 8px #007bff22;
 }
 
+/* Program Edit Form Layout */
+.program-edit-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.program-edit-form input {
+  flex: 1;
+  min-width: 120px;
+  padding: 6px 10px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.program-edit-form input[name="name"] {
+  flex: 2;
+  min-width: 200px;
+}
+
+.program-edit-form button {
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
 /* Card shadow for tabs */
 .shadow-lg {
   box-shadow:
     0 8px 32px #007bff22,
-    0 1.5px 8px #00c6ff22;
+    1.5px 8px #00c6ff22;
   border-radius: 12px;
 }
 .job-progress-header {
