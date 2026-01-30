@@ -246,7 +246,8 @@ function openShopDetails(mainId) {
   fetch(`/admin/shops/${mainId}/details`)
     .then((r) => r.json())
     .then((data) => {
-      title.textContent = data.canonical_name || `Shop ${mainId}`;
+      const main = data.main || data || {};
+      title.textContent = main.canonical_name || `Shop ${mainId}`;
       if (!data.shops || data.shops.length === 0) {
         content.innerHTML = "<div>No linked shops or rates found.</div>";
         return;
@@ -255,22 +256,22 @@ function openShopDetails(mainId) {
       // ShopMain metadata with action buttons
       html += `<div style='margin-bottom:18px;'>`;
       html += `<strong>ShopMain Metadaten:</strong><ul style='margin:6px 0 0 18px;'>`;
-      html += `<li><strong>Name:</strong> ${data.canonical_name || "—"}</li>`;
+      html += `<li><strong>Name:</strong> ${main.canonical_name || "—"}</li>`;
       html += `<li><strong>Status:</strong> <span style="padding: 3px 8px; border-radius: 4px; font-size: 12px; ${
-        data.status === "deleted"
+        main.status === "deleted"
           ? "background: #ffcccc; color: #8b0000;"
-          : data.status === "merged"
+          : main.status === "merged"
             ? "background: #fff3cd; color: #856404;"
             : "background: #d4edda; color: #155724;"
-      }">${(data.status || "active").toUpperCase()}</span></li>`;
+      }">${(main.status || "active").toUpperCase()}</span></li>`;
       html += `<li><strong>Website:</strong> ${
-        data.website ? `<a href='${data.website}' target='_blank'>${data.website}</a>` : "—"
+        main.website ? `<a href='${main.website}' target='_blank'>${main.website}</a>` : "—"
       }</li>`;
-      if (data.logo_url)
-        html += `<li><strong>Logo:</strong> <img src='${data.logo_url}' alt='Logo' style='max-height:32px;vertical-align:middle;'></li>`;
+      if (main.logo_url)
+        html += `<li><strong>Logo:</strong> <img src='${main.logo_url}' alt='Logo' style='max-height:32px;vertical-align:middle;'></li>`;
       html += `</ul>`;
       html += `<div style='margin-top:12px; display:flex; gap:8px;'>`;
-      if (data.status === "deleted") {
+      if (main.status === "deleted") {
         html += `<button class='btn btn-success' onclick="restoreShop('${mainId}')">✔️ Shop wiederherstellen</button>`;
       } else {
         html += `<button class='btn btn-danger' onclick="deleteShop('${mainId}')">🗑️ Shop löschen</button>`;
@@ -278,9 +279,9 @@ function openShopDetails(mainId) {
       html += `</div></div>`;
       // Variants section (detailed, with all metadata and delete button)
       html += `<div style='margin-bottom:18px;'><strong>Varianten:</strong>`;
-      if (data.variants && data.variants.length > 0) {
+      if (main.variants && main.variants.length > 0) {
         html += `<table class='admin-table' style='margin-top:6px;'><thead><tr><th>Source</th><th>Name</th><th>Source ID</th><th>Confidence</th><th>Aktionen</th></tr></thead><tbody>`;
-        data.variants.forEach((v) => {
+        main.variants.forEach((v) => {
           html += `<tr>`;
           html += `<td>${v.source}</td>`;
           html += `<td>${v.name}</td>`;

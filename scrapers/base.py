@@ -40,6 +40,15 @@ class BaseScraper(ABC):
             shop_name=data["name"], source=source_name, source_id=source_id
         )
 
+        if (shop_main.status or "").lower() != "active":
+            logger.warning(
+                "Skipping rates for non-active shop_main=%s status=%s source=%s",
+                shop_main.canonical_name,
+                shop_main.status,
+                source_name,
+            )
+            return
+
         # Prevent duplicate ShopVariant insert (defensive, in case dedup logic missed)
         from spo.models import ShopVariant
 
