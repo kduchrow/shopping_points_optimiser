@@ -32,9 +32,12 @@ def register_admin_jobs(app):
         flash(success_message.format(job_id[:8]), "success")
         shops = Shop.query.all()
         programs = BonusProgram.query.all()
+        programs_data = [
+            {"id": p.id, "name": p.name, "point_value_eur": p.point_value_eur} for p in programs
+        ]
         logs = ScrapeLog.query.order_by(ScrapeLog.timestamp.desc()).limit(200).all()
         return render_template(
-            "admin.html", shops=shops, programs=programs, logs=logs, job_id=job_id
+            "admin.html", shops=shops, programs=programs_data, logs=logs, job_id=job_id
         )
 
     @app.route("/admin/run_scraper", methods=["POST"])
@@ -95,9 +98,12 @@ def register_admin_jobs(app):
         flash(f"Shop-Deduplizierung gestartet. Job ID: {job_id[:8]}...", "success")
         shops = Shop.query.all()
         programs = BonusProgram.query.all()
+        programs_data = [
+            {"id": p.id, "name": p.name, "point_value_eur": p.point_value_eur} for p in programs
+        ]
         logs = ScrapeLog.query.order_by(ScrapeLog.timestamp.desc()).limit(200).all()
         return render_template(
-            "admin.html", shops=shops, programs=programs, logs=logs, job_id=job_id
+            "admin.html", shops=shops, programs=programs_data, logs=logs, job_id=job_id
         )
 
     @app.route("/admin/job_status/<job_id>", methods=["GET"])

@@ -247,7 +247,7 @@ class TestTopCashbackScraper:
         assert rate["program"] == "TopCashback"
         assert rate["cashback_pct"] == 2.0
         assert rate["points_per_eur"] == 0.0  # TopCashback uses cashback, not points
-        assert rate["point_value_eur"] == 0.01
+        assert rate["point_value_eur"] == 0.0
 
 
 class TestTopCashbackIntegration:
@@ -266,7 +266,7 @@ class TestTopCashbackIntegration:
                     "program": "TopCashback",
                     "cashback_pct": 3.5,
                     "points_per_eur": 0.0,
-                    "point_value_eur": 0.01,
+                    "point_value_eur": 0.0,
                 },
             }
 

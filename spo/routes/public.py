@@ -23,10 +23,26 @@ def register_public(app):
         # API: Liefert Shop-Namen für das Dropdown, gefiltert nach Query-String
         q = request.args.get("q", "").strip().lower()
         limit = 30
+
+        # Suche in ShopMain canonical_name UND in ShopVariant source_name
         query = ShopMain.query.filter_by(status="active")
+
         if q:
-            query = query.filter(ShopMain.canonical_name_lower.contains(q))
-        shop_mains = query.order_by(ShopMain.canonical_name).limit(limit).all()
+            # Join mit ShopVariant um auch Varianten-Namen zu durchsuchen
+            from sqlalchemy import or_
+
+            from spo.models import ShopVariant
+
+            query = query.outerjoin(ShopVariant, ShopMain.id == ShopVariant.shop_main_id).filter(
+                or_(
+                    ShopMain.canonical_name_lower.contains(q),
+                    ShopVariant.source_name.ilike(f"%{q}%"),  # ilike = case-insensitive LIKE
+                )
+            )
+
+        # Distinct um Duplikate zu vermeiden (wenn mehrere Varianten matchen)
+        shop_mains = query.distinct().order_by(ShopMain.canonical_name).limit(limit).all()
+
         # Hole jeweils den ersten aktiven Shop für die ID
         result = []
         for shop_main in shop_mains:

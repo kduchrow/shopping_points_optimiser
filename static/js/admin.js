@@ -252,35 +252,48 @@ function openShopDetails(mainId) {
         return;
       }
       let html = "";
-      // ShopMain metadata
+      // ShopMain metadata with action buttons
       html += `<div style='margin-bottom:18px;'>`;
       html += `<strong>ShopMain Metadaten:</strong><ul style='margin:6px 0 0 18px;'>`;
       html += `<li><strong>Name:</strong> ${data.canonical_name || "—"}</li>`;
-      html += `<li><strong>Status:</strong> ${data.status || "—"}</li>`;
+      html += `<li><strong>Status:</strong> <span style="padding: 3px 8px; border-radius: 4px; font-size: 12px; ${
+        data.status === "deleted"
+          ? "background: #ffcccc; color: #8b0000;"
+          : data.status === "merged"
+            ? "background: #fff3cd; color: #856404;"
+            : "background: #d4edda; color: #155724;"
+      }">${(data.status || "active").toUpperCase()}</span></li>`;
       html += `<li><strong>Website:</strong> ${
         data.website ? `<a href='${data.website}' target='_blank'>${data.website}</a>` : "—"
       }</li>`;
       if (data.logo_url)
         html += `<li><strong>Logo:</strong> <img src='${data.logo_url}' alt='Logo' style='max-height:32px;vertical-align:middle;'></li>`;
-      html += `</ul></div>`;
-      // Variants section (detailed, with all metadata)
+      html += `</ul>`;
+      html += `<div style='margin-top:12px; display:flex; gap:8px;'>`;
+      if (data.status === "deleted") {
+        html += `<button class='btn btn-success' onclick="restoreShop('${mainId}')">✔️ Shop wiederherstellen</button>`;
+      } else {
+        html += `<button class='btn btn-danger' onclick="deleteShop('${mainId}')">🗑️ Shop löschen</button>`;
+      }
+      html += `</div></div>`;
+      // Variants section (detailed, with all metadata and delete button)
+      html += `<div style='margin-bottom:18px;'><strong>Varianten:</strong>`;
       if (data.variants && data.variants.length > 0) {
-        html += `<div style='margin-bottom:18px;'><strong>Varianten:</strong><table class='admin-table' style='margin-top:6px;'><thead><tr><th>Source</th><th>Name</th><th>Source ID</th><th>Confidence</th><th>Status</th><th>Website</th><th>Logo</th></tr></thead><tbody>`;
+        html += `<table class='admin-table' style='margin-top:6px;'><thead><tr><th>Source</th><th>Name</th><th>Source ID</th><th>Confidence</th><th>Aktionen</th></tr></thead><tbody>`;
         data.variants.forEach((v) => {
           html += `<tr>`;
           html += `<td>${v.source}</td>`;
           html += `<td>${v.name}</td>`;
           html += `<td>${v.source_id || "—"}</td>`;
           html += `<td>${typeof v.confidence !== "undefined" ? Math.round(v.confidence) + "%" : "—"}</td>`;
-          html += `<td>${v.status || "—"}</td>`;
-          html += `<td>${v.website ? `<a href='${v.website}' target='_blank'>${v.website}</a>` : "—"}</td>`;
-          html += `<td>${
-            v.logo_url ? `<img src='${v.logo_url}' alt='Logo' style='max-height:24px;vertical-align:middle;'>` : "—"
-          }</td>`;
+          html += `<td><button class='btn btn-sm btn-danger' onclick="deleteVariant(${v.id})">🗑️</button></td>`;
           html += `</tr>`;
         });
-        html += `</tbody></table></div>`;
+        html += `</tbody></table>`;
+      } else {
+        html += `<p style='color:#888; margin:6px 0;'>Keine Varianten vorhanden.</p>`;
       }
+      html += `<button class='btn btn-primary' onclick="showAddVariantForm('${mainId}')">➕ Variante hinzufügen</button></div>`;
       // Linked shops and rates
       data.shops.forEach((s) => {
         html += `<div style='margin-bottom:18px;'><h4 style='margin:6px 0 4px 0;'>${s.name}</h4>`;
@@ -319,6 +332,144 @@ function openShopDetails(mainId) {
 function closeShopDetails() {
   const modal = document.getElementById("shop-details-modal");
   if (modal) modal.style.display = "none";
+}
+
+function deleteShop(shopMainId) {
+  if (!confirm("Diesen Shop wirklich löschen?")) return;
+  fetch(`/admin/shops/${shopMainId}/delete`, { method: "POST" })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.success) {
+        alert("Shop gelöscht");
+        closeShopDetails();
+        loadShops();
+      } else {
+        alert("Fehler: " + (data.error || "Unbekannt"));
+      }
+    })
+    .catch((e) => alert("Fehler: " + e));
+}
+
+function restoreShop(shopMainId) {
+  if (!confirm("Diesen Shop wirklich wiederherstellen?")) return;
+  fetch(`/admin/shops/${shopMainId}/restore`, { method: "POST" })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.success) {
+        alert("Shop wiederhergestellt");
+        closeShopDetails();
+        loadShops();
+      } else {
+        alert("Fehler: " + (data.error || "Unbekannt"));
+      }
+    })
+    .catch((e) => alert("Fehler: " + e));
+}
+
+function deleteVariant(variantId) {
+  if (!confirm("Diese Variante wirklich löschen?")) return;
+  fetch(`/admin/variants/${variantId}/delete`, { method: "POST" })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.success) {
+        alert("Variante gelöscht");
+        // Reload shop details to reflect changes
+        const modal = document.getElementById("shop-details-modal");
+        const shopId = modal?.dataset?.shopMainId;
+        if (shopId) {
+          openShopDetails(shopId);
+        } else {
+          closeShopDetails();
+          loadShops();
+        }
+      } else {
+        alert("Fehler: " + (data.error || "Unbekannt"));
+      }
+    })
+    .catch((e) => alert("Fehler: " + e));
+}
+
+function showAddVariantForm(shopMainId) {
+  const form = `
+    <div style="background:#f8f9fa; padding:16px; border-radius:8px; margin-top:12px;" id="add-variant-form">
+      <h4 style="margin:0 0 12px 0;">Neue Variante hinzufügen</h4>
+      <div style="display:grid; gap:12px;">
+        <div>
+          <label style="display:block; margin-bottom:4px; font-weight:600;">Source (z.B. Google, Amazon, manual):</label>
+          <input type="text" id="variant-source" class="shop-search-input" placeholder="manual" value="manual" style="width:100%;" />
+        </div>
+        <div>
+          <label style="display:block; margin-bottom:4px; font-weight:600;">Name (z.B. "1 und 1"):</label>
+          <input type="text" id="variant-name" class="shop-search-input" placeholder="Shop-Varianten-Name" style="width:100%;" required />
+        </div>
+        <div>
+          <label style="display:block; margin-bottom:4px; font-weight:600;">Source ID (optional):</label>
+          <input type="text" id="variant-source-id" class="shop-search-input" placeholder="z.B. google_12345" style="width:100%;" />
+        </div>
+        <div>
+          <label style="display:block; margin-bottom:4px; font-weight:600;">Confidence (0-100):</label>
+          <input type="number" id="variant-confidence" class="shop-search-input" value="100" min="0" max="100" style="width:100%;" />
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-success" onclick="addVariant('${shopMainId}')">✅ Speichern</button>
+          <button class="btn btn-secondary" onclick="hideAddVariantForm()">❌ Abbrechen</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Find the variants section and insert form
+  const modal = document.getElementById("shop-details-content");
+  if (!modal) return;
+
+  // Remove existing form if present
+  const existingForm = document.getElementById("add-variant-form");
+  if (existingForm) existingForm.remove();
+
+  // Insert form at the end of content
+  modal.insertAdjacentHTML("beforeend", form);
+
+  // Focus name input
+  document.getElementById("variant-name")?.focus();
+}
+
+function hideAddVariantForm() {
+  const form = document.getElementById("add-variant-form");
+  if (form) form.remove();
+}
+
+function addVariant(shopMainId) {
+  const source = document.getElementById("variant-source")?.value?.trim() || "manual";
+  const name = document.getElementById("variant-name")?.value?.trim();
+  const sourceId = document.getElementById("variant-source-id")?.value?.trim() || null;
+  const confidence = parseFloat(document.getElementById("variant-confidence")?.value) || 100.0;
+
+  if (!name) {
+    alert("Bitte gib einen Namen für die Variante ein.");
+    return;
+  }
+
+  fetch(`/admin/shops/${shopMainId}/variants`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      source: source,
+      source_name: name,
+      source_id: sourceId,
+      confidence_score: confidence,
+    }),
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.success) {
+        alert("Variante erfolgreich hinzugefügt!");
+        hideAddVariantForm();
+        openShopDetails(shopMainId); // Reload details
+      } else {
+        alert("Fehler: " + (data.error || "Unbekannt"));
+      }
+    })
+    .catch((e) => alert("Fehler: " + e));
 }
 
 function fetchNotifications() {
@@ -696,11 +847,19 @@ function renderShopList(data) {
     }
     html += `<tr>`;
     html += `<td><strong>${shop.name}</strong></td>`;
-    html += `<td>${shop.status}</td>`;
+    html += `<td><span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; ${
+      shop.status === "deleted"
+        ? "background: #ffcccc; color: #8b0000; font-weight: bold;"
+        : shop.status === "merged"
+          ? "background: #fff3cd; color: #856404;"
+          : "background: #d4edda; color: #155724;"
+    }">${shop.status.toUpperCase()}</span></td>`;
     html += `<td>${shop.website ? `<a href='${shop.website}' target='_blank'>${shop.website}</a>` : "—"}</td>`;
     html += `<td>${variants || "—"}</td>`;
     html += `<td>${rates}</td>`;
-    html += `<td><button class='btn btn-inline' onclick="openShopDetails('${shop.id}')">🔎 Details</button></td>`;
+    html += `<td>
+      <button class='btn btn-inline' onclick="openShopDetails('${shop.id}')">🔎 Details</button>
+    </td>`;
     html += `</tr>`;
   });
   html += `</tbody></table>`;
@@ -734,11 +893,13 @@ function changeShopPage(page) {
 function loadShops() {
   const searchInput = document.getElementById("shop-search");
   const programSelect = document.getElementById("bonus-program-filter");
+  const showDeletedCheckbox = document.getElementById("show-deleted-shops");
   const q = searchInput?.value || "";
   const program = programSelect?.value || "";
+  const showDeleted = showDeletedCheckbox?.checked ? "1" : "0";
   const url = `/admin/shops_overview?q=${encodeURIComponent(q)}${
     program ? `&program=${encodeURIComponent(program)}` : ""
-  }&page=${shopPage}&per_page=${shopPerPage}`;
+  }&page=${shopPage}&per_page=${shopPerPage}&include_deleted=${showDeleted}`;
   fetch(url)
     .then((r) => r.json())
     .then((data) => renderShopList(data));
@@ -758,6 +919,13 @@ function wireShopSearch() {
   const programSelect = document.getElementById("bonus-program-filter");
   if (programSelect) {
     programSelect.addEventListener("change", () => {
+      shopPage = 1;
+      loadShops();
+    });
+  }
+  const showDeletedCheckbox = document.getElementById("show-deleted-shops");
+  if (showDeletedCheckbox) {
+    showDeletedCheckbox.addEventListener("change", () => {
       shopPage = 1;
       loadShops();
     });
