@@ -74,6 +74,7 @@ def register_admin_shops(app):
 
         query = request.args.get("q", "").strip().lower()
         program_filter = request.args.get("program", "").strip()
+        include_deleted = request.args.get("include_deleted", "0") == "1"
         try:
             page = int(request.args.get("page", 1))
             per_page = int(request.args.get("per_page", 50))
@@ -81,11 +82,12 @@ def register_admin_shops(app):
             page = 1
             per_page = 50
 
-        mains_query = (
-            db.session.query(ShopMain)
-            .filter(ShopMain.status != "deleted")
-            .order_by(ShopMain.canonical_name)
-        )
+        mains_query = db.session.query(ShopMain).order_by(ShopMain.canonical_name)
+
+        # Filter out deleted shops unless include_deleted is True
+        if not include_deleted:
+            mains_query = mains_query.filter(ShopMain.status != "deleted")
+
         if query:
             mains_query = mains_query.filter(ShopMain.canonical_name_lower.ilike(f"%{query}%"))
 
@@ -298,22 +300,15 @@ def register_admin_shops(app):
         variant_b = db.session.get(ShopVariant, proposal.variant_b_id)
 
         try:
-            # Choose target/main_to as the older ShopMain to keep canonical continuity
-            main_a = db.session.get(ShopMain, variant_a.shop_main_id)
-            main_b = db.session.get(ShopMain, variant_b.shop_main_id)
-            if not main_a or not main_b:
+            # variant_a is the one to KEEP, variant_b is the one to MERGE INTO variant_a
+            main_keep = db.session.get(ShopMain, variant_a.shop_main_id)
+            main_merge = db.session.get(ShopMain, variant_b.shop_main_id)
+            if not main_keep or not main_merge:
                 return jsonify({"error": "ShopMain not found for one or both variants"}), 404
 
-            if main_a.created_at <= main_b.created_at:
-                source_id = main_b.id
-                target_id = main_a.id
-            else:
-                source_id = main_a.id
-                target_id = main_b.id
-
             merge_shops(
-                main_from_id=source_id,
-                main_to_id=target_id,
+                main_from_id=main_merge.id,
+                main_to_id=main_keep.id,
                 user_id=current_user.id,
             )
             proposal.status = "APPROVED"
@@ -456,6 +451,88 @@ def register_admin_shops(app):
         db.session.commit()
 
         return jsonify({"success": True})
+
+    @app.route("/admin/shops/<shop_main_id>/restore", methods=["POST"])
+    @login_required
+    def restore_shop(shop_main_id):
+        """Restore a deleted ShopMain by setting status back to 'active'."""
+        if current_user.role != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+
+        shop_main = db.session.get(ShopMain, shop_main_id)
+        if not shop_main:
+            return jsonify({"error": "Shop not found"}), 404
+
+        # Restore: set status back to 'active'
+        shop_main.status = "active"
+        shop_main.updated_at = datetime.now(UTC)
+        shop_main.updated_by_user_id = current_user.id
+
+        db.session.commit()
+
+        return jsonify({"success": True})
+
+    @app.route("/admin/variants/<int:variant_id>/delete", methods=["POST"])
+    @login_required
+    def delete_variant(variant_id):
+        """Delete a ShopVariant."""
+        if current_user.role != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+
+        variant = db.session.get(ShopVariant, variant_id)
+        if not variant:
+            return jsonify({"error": "Variant not found"}), 404
+
+        db.session.delete(variant)
+        db.session.commit()
+
+        return jsonify({"success": True})
+
+    @app.route("/admin/shops/<shop_main_id>/variants", methods=["POST"])
+    @login_required
+    def add_variant(shop_main_id):
+        """Add a new ShopVariant to a ShopMain."""
+        if current_user.role != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+
+        shop_main = db.session.get(ShopMain, shop_main_id)
+        if not shop_main:
+            return jsonify({"error": "Shop not found"}), 404
+
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        source = data.get("source", "manual") or "manual"
+        source_name = (data.get("source_name") or "").strip()
+        source_id_raw = data.get("source_id")
+        source_id = source_id_raw.strip() if source_id_raw else None
+        confidence_score = float(data.get("confidence_score", 100.0))
+
+        if not source_name:
+            return jsonify({"error": "source_name is required"}), 400
+
+        # Check if variant already exists
+        existing = ShopVariant.query.filter_by(
+            shop_main_id=shop_main_id, source=source, source_name=source_name
+        ).first()
+
+        if existing:
+            return jsonify({"error": "Variant already exists"}), 409
+
+        # Create new variant
+        variant = ShopVariant(
+            shop_main_id=shop_main_id,
+            source=source,
+            source_name=source_name,
+            source_id=source_id,
+            confidence_score=confidence_score,
+        )
+
+        db.session.add(variant)
+        db.session.commit()
+
+        return jsonify({"success": True, "variant_id": variant.id})
 
     @app.route("/admin/shops/<shop_main_id>/details", methods=["GET"])
     @login_required

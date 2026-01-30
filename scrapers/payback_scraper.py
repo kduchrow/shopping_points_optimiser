@@ -88,7 +88,7 @@ class PaybackScraper(BaseScraper):
                 "program": "Payback",
                 "points_per_eur": numeric.get("points_per_eur", 0.0),
                 "cashback_pct": numeric.get("cashback_pct", 0.0),
-                "point_value_eur": 0.005,
+                "point_value_eur": 0.01,
             }
 
             # include raw incentive and per-completion info as metadata

@@ -288,6 +288,21 @@ def register_proposals(app):
             )
             db.session.add(program)
 
+        elif proposal.proposal_type == "url":
+            # URL proposal from browser extension: update shop's website
+            from spo.models import Shop, ShopMain
+
+            shop = Shop.query.get(proposal.shop_id)
+            if shop and shop.shop_main_id:
+                shop_main = ShopMain.query.get(shop.shop_main_id)
+                if shop_main:
+                    # Update ShopMain website if not set or if different
+                    if not shop_main.website or shop_main.website != proposal.source_url:
+                        shop_main.website = proposal.source_url
+                        shop_main.updated_at = datetime.now(UTC)
+                        if current_user:
+                            shop_main.updated_by_user_id = current_user.id
+
         proposal.status = "approved"
         proposal.approved_at = datetime.now(UTC)
         proposal.approved_by_system = False

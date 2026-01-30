@@ -168,7 +168,7 @@ def get_or_create_shop_main(shop_name: str, source: str, source_id: str | None =
 
 def merge_shops(main_from_id: str, main_to_id: str, user_id: int):
     """Merge one shop into another and re-point variants and Shop entries."""
-    from spo.models import Shop
+    from spo.models import Shop, ShopProgramRate
 
     from_shop = db.session.get(ShopMain, main_from_id)
     to_shop = db.session.get(ShopMain, main_to_id)
@@ -182,6 +182,19 @@ def merge_shops(main_from_id: str, main_to_id: str, user_id: int):
         variant.shop_main_id = to_shop.id
 
     # Move all Shop entries to the target ShopMain
+    from_shops = Shop.query.filter_by(shop_main_id=main_from_id).all()
+    to_shops = Shop.query.filter_by(shop_main_id=main_to_id).all()
+
+    # Before moving shops, consolidate rates if there are multiple shops in target
+    # Move all rates from source shops to first target shop
+    if to_shops:
+        target_shop_id = to_shops[0].id
+        for from_shop_obj in from_shops:
+            ShopProgramRate.query.filter_by(shop_id=from_shop_obj.id).update(
+                {"shop_id": target_shop_id}, synchronize_session=False
+            )
+
+    # Now move Shop objects
     Shop.query.filter_by(shop_main_id=main_from_id).update({"shop_main_id": main_to_id})
 
     from_shop.status = "merged"

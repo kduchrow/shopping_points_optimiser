@@ -56,10 +56,16 @@ Install from [browser_extension/](browser_extension/README.md) directory (Chrome
 
 ## 📖 Documentation
 
+### Core Documentation
+
 - **[QUICKSTART](docs/QUICKSTART.md)** - Setup & first steps
-- **[DEPLOYMENT](docs/DEPLOYMENT.md)** - Production deployment
-- **[CHANGELOG](docs/CHANGELOG.md)** - Version history
-- **[Browser Extension](browser_extension/README.md)** - Extension guide
+- **[DATA MODEL & WORKFLOWS](docs/DATA_MODEL_AND_WORKFLOWS.md)** - Database structure, URL proposals, shop merging
+
+### Technical Guides
+
+- **[Feature Development](docs/FEATURE_DEVELOPMENT_WORKFLOW.md)** - Contributing workflow
+- **[Miles & More Implementation](docs/MILES_AND_MORE_SCRAPER_IMPLEMENTATION.md)** - Scraper architecture
+- **[Admin System](docs/ADMIN_SYSTEM.md)** - Admin dashboard usage
 
 ## 🏗️ Architecture
 
