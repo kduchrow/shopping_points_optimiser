@@ -781,6 +781,23 @@ function wireScraperForms() {
         .catch((err) => alert("Error starting LetyShops scraper: " + err));
     });
   }
+
+  const andChargeForm = document.getElementById("and-charge-form");
+  if (andChargeForm) {
+    andChargeForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      fetch("/admin/run_and_charge", {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        credentials: "same-origin",
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.job_id) startJobMonitoring(data.job_id);
+        })
+        .catch((err) => alert("Error starting &Charge scraper: " + err));
+    });
+  }
 }
 
 let jobId = null;
