@@ -4,10 +4,12 @@ from flask import flash, jsonify, render_template, request
 from flask_login import current_user, login_required
 
 from job_queue import job_queue
-from spo.models import BonusProgram, ScrapeLog, Shop
+from spo.extensions import db
+from spo.models import BonusProgram, ScrapeLog, Shop, ShopProgramRate
 from spo.services.dedup import run_deduplication
 from spo.services.scrapers import (
     scrape_example,
+    scrape_letyshops,
     scrape_miles_and_more,
     scrape_payback,
     scrape_shoop,
@@ -21,7 +23,15 @@ def register_admin_jobs(app):
     def admin_bonus_programs():
         if current_user.role != "admin":
             return jsonify({"error": "Unauthorized"}), 403
-        programs = BonusProgram.query.order_by(BonusProgram.name.asc()).all()
+        # Return only programs for which we have at least one active ShopProgramRate
+        programs = (
+            db.session.query(BonusProgram)
+            .join(ShopProgramRate, BonusProgram.id == ShopProgramRate.program_id)
+            .filter(ShopProgramRate.valid_to.is_(None))
+            .group_by(BonusProgram.id)
+            .order_by(BonusProgram.name.asc())
+            .all()
+        )
         return jsonify({"programs": [{"name": p.name} for p in programs]})
 
     def _run_scraper_job(scraper_func, success_message):
@@ -81,6 +91,14 @@ def register_admin_jobs(app):
             flash("Sie haben keine Berechtigung für diese Aktion.", "error")
             return jsonify({"error": "Unauthorized"}), 403
         return _run_scraper_job(scrape_shoop, "Shoop-Scraper gestartet. Job ID: {}...")
+
+    @app.route("/admin/run_letyshops", methods=["POST"])
+    @login_required
+    def admin_run_letyshops():
+        if current_user.role != "admin":
+            flash("Sie haben keine Berechtigung für diese Aktion.", "error")
+            return jsonify({"error": "Unauthorized"}), 403
+        return _run_scraper_job(scrape_letyshops, "LetyShops-Scraper gestartet. Job ID: {}...")
 
     @app.route("/admin/run_deduplication", methods=["POST"])
     @login_required

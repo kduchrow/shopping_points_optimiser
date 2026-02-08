@@ -764,6 +764,23 @@ function wireScraperForms() {
         .catch((err) => alert("Error starting TopCashback scraper: " + err));
     });
   }
+
+  const letyForm = document.getElementById("letyshops-form");
+  if (letyForm) {
+    letyForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      fetch("/admin/run_letyshops", {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        credentials: "same-origin",
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.job_id) startJobMonitoring(data.job_id);
+        })
+        .catch((err) => alert("Error starting LetyShops scraper: " + err));
+    });
+  }
 }
 
 let jobId = null;
