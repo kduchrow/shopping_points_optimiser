@@ -6,7 +6,8 @@ from datetime import UTC, datetime
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from sqlalchemy.orm.exc import NoResultFound, ObjectDeletedError
+from sqlalchemy.exc import NoResultFound
+from sqlalchemy.orm.exc import ObjectDeletedError
 
 from spo.extensions import db
 from spo.models import ScheduledJob, ScheduledJobRun, utcnow

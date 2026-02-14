@@ -13,6 +13,8 @@ def test_parse_sample_partner():
     s = AndChargeScraper()
     shop = s._parse_partner(sample)
 
+    assert shop is not None
+
     assert shop["name"] == "ManoMano DE"
     assert shop["source"] == "AndCharge"
     assert shop["source_id"] == "3019"
