@@ -43,6 +43,7 @@
 <div class="card medium" style="margin-bottom: 24px;">
   <h1>💰 Shopping Points Optimiser</h1>
 
+  {% set can_view_rates = current_user.is_authenticated and current_user.role in ['moderator', 'admin'] %}
   <form method="post" action="/evaluate">
     <input type="hidden" name="mode" value="shopping" />
 
@@ -54,6 +55,7 @@
       </select>
     </div>
 
+    {% if can_view_rates %}
     <div id="shopping-fields" class="input-fields" style="display: block">
       <label for="amount">💵 Betrag (optional):</label>
       <p class="text-small text-gray" style="margin: 6px 0 10px 0;">
@@ -64,6 +66,11 @@
         <span class="currency-symbol">€</span>
       </div>
     </div>
+    {% else %}
+    <div class="info-box" style="margin-top: 12px;">
+      Genaue Raten koennen wir aus rechtlichen Gruenden leider nicht anzeigen.
+    </div>
+    {% endif %}
 
     {% if current_user.is_authenticated %}
     <div class="form-group" style="margin-top: 12px;">
@@ -83,7 +90,11 @@
     </div>
     {% endif %}
 
+    {% if can_view_rates %}
     <button type="submit" id="submit-btn">ℹ️ Informationen ohne Wert anzeigen</button>
+    {% else %}
+    <button type="submit" id="submit-btn">Programme anzeigen</button>
+    {% endif %}
   </form>
 </div>
 
@@ -100,7 +111,11 @@
     <!-- Step 2 -->
     <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #8b5cf6;">
       <h3 style="margin: 0 0 8px 0; color: #1f2937;">2️⃣ Betrag eingeben (optional)</h3>
+      {% if can_view_rates %}
       <p style="color: #666; margin: 0; font-size: 0.95em;">Gib einen Betrag ein oder lass das Feld leer um nur die Raten zu sehen</p>
+      {% else %}
+      <p style="color: #666; margin: 0; font-size: 0.95em;">Raten sind aus rechtlichen Gründen leider nicht verfügbar</p>
+      {% endif %}
     </div>
 
     <!-- Step 3 -->
@@ -111,7 +126,11 @@
   </div>
 
   <div style="margin-top: 20px; padding: 16px; background: #ecf0ff; border-radius: 8px; border-left: 4px solid #3b82f6;">
+    {% if can_view_rates %}
     <strong>💡 Tipp:</strong> Du brauchst keinen Betrag einzugeben um die aktuellen Raten zu sehen. Lass das Feld einfach leer und klicke auf "Informationen ohne Wert anzeigen"!
+    {% else %}
+    <strong>💡 Tipp:</strong> Programmbeziehungen sind sichtbar, konkrete Raten sind aus rechtlichen Gründen leider nicht verfügbar.
+    {% endif %}
   </div>
 </div>
 

@@ -109,7 +109,8 @@ class PaybackScraper(BaseScraper):
                 {
                     "name": name,
                     "rates": [rate],
-                    "source_id": partner_id,
+                    "source": "Payback",
+                    "source_id": str(partner_id),
                 }
             )
 

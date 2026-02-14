@@ -31,6 +31,9 @@ class LetyshopsScraper(BaseScraper):
             url = f"{self.BASE_URL}{self.LISTING_PATH}?page={page}"
             try:
                 resp = requests.get(url, timeout=15)
+                if resp.status_code == 404:
+                    logger.info("Reached end of LetyShops listing at %s (404)", url)
+                    break
                 resp.raise_for_status()
             except Exception as e:
                 logger.error("Failed to fetch %s: %s", url, e)
@@ -410,7 +413,7 @@ class LetyshopsScraper(BaseScraper):
                 "rates": rates,
                 "logo": logo,
                 "source_id": href.split("/")[-1] if href else None,
-                "source": "Letyshops",
+                "source": "LetyShops",
             }
             # Fallback: if name is missing, derive a readable name from source_id
             if not shop["name"] and shop.get("source_id"):

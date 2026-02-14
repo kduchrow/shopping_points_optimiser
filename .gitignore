@@ -58,6 +58,7 @@ browser_extension.zip
 .coverage
 htmlcov/
 .tox/
+import/
 
 # MyPy
 .mypy_cache/

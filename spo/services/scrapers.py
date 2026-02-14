@@ -162,3 +162,47 @@ def scrape_letyshops(job):
 
         job.set_progress(100, 100)
         return {"added": added}
+
+
+def scrape_and_charge(job):
+    with current_app.app_context():
+        job.add_message("Starte &Charge-Scraper...")
+        job.set_progress(10, 100)
+
+        db.session.add(ScrapeLog(message="AndCharge scraper started"))
+        db.session.commit()
+
+        job.add_message("Fetche Daten von &Charge API...")
+        job.set_progress(30, 100)
+
+        before_shops = Shop.query.count()
+        import scrapers.and_charge_scraper as ac_scraper
+
+        scraper = ac_scraper.AndChargeScraper()
+        data = scraper.fetch()
+
+        job.add_message("Registriere Daten in Datenbank...")
+        job.set_progress(60, 100)
+
+        added = 0
+        if isinstance(data, list):
+            for item in data:
+                try:
+                    scraper.register_to_db(item)
+                except Exception as e:
+                    job.add_message(f"Fehler beim Registrieren: {e}")
+            after_shops = Shop.query.count()
+            added = after_shops - before_shops
+        elif isinstance(data, dict):
+            scraper.register_to_db(data)
+            after_shops = Shop.query.count()
+            added = after_shops - before_shops
+        else:
+            job.add_message("Keine Daten zum Registrieren gefunden")
+
+        job.add_message(f"Fertig: {added} Shops hinzugefügt")
+        db.session.add(ScrapeLog(message=f"AndCharge scraper finished, added {added} shops"))
+        db.session.commit()
+
+        job.set_progress(100, 100)
+        return {"added": added}

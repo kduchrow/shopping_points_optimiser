@@ -151,7 +151,9 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
     from spo.services.dedup import run_deduplication
     from spo.services.scheduler import init_scheduler, register_job_type
     from spo.services.scrapers import (
+        scrape_and_charge,
         scrape_example,
+        scrape_letyshops,
         scrape_miles_and_more,
         scrape_payback,
         scrape_shoop,
@@ -164,6 +166,8 @@ def create_app(*, start_jobs: bool = True, run_seed: bool = True):
     register_job_type("scrape_topcashback", scrape_topcashback)
     register_job_type("scrape_shoop", scrape_shoop)
     register_job_type("scrape_example", scrape_example)
+    register_job_type("scrape_letyshops", scrape_letyshops)
+    register_job_type("scrape_and_charge", scrape_and_charge)
 
     if start_jobs and os.environ.get("DISABLE_JOB_QUEUE", "false").lower() != "true":
         job_queue.set_app(app)

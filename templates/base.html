@@ -16,7 +16,7 @@
         <a class="nav-link" href="/profile">👤 {{ current_user.username }}</a>
         {% if current_user.role == 'admin' %}
         <a class="nav-link" href="/admin">⚙️ Admin</a>
-        {% endif %} {% if current_user.role in ['user', 'contributor', 'admin'] %}
+        {% endif %} {% if current_user.role in ['user', 'contributor', 'moderator', 'admin'] %}
         <a class="nav-link" href="/proposals">📝 Beiträge</a>
         {% endif %}
         <a class="nav-link" href="/">🏠 Home</a>

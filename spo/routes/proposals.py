@@ -22,7 +22,7 @@ def register_proposals(app):
     @app.route("/proposals")
     @login_required
     def proposals():
-        if current_user.role not in ["viewer", "user", "contributor", "admin"]:
+        if current_user.role not in ["viewer", "user", "contributor", "moderator", "admin"]:
             flash("Sie müssen registriert sein, um Beiträge zu sehen.", "error")
             return redirect(url_for("index"))
 
@@ -35,7 +35,7 @@ def register_proposals(app):
             upvotes = sum(v.vote_weight for v in votes if v.vote == 1)
             downvotes = sum(1 for v in votes if v.vote == -1)
             user_vote = None
-            if current_user.role in ["contributor", "admin"]:
+            if current_user.role in ["contributor", "moderator", "admin"]:
                 user_vote_obj = ProposalVote.query.filter_by(
                     proposal_id=proposal.id, voter_id=current_user.id
                 ).first()
@@ -100,7 +100,7 @@ def register_proposals(app):
     @app.route("/vote/<int:proposal_id>", methods=["POST"])
     @login_required
     def vote_proposal(proposal_id):
-        if current_user.role not in ["contributor", "admin"]:
+        if current_user.role not in ["contributor", "moderator", "admin"]:
             flash("Sie müssen Contributor sein zum Abstimmen.", "error")
             return redirect(url_for("proposals"))
 
@@ -314,8 +314,8 @@ def register_proposals(app):
     @app.route("/proposals/new", methods=["GET", "POST"])
     @login_required
     def create_proposal():
-        if current_user.role not in ["viewer", "user", "contributor", "admin"]:
-            flash("Sie müssen registriert sein, um Beiträge zu erstellen.", "error")
+        if current_user.role not in ["viewer", "user", "contributor", "moderator", "admin"]:
+            flash("Sie müssen registriert sein, um Beiträge zu sehen.", "error")
             return redirect(url_for("index"))
 
         if request.method == "POST":
@@ -328,7 +328,9 @@ def register_proposals(app):
                     proposal_type=proposal_type,
                     user_id=current_user.id,
                     reason=reason,
-                    source_url=source_url if source_url else None,
+                    source_url=source_url,
+                    status="pending",
+                    approved_by_system=False,
                 )
 
                 if proposal_type == "rate_change":
@@ -355,7 +357,6 @@ def register_proposals(app):
                             return redirect(url_for("create_proposal"))
                         proposal.proposed_points_per_eur = float(points_per_eur)
                         proposal.proposed_cashback_pct = 0.0
-                    # Store whether this is a contract or shop rate
                     proposal.proposed_rate_type = rate_category
 
                 elif proposal_type == "shop_add":

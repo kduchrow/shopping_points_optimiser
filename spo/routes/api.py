@@ -1,15 +1,16 @@
 """API endpoints for browser extension and scraper workers."""
 
 import os
+from datetime import datetime, timedelta
 
 from flask import jsonify, request
 from flask_login import current_user
 from sqlalchemy import or_
 
 from spo.extensions import db
-from spo.models import ScrapeLog
+from spo.models import BonusProgram, Coupon, ScrapeLog
 from spo.models.proposals import Proposal
-from spo.models.shops import Shop, ShopMain, ShopProgramRate
+from spo.models.shops import Shop, ShopMain, ShopProgramRate, ShopVariant
 from spo.models.user_preferences import UserFavoriteProgram
 from spo.services.scrape_ingest import ingest_scrape_results
 from spo.services.scrape_queue import enqueue_scrape_job
@@ -71,6 +72,11 @@ def register_api_routes(app):
     def api_get_shop_rates(shop_id):
         """Get all rates for a specific shop."""
         from spo.models.core import BonusProgram
+
+        if not current_user.is_authenticated:
+            return jsonify({"error": "Authentication required"}), 401
+        if current_user.role not in ["moderator", "admin"]:
+            return jsonify({"error": "Forbidden"}), 403
 
         shop = Shop.query.get_or_404(shop_id)
         shop_main = ShopMain.query.get(shop.shop_main_id) if shop.shop_main_id else None
@@ -159,6 +165,9 @@ def register_api_routes(app):
                 "is_admin": (
                     current_user.role == "admin" if current_user.is_authenticated else False
                 ),
+                "is_moderator": (
+                    current_user.role == "moderator" if current_user.is_authenticated else False
+                ),
                 "favorite_program_ids": favorite_ids,
                 "has_favorites": bool(favorite_ids),
             }
@@ -227,6 +236,44 @@ def register_api_routes(app):
         provided = request.headers.get("X-Scraper-Token")
         return provided == expected
 
+    def _normalize_name(value: str) -> str:
+        return " ".join(value.strip().lower().split())
+
+    def _parse_date(value: str | None) -> datetime | None:
+        if not value:
+            return None
+        if isinstance(value, datetime):
+            return value
+        for fmt in ("%Y-%m-%d", "%Y-%m-%d %H:%M:%S"):
+            try:
+                return datetime.strptime(str(value), fmt)
+            except Exception:
+                continue
+        return None
+
+    def _resolve_shop_id(merchant: str) -> int | None:
+        if not merchant:
+            return None
+        norm = _normalize_name(merchant)
+
+        main = ShopMain.query.filter(ShopMain.canonical_name_lower == norm).first()
+        if main:
+            shop = Shop.query.filter_by(shop_main_id=main.id).first()
+            if shop:
+                return shop.id
+
+        variant = ShopVariant.query.filter(ShopVariant.source_name.ilike(merchant)).first()
+        if variant:
+            shop = Shop.query.filter_by(shop_main_id=variant.shop_main_id).first()
+            if shop:
+                return shop.id
+
+        shop = Shop.query.filter(Shop.name.ilike(merchant)).first()
+        if shop:
+            return shop.id
+
+        return None
+
     @app.route("/api/scrape-jobs", methods=["POST"])
     def api_enqueue_scrape_job():
         if not _scraper_token_valid():
@@ -262,3 +309,107 @@ def register_api_routes(app):
         db.session.commit()
 
         return jsonify({"ingested": ingested, "run_id": run_id, "program": program})
+
+    @app.route("/api/coupon-import", methods=["POST"])
+    def api_import_coupons():
+        if not _scraper_token_valid():
+            return jsonify({"error": "Unauthorized"}), 401
+
+        data = request.get_json(silent=True) or {}
+        program_name = data.get("program")
+        coupons = data.get("coupons")
+        run_id = data.get("run_id")
+
+        if coupons is None:
+            return jsonify({"error": "coupons are required"}), 400
+        if not isinstance(coupons, list):
+            return jsonify({"error": "coupons must be a list"}), 400
+
+        program = None
+        if isinstance(program_name, str) and program_name.strip():
+            program = BonusProgram.query.filter(BonusProgram.name.ilike(program_name)).first()
+            if not program:
+                return jsonify({"error": f"Program not found: {program_name}"}), 400
+
+        missing_shops = []
+        resolved = []
+
+        for c in coupons:
+            if not isinstance(c, dict):
+                continue
+            merchant = c.get("merchant") or c.get("shop") or c.get("shop_name") or c.get("name")
+            shop_id = c.get("shop_id")
+            if shop_id is None and merchant:
+                shop_id = _resolve_shop_id(str(merchant))
+
+            if shop_id is None:
+                missing_shops.append(merchant or "<unknown>")
+                continue
+
+            resolved.append((c, shop_id))
+
+        if missing_shops:
+            return (
+                jsonify({"error": "Missing shops", "missing_shops": sorted(set(missing_shops))}),
+                400,
+            )
+
+        ingested = 0
+        for c, shop_id in resolved:
+            coupon_type = c.get("coupon_type") or "discount"
+            name = c.get("title") or c.get("name") or "Coupon"
+            description = c.get("note") or c.get("description") or c.get("discount_text") or ""
+            value = c.get("value") or c.get("discount_value") or 0
+            try:
+                value = float(value)
+            except Exception:
+                value = 0.0
+            combinable = c.get("combinable")
+
+            valid_from = _parse_date(c.get("valid_from"))
+            valid_to = _parse_date(c.get("valid_to"))
+            if not valid_from:
+                valid_from = datetime.utcnow()
+            if not valid_to:
+                valid_to = valid_from + timedelta(days=30)
+
+            existing_query = Coupon.query.filter(
+                Coupon.shop_id == shop_id,
+                Coupon.name == name,
+                Coupon.status == "active",
+            )
+            if program:
+                existing_query = existing_query.filter(Coupon.program_id == program.id)
+            else:
+                existing_query = existing_query.filter(Coupon.program_id.is_(None))
+
+            existing = existing_query.all()
+            now = datetime.utcnow()
+            for prev in existing:
+                prev.status = "inactive"
+                prev.valid_to = now
+
+            coupon = Coupon(
+                coupon_type=coupon_type,
+                name=name,
+                description=description,
+                shop_id=shop_id,
+                program_id=program.id if program else None,
+                value=value,
+                combinable=combinable,
+                valid_from=valid_from,
+                valid_to=valid_to,
+                source_url=c.get("url"),
+            )
+            db.session.add(coupon)
+            ingested += 1
+
+        program_label = program_name or "<none>"
+        db.session.add(
+            ScrapeLog(
+                message=f"Coupon import: {program_label} ({ingested} coupons, run_id={run_id})"
+            )
+        )
+        db.session.commit()
+
+        return jsonify({"ingested": ingested, "run_id": run_id, "program": program_name})

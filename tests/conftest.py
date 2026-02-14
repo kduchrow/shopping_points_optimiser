@@ -147,6 +147,8 @@ def test_resources(app, db):
         # Create a test admin user (for RateComment, ShopMergeProposal, etc.)
         admin_user = User.query.filter_by(username="test_admin").first()
         if not admin_user:
+            admin_user = User.query.filter_by(email="admin@test.com").first()
+        if not admin_user:
             admin_user = User(username="test_admin", email="admin@test.com", role="admin")
             admin_user.set_password("test_password")
             db.session.add(admin_user)
@@ -226,6 +228,8 @@ def admin_user(app, db):
             )
 
         admin = User.query.filter_by(username=test_admin_username).first()
+        if not admin:
+            admin = User.query.filter_by(email="admin@test.com").first()
         if not admin:
             admin = User()
             admin.username = test_admin_username

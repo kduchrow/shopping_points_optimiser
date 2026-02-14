@@ -19,13 +19,17 @@ logger = logging.getLogger("BaseScraper")
 class BaseScraper(ABC):
     @abstractmethod
     def fetch(self):
-        """Return shop data dict:
-        {
-          'name': 'ShopName',
-          'rates': [
-            {'program': 'Payback', 'points_per_eur': 1.0, 'cashback_pct': 0.0, 'point_value_eur': 0.005},
-          ]
-        }
+        """Return a list of shop dicts:
+        [
+            {
+                'name': 'ShopName',
+                'rates': [
+                    {'program': 'Payback', 'points_per_eur': 1.0, 'cashback_pct': 0.0, 'point_value_eur': 0.005},
+                ],
+                'source': 'Payback',
+                'source_id': '12345',
+            }
+        ]
         """
 
     def register_to_db(self, data):

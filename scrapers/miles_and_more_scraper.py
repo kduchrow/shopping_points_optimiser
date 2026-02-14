@@ -13,13 +13,14 @@ from datetime import datetime
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from scrapers.base import BaseScraper  # noqa: E402
 from spo.extensions import db  # noqa: E402
 from spo.models import Proposal, Shop, ShopProgramRate, User  # noqa: E402
 from spo.services.bonus_programs import ensure_program  # noqa: E402
 from spo.services.dedup import get_or_create_shop_main  # noqa: E402
 
 
-class MilesAndMoreScraper:
+class MilesAndMoreScraper(BaseScraper):
     def __init__(self):
         self.base_url = "https://www.miles-and-more.com/de/de/program/partners.html"
         self.program_name = "MilesAndMore"
@@ -134,6 +135,7 @@ class MilesAndMoreScraper:
                         {
                             "name": partner["name"],
                             "source_id": partner["url"],
+                            "source": "MilesAndMore",
                             "rates": [
                                 {
                                     "program": "MilesAndMore",

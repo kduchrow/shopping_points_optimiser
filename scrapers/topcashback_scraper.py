@@ -207,7 +207,7 @@ class TopCashbackScraper(BaseScraper):
                                         "program": "TopCashback",
                                         "cashback_pct": rate_val,
                                         "points_per_eur": 0.0,
-                                        "point_value_eur": 0,
+                                        "point_value_eur": 0.0,
                                         "category": category_field,
                                     }
                                     if subcat_text:
@@ -224,7 +224,7 @@ class TopCashbackScraper(BaseScraper):
                                 "program": "TopCashback",
                                 "cashback_pct": rate_val,
                                 "points_per_eur": 0.0,
-                                "point_value_eur": 0,
+                                "point_value_eur": 0.0,
                                 "category": category_name,
                             }
                         )
@@ -239,10 +239,14 @@ class TopCashbackScraper(BaseScraper):
                             "description": description,
                             "rates": rates,
                             "category": category_name,
+                            "source": "TopCashback",
+                            "source_id": shop_url or canonical,
                         }
                     else:
                         # Merge rates if shop seen again
                         shop_map[canonical]["rates"].extend(rates)
+                        if shop_url and not shop_map[canonical].get("source_id"):
+                            shop_map[canonical]["source_id"] = shop_url
                         if description and len(description) > len(
                             shop_map[canonical]["description"]
                         ):
@@ -255,9 +259,5 @@ class TopCashbackScraper(BaseScraper):
         # For test compatibility: if called in test context, return (results, debug)
         results = list(shop_map.values())
         # If running in test, return (results, debug) if requested
-        import os
 
-        if os.environ.get("TEST_TOPCASHBACK_DEBUG") == "1":
-            debug = {"status_code": getattr(self, "_last_status_code", 200), "error": None}
-            return results, debug
         return results

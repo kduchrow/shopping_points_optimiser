@@ -170,7 +170,7 @@ function renderUserTable(users) {
       html += `<form action='/admin/users/${user.id}/update_role' method='POST' class='action-form user-role-form' data-user-id='${user.id}'>`;
       html += `<select name='role' class='role-select'>`;
       html += `<option value=''>Rolle ändern...</option>`;
-      ["viewer", "user", "contributor", "admin"].forEach((role) => {
+      ["viewer", "user", "contributor", "moderator", "admin"].forEach((role) => {
         html += `<option value='${role}'${user.role === role ? " disabled" : ""}>${
           role.charAt(0).toUpperCase() + role.slice(1)
         }</option>`;
@@ -208,7 +208,7 @@ function renderUserTable(users) {
   } else {
     html += `<div class='empty-state'><p>Keine User gefunden.</p></div>`;
   }
-  html += `<h4 class='mt-30'>ℹ️ Rollen-Erklärung</h4><ul class='line-height-1-8 pl-20'><li><strong>Viewer:</strong> Kann nur öffentliche Inhalte sehen</li><li><strong>User:</strong> Kann Proposals erstellen</li><li><strong>Contributor:</strong> Kann Proposals erstellen und über Proposals abstimmen</li><li><strong>Admin:</strong> Volle Rechte (User-Verwaltung, Scrapers, Proposals direkt genehmigen)</li></ul></div>`;
+  html += `<h4 class='mt-30'>ℹ️ Rollen-Erklärung</h4><ul class='line-height-1-8 pl-20'><li><strong>Viewer:</strong> Kann nur öffentliche Inhalte sehen</li><li><strong>User:</strong> Kann Proposals erstellen</li><li><strong>Contributor:</strong> Kann Proposals erstellen und über Proposals abstimmen</li><li><strong>Moderator:</strong> Kann Raten einsehen</li><li><strong>Admin:</strong> Volle Rechte (User-Verwaltung, Scrapers, Proposals direkt genehmigen)</li></ul></div>`;
   tab.innerHTML = html;
 }
 
@@ -798,6 +798,324 @@ function wireScraperForms() {
         .catch((err) => alert("Error starting &Charge scraper: " + err));
     });
   }
+
+  const importForm = document.getElementById("consolidated-import-form");
+  const importPreview = document.getElementById("consolidated-preview");
+  const importProgram = document.getElementById("consolidated-program");
+  const importCount = document.getElementById("consolidated-shop-count");
+  const importConfirm = document.getElementById("consolidated-confirm");
+
+  if (importForm) {
+    importForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById("consolidated-file");
+      if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        alert("Bitte eine JSON-Datei auswählen.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+
+      fetch("/admin/import_consolidated/preview", {
+        method: "POST",
+        body: formData,
+        credentials: "same-origin",
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.error) {
+            alert("Fehler: " + data.error);
+            return;
+          }
+          importPreview.style.display = "block";
+          importProgram.textContent = data.program || "—";
+          importCount.textContent = data.shop_count ?? 0;
+          importConfirm.disabled = false;
+          importConfirm.dataset.token = data.token;
+        })
+        .catch((err) => alert("Fehler beim Laden der Vorschau: " + err));
+    });
+  }
+
+  if (importConfirm) {
+    importConfirm.addEventListener("click", () => {
+      const token = importConfirm.dataset.token;
+      if (!token) {
+        alert("Kein Token vorhanden. Bitte Vorschau erneut laden.");
+        return;
+      }
+      fetch("/admin/import_consolidated/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ token }),
+        credentials: "same-origin",
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.error) {
+            alert("Fehler: " + data.error);
+            return;
+          }
+          if (data.job_id) startJobMonitoring(data.job_id);
+        })
+        .catch((err) => alert("Fehler beim Starten des Imports: " + err));
+    });
+  }
+
+  const couponForm = document.getElementById("coupon-import-form");
+  const couponPreview = document.getElementById("coupon-preview");
+  const couponProgram = document.getElementById("coupon-program");
+  const couponCount = document.getElementById("coupon-count");
+  const couponMissing = document.getElementById("coupon-missing");
+  const couponMissingPrograms = document.getElementById("coupon-missing-programs");
+  const couponMissingShops = document.getElementById("coupon-missing-shops");
+  const couponConfirm = document.getElementById("coupon-confirm");
+  const couponTableWrapper = document.getElementById("coupon-table-wrapper");
+  const couponFeedback = document.getElementById("coupon-import-feedback");
+
+  const couponState = {
+    token: null,
+    rows: [],
+  };
+
+  function setCouponConfirmEnabled() {
+    if (!couponConfirm) return;
+    const table = document.getElementById("coupon-table");
+    if (!table) {
+      couponConfirm.disabled = true;
+      return;
+    }
+    const anyChecked = table.querySelectorAll(".coupon-include:checked").length > 0;
+    couponConfirm.disabled = !anyChecked;
+  }
+
+  function showCouponFeedback(message, type) {
+    if (!couponFeedback) return;
+    couponFeedback.style.display = "block";
+    const color = type === "success" ? "#2e7d32" : type === "error" ? "#b00020" : "#555";
+    couponFeedback.innerHTML = `<p style="margin:0;color:${color};">${message}</p>`;
+  }
+
+  function buildSuggestionOptions(row) {
+    const suggestions = row.suggestions || [];
+    const matchedId = row.matched_shop_id;
+    const matchedName = row.matched_shop_name;
+    const ids = new Set(suggestions.map((s) => String(s.id)));
+    let options = `<option value="">— Shop wählen —</option>`;
+    if (matchedId && matchedName && !ids.has(String(matchedId))) {
+      options += `<option value="${matchedId}" selected>${matchedName}</option>`;
+    }
+    suggestions.forEach((s) => {
+      const selected = matchedId && String(s.id) === String(matchedId) ? "selected" : "";
+      options += `<option value="${s.id}" ${selected}>${s.name}</option>`;
+    });
+    return options;
+  }
+
+  function updateMatchStatus(rowEl) {
+    const statusEl = rowEl.querySelector(".coupon-match-status");
+    const select = rowEl.querySelector(".coupon-shop-select");
+    if (!statusEl || !select) return;
+    statusEl.textContent = select.value ? "✅" : "❌";
+  }
+
+  function renderCouponTable(rows) {
+    if (!couponTableWrapper) return;
+    if (!rows || rows.length === 0) {
+      couponTableWrapper.innerHTML = "<div class='empty-state'><p>Keine Coupons gefunden.</p></div>";
+      return;
+    }
+
+    let html = `<table class='admin-table' id='coupon-table'>`;
+    html += `<thead><tr>`;
+    html += `<th>Import</th>`;
+    html += `<th>Shopname (editierbar)</th>`;
+    html += `<th>Shop-Match</th>`;
+    html += `<th>Status</th>`;
+    html += `<th>Coupon</th>`;
+    html += `</tr></thead><tbody>`;
+
+    rows.forEach((row) => {
+      const title = row.title || "Coupon";
+      const discount = row.discount_text || "";
+      html += `<tr data-index='${row.index}'>`;
+      const isMatched = !!row.matched_shop_id;
+      html += `<td><input type='checkbox' class='coupon-include' ${isMatched ? "checked" : ""} /></td>`;
+      html += `<td><input type='text' class='coupon-merchant-input' value='${row.merchant || ""}' /></td>`;
+      html += `<td><select class='coupon-shop-select'>${buildSuggestionOptions(row)}</select></td>`;
+      html += `<td><span class='coupon-match-status'>${row.matched_shop_id ? "✅" : "❌"}</span></td>`;
+      html += `<td><strong>${title}</strong><br /><small>${discount}</small></td>`;
+      html += `</tr>`;
+    });
+
+    html += `</tbody></table>`;
+    couponTableWrapper.innerHTML = html;
+
+    couponTableWrapper.querySelectorAll(".coupon-include").forEach((input) => {
+      input.addEventListener("change", setCouponConfirmEnabled);
+    });
+
+    couponTableWrapper.querySelectorAll(".coupon-shop-select").forEach((select) => {
+      select.addEventListener("change", (e) => {
+        const rowEl = e.target.closest("tr");
+        if (rowEl) updateMatchStatus(rowEl);
+      });
+    });
+
+    couponTableWrapper.querySelectorAll(".coupon-merchant-input").forEach((input) => {
+      let timeout = null;
+      input.addEventListener("input", (e) => {
+        const rowEl = e.target.closest("tr");
+        const select = rowEl ? rowEl.querySelector(".coupon-shop-select") : null;
+        if (!rowEl || !select) return;
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          const q = e.target.value.trim();
+          if (!q) {
+            select.innerHTML = `<option value="">— Shop wählen —</option>`;
+            updateMatchStatus(rowEl);
+            return;
+          }
+          fetch(`/shop_names?q=${encodeURIComponent(q)}&limit=50`)
+            .then((r) => r.json())
+            .then((suggestions) => {
+              const tempRow = {
+                suggestions: suggestions || [],
+                matched_shop_id: null,
+                matched_shop_name: null,
+              };
+              select.innerHTML = buildSuggestionOptions(tempRow);
+              updateMatchStatus(rowEl);
+            })
+            .catch(() => {
+              select.innerHTML = `<option value="">— Shop wählen —</option>`;
+              updateMatchStatus(rowEl);
+            });
+        }, 300);
+      });
+    });
+
+    setCouponConfirmEnabled();
+  }
+
+  if (couponForm) {
+    couponForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById("coupon-file");
+      if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        alert("Bitte eine JSON-Datei auswählen.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+
+      fetch("/admin/import_coupons/preview", {
+        method: "POST",
+        body: formData,
+        credentials: "same-origin",
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.error) {
+            alert("Fehler: " + data.error);
+            return;
+          }
+          couponPreview.style.display = "block";
+          couponProgram.textContent = data.program || "—";
+          couponCount.textContent = data.coupon_count ?? 0;
+
+          const missingPrograms = data.missing_programs || [];
+          const missingShops = data.missing_shops || [];
+          if (missingPrograms.length || missingShops.length) {
+            couponMissing.style.display = "block";
+            couponMissingPrograms.textContent = missingPrograms.join(", ") || "—";
+            couponMissingShops.textContent = missingShops.join(", ") || "—";
+          } else {
+            couponMissing.style.display = "none";
+          }
+
+          couponState.token = data.token;
+          couponState.rows = data.rows || [];
+          couponConfirm.dataset.token = data.token;
+          renderCouponTable(couponState.rows);
+          showCouponFeedback("Vorschau geladen. Bitte Auswahl prüfen und Import starten.", "info");
+        })
+        .catch((err) => alert("Fehler beim Laden der Vorschau: " + err));
+    });
+  }
+
+  if (couponConfirm) {
+    couponConfirm.addEventListener("click", () => {
+      const token = couponConfirm.dataset.token;
+      if (!token) {
+        alert("Kein Token vorhanden. Bitte Vorschau erneut laden.");
+        return;
+      }
+      const table = document.getElementById("coupon-table");
+      if (!table) {
+        alert("Keine Tabelle gefunden. Bitte Vorschau erneut laden.");
+        return;
+      }
+
+      const selections = [];
+      const missing = [];
+      table.querySelectorAll("tbody tr").forEach((row) => {
+        const include = row.querySelector(".coupon-include");
+        if (!include || !include.checked) return;
+        const index = row.getAttribute("data-index");
+        const merchant = row.querySelector(".coupon-merchant-input")?.value || "";
+        const shopId = row.querySelector(".coupon-shop-select")?.value || "";
+        if (!shopId) {
+          missing.push(merchant || `Index ${index}`);
+          return;
+        }
+        selections.push({ index: Number(index), shop_id: Number(shopId), merchant });
+      });
+
+      if (missing.length) {
+        alert(`Bitte Shop auswählen für: ${missing.join(", ")}`);
+        return;
+      }
+      if (!selections.length) {
+        alert("Bitte mindestens einen Coupon auswählen.");
+        return;
+      }
+      couponConfirm.disabled = true;
+      showCouponFeedback("Import wird gestartet…", "info");
+      fetch("/admin/import_coupons/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ token, selections }),
+        credentials: "same-origin",
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.error) {
+            const extra = [];
+            if (data.missing_programs && data.missing_programs.length) {
+              extra.push(`Fehlende Programme: ${data.missing_programs.join(", ")}`);
+            }
+            if (data.missing_shops && data.missing_shops.length) {
+              extra.push(`Fehlende Shops: ${data.missing_shops.join(", ")}`);
+            }
+            showCouponFeedback(
+              "Fehler: " + data.error + (extra.length ? "<br />" + extra.join("<br />") : ""),
+              "error",
+            );
+            setCouponConfirmEnabled();
+            return;
+          }
+          if (data.job_id) startJobMonitoring(data.job_id);
+          showCouponFeedback("Import gestartet. Job läuft im Hintergrund.", "success");
+        })
+        .catch((err) => {
+          showCouponFeedback("Fehler beim Starten des Imports: " + err, "error");
+          setCouponConfirmEnabled();
+        });
+    });
+  }
 }
 
 let jobId = null;
@@ -822,6 +1140,22 @@ function updateJobStatus() {
       if (statusEl) {
         statusEl.textContent = data.status.toUpperCase();
         statusEl.className = `job-status ${data.status}`;
+        // Make status clickable to view worker logs (if available)
+        statusEl.style.cursor = "pointer";
+        statusEl.onclick = () => {
+          fetch(`/admin/job_status/${jobId}?include_logs=1`)
+            .then((r) => r.json())
+            .then((d) => {
+              const logs = d.logs || d.messages || [];
+              if (logs.length === 0) {
+                alert("No logs available for this job.");
+                return;
+              }
+              const txt = logs.map((m) => (m.timestamp ? `[${m.timestamp}] ${m.message}` : m.message)).join("\n");
+              alert(`Worker logs:\n\n${txt}`);
+            })
+            .catch((err) => alert("Error fetching logs: " + err));
+        };
       }
       if (progressFill) {
         progressFill.style.width = `${data.progress_percent}%`;

@@ -42,7 +42,7 @@ def register_admin_users(app):
         user = User.query.get_or_404(user_id)
         new_role = request.form.get("role")
 
-        if new_role not in ["viewer", "user", "contributor", "admin"]:
+        if new_role not in ["viewer", "user", "contributor", "moderator", "admin"]:
             flash("Ungültige Rolle.", "error")
             return redirect(url_for("admin_users"))
 

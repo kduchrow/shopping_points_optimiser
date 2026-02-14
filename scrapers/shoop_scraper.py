@@ -22,10 +22,10 @@ class ShoopScraper(BaseScraper):
         for m in merchants:
             rates = []
             for r in m.get("rates", []):
-                cashback_pct = None
-                cashback_absolute = None
-                points_per_eur = None
-                points_absolute = None
+                cashback_pct = 0.0
+                cashback_absolute = 0.0
+                points_per_eur = 0.0
+                points_absolute = 0.0
                 note = None
                 # Shoop: percent = relative, EUR = absolute
                 sign = r.get("basic", {}).get("sign")
@@ -61,6 +61,7 @@ class ShoopScraper(BaseScraper):
                 "name": m.get("name"),
                 "rates": rates,
                 "source_id": str(m.get("id")),
+                "source": "Shoop",
             }
             results.append(shop_data)
         return results

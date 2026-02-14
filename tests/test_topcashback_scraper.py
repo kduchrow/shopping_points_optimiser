@@ -120,9 +120,6 @@ class TestTopCashbackScraper:
         ]
 
         results = scraper.fetch()
-        if isinstance(results, tuple):
-            results, debug = results
-            assert debug["status_code"] == 200
 
         assert len(results) == 2
 
@@ -197,8 +194,6 @@ class TestTopCashbackScraper:
         ]
 
         results = scraper.fetch()
-        if isinstance(results, tuple):
-            results, debug = results
 
         # Should deduplicate by shop name
         assert len(results) == 1
@@ -238,8 +233,6 @@ class TestTopCashbackScraper:
         ]
 
         results = scraper.fetch()
-        if isinstance(results, tuple):
-            results, debug = results
 
         assert len(results) == 1
         rate = results[0]["rates"][0]

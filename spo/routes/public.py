@@ -22,7 +22,8 @@ def register_public(app):
     def shop_names():
         # API: Liefert Shop-Namen für das Dropdown, gefiltert nach Query-String
         q = request.args.get("q", "").strip().lower()
-        limit = 30
+        limit_param = request.args.get("limit", type=int) or 30
+        limit = min(max(limit_param, 1), 50)
 
         # Suche in ShopMain canonical_name UND in ShopVariant source_name
         query = ShopMain.query.filter_by(status="active")
@@ -190,11 +191,84 @@ def register_public(app):
 
         if not shop:
             return redirect(url_for("index"))
+        rates_visible = current_user.is_authenticated and current_user.role in [
+            "moderator",
+            "admin",
+        ]
         # Use all sibling shops for this ShopMain to ensure all rates (e.g. Payback) are included
         shop_ids = [s.id for s in Shop.query.filter_by(shop_main_id=shop.shop_main_id).all()]
         rates = ShopProgramRate.query.filter(
             ShopProgramRate.shop_id.in_(shop_ids), ShopProgramRate.valid_to.is_(None)
         ).all()
+        has_coupons = bool(shop_coupons)
+
+        if mode == "voucher":
+            # Voucher mode is currently disabled
+            flash("Gutschein-Modus ist derzeit nicht verfügbar.", "error")
+            return redirect(url_for("index"))
+
+        if mode == "contract":
+            # Filter only contract-type rates
+            contract_rates = [r for r in rates if getattr(r, "rate_type", "shop") == "contract"]
+            results = []
+            for rate in contract_rates:
+                program = db.session.get(BonusProgram, rate.program_id)
+                if not program:
+                    continue
+                # Build bonus description
+                bonus_parts = []
+                if rate.points_absolute:
+                    bonus_parts.append(f"{rate.points_absolute:.0f} Punkte")
+                if rate.points_per_eur:
+                    bonus_parts.append(f"{rate.points_per_eur} P/EUR")
+                if rate.cashback_absolute:
+                    bonus_parts.append(f"{rate.cashback_absolute}€ Cashback")
+                if rate.cashback_pct:
+                    bonus_parts.append(f"{rate.cashback_pct}% Cashback")
+
+                bonus_text = " + ".join(bonus_parts) if bonus_parts else "Siehe Admin für Details"
+                results.append(
+                    {
+                        "program": program.name if program else "?",
+                        "bonus": bonus_text,
+                        "note": rate.rate_note or "",
+                    }
+                )
+            return render_template("result.html", mode="contract", shop=shop, results=results)
+
+        if not rates_visible and mode == "shopping":
+            program_best = {}
+            for rate in rates:
+                program = db.session.get(BonusProgram, rate.program_id)
+                if not program:
+                    continue
+                points_per_eur = float(rate.points_per_eur or 0.0)
+                cashback_pct = float(rate.cashback_pct or 0.0)
+                point_value_eur = float(program.point_value_eur or 0.0)
+                best_value = (points_per_eur * point_value_eur) + (cashback_pct / 100.0)
+                existing = program_best.get(program.name)
+                if existing is None or best_value > existing:
+                    program_best[program.name] = best_value
+
+            programs_list = [
+                {"program": name, "best_value": value} for name, value in program_best.items()
+            ]
+            programs_list.sort(key=lambda p: (p["best_value"], p["program"].lower()), reverse=True)
+            return render_template(
+                "result.html",
+                mode=mode,
+                shop=shop,
+                amount=None,
+                grouped_results=programs_list,
+                results=[],
+                has_coupons=has_coupons,
+                active_coupons=shop_coupons,
+                combine_coupons=False,
+                include_my_proposals=False,
+                favorites_only=False,
+                hidden_programs_count=0,
+                rates_hidden=True,
+            )
 
         # Show own pending proposals for this shop only to the submitting user
         if current_user.is_authenticated and include_my_proposals:
@@ -228,7 +302,6 @@ def register_public(app):
                         proposal_status=p.status,
                     )
                 )
-        has_coupons = bool(shop_coupons)
         # Get selected coupon IDs from form (may be multiple, includes both "123" and "proposal-123" formats)
         selected_coupon_ids = request.form.getlist("coupon_ids")
         selected_coupon_ids_set = set()
@@ -474,38 +547,6 @@ def register_public(app):
         #     return render_template(
         #         "result.html", mode="voucher", shop=shop, voucher=voucher, results=results
         #     )
-        elif mode == "voucher":
-            # Voucher mode is currently disabled
-            flash("Gutschein-Modus ist derzeit nicht verfügbar.", "error")
-            return redirect(url_for("index"))
-        elif mode == "contract":
-            # Filter only contract-type rates
-            contract_rates = [r for r in rates if getattr(r, "rate_type", "shop") == "contract"]
-            results = []
-            for rate in contract_rates:
-                program = db.session.get(BonusProgram, rate.program_id)
-                if not program:
-                    continue
-                # Build bonus description
-                bonus_parts = []
-                if rate.points_absolute:
-                    bonus_parts.append(f"{rate.points_absolute:.0f} Punkte")
-                if rate.points_per_eur:
-                    bonus_parts.append(f"{rate.points_per_eur} P/EUR")
-                if rate.cashback_absolute:
-                    bonus_parts.append(f"{rate.cashback_absolute}€ Cashback")
-                if rate.cashback_pct:
-                    bonus_parts.append(f"{rate.cashback_pct}% Cashback")
-
-                bonus_text = " + ".join(bonus_parts) if bonus_parts else "Siehe Admin für Details"
-                results.append(
-                    {
-                        "program": program.name if program else "?",
-                        "bonus": bonus_text,
-                        "note": rate.rate_note or "",
-                    }
-                )
-            return render_template("result.html", mode="contract", shop=shop, results=results)
 
     @app.route("/suggest-success/<int:shop_id>", methods=["GET"])
     @login_required
