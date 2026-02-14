@@ -31,7 +31,64 @@
     {% endif %}
   </div>
 
-  {% if mode == 'shopping' %}
+  {% if rates_hidden %}
+    <div class="info-box">
+      Genaue Raten sind aus rechtlichen Gründen leider nicht verfügbar. Du siehst hier nur, welche Programme verfügbar sind.
+    </div>
+    {% if mode == 'shopping' and has_coupons %}
+    <div class="coupons-section">
+      <h3>Verfügbare Sonderaktionen für diesen Shop</h3>
+      <div class="coupons-list" style="display: flex; flex-wrap: nowrap; gap: 16px; margin-bottom: 8px; overflow-x: auto; padding-bottom: 12px;">
+        {% for coupon in active_coupons %}
+        <div class="coupon-card" style="background: #f8fafc; border: 1px solid #e0e7ef; border-radius: 14px; padding: 18px 20px 32px 20px; min-width: 260px; max-width: 340px; box-shadow: 0 2px 8px #e0e7ef33; display: flex; flex-direction: column; align-items: flex-start; position: relative;">
+          <div style="width:100%; display:flex; flex-direction:column;">
+            <span style="font-weight:600; font-size:1.13em; color:#222;">{{ coupon.name }}</span>
+            <span style="display:block; font-size:1em; color:#444; margin-top:4px;">
+              {% if coupon.coupon_type == 'multiplier' %}<b>{{ coupon.value|int if coupon.value == coupon.value|int else coupon.value }}x</b> Multiplikator{% else %}<b>{{ coupon.value|int if coupon.value == coupon.value|int else coupon.value }}%</b> Rabatt{% endif %}
+            </span>
+            <span style="font-size:0.95em; color:#666; margin-top:4px;">{{ coupon.description }}</span>
+            <div style="font-size:0.93em; color:#888; margin-top:8px; margin-bottom:10px;">
+              {% if coupon.shop and coupon.shop.name %}
+                {{ coupon.shop.name }}
+              {% endif %}
+              <br />
+              {% if coupon.program and coupon.program.name %}
+                <span style="margin-left:8px;">Programm: {{ coupon.program.name }}</span>
+              {% endif %}
+              {% if coupon.is_proposal %}
+                <br />
+                <span style="display:inline-block; margin-top:4px; padding:3px 10px; border-radius:10px; background:#ecfdf3; color:#166534; border:1px solid #bbf7d0; font-size:12px; font-weight:500;">
+                  Dein Vorschlag · pending
+                </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% if active_coupons|length > 3 %}
+      <p class="text-small text-gray-light mt-8 text-center">Scroll für mehr Coupons</p>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% if grouped_results and grouped_results|length > 0 %}
+    <h2>Verfügbare Programme</h2>
+    <ul class="results-list" id="results-list">
+      {% for prog in grouped_results %}
+      <li>
+        <div class="program-name">
+          {{ prog.program }}
+          {% if loop.first %}
+            <span style="margin-left:8px; padding:2px 8px; border-radius:10px; background:#ecfdf3; color:#166534; border:1px solid #bbf7d0; font-size:12px;">Bestes Angebot</span>
+          {% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="info-box">Keine Programme gefunden.</div>
+    {% endif %}
+  {% elif mode == 'shopping' %}
     {% if has_coupons %}
     <div class="coupons-section">
       <h3>Verfügbare Sonderaktionen für diesen Shop</h3>

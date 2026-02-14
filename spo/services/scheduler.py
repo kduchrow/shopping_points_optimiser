@@ -6,6 +6,8 @@ from datetime import UTC, datetime
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from sqlalchemy.exc import NoResultFound
+from sqlalchemy.orm.exc import ObjectDeletedError
 
 from spo.extensions import db
 from spo.models import ScheduledJob, ScheduledJobRun, utcnow
@@ -259,13 +261,13 @@ def _run_scheduled_job(job, scheduled_job_id: int, run_id: int, job_func):
         scheduled_job = db.session.get(ScheduledJob, scheduled_job_id)
         run = db.session.get(ScheduledJobRun, run_id)
 
-        if not scheduled_job or not run:
-            logger.error(
-                f"Scheduled job or run missing (job_id={scheduled_job_id}, run_id={run_id})"
-            )
+        if not run:
+            logger.error(f"Scheduled run missing (run_id={run_id})")
             return
 
-        logger.info(f"Starting scheduled job run {run_id} for job '{scheduled_job.job_name}'")
+        # Capture job name early in case the DB row is deleted while running
+        job_name = scheduled_job.job_name if scheduled_job else f"scheduled_job_{scheduled_job_id}"
+        logger.info(f"Starting scheduled job run {run_id} for job '{job_name}'")
 
         status = "success"
         message = "Completed successfully"
@@ -285,22 +287,53 @@ def _run_scheduled_job(job, scheduled_job_id: int, run_id: int, job_func):
         except Exception as e:  # noqa: BLE001
             status = "failed"
             message = str(e)[:500]
-            logger.exception(f"Scheduled job {scheduled_job.job_name} failed")
-            run.status = status
-            run.message = message
-            scheduled_job.last_run_at = utcnow()
-            scheduled_job.last_run_status = status
-            scheduled_job.last_run_message = message
-            db.session.commit()
-            logger.error(f"Marked run {run_id} as failed")
+            logger.exception(f"Scheduled job {job_name} failed")
+            # Update run state
+            try:
+                run.status = status
+                run.message = message
+                db.session.commit()
+            except (ObjectDeletedError, NoResultFound):
+                logger.warning(
+                    f"Run {run_id} row deleted while handling failure; skipping run update"
+                )
+
+            # Try to update scheduled_job summary fields if it still exists
+            try:
+                sj = db.session.get(ScheduledJob, scheduled_job_id)
+                if sj:
+                    sj.last_run_at = utcnow()
+                    sj.last_run_status = status
+                    sj.last_run_message = message
+                    db.session.commit()
+            except (ObjectDeletedError, NoResultFound):
+                logger.warning(
+                    f"Scheduled job {scheduled_job_id} row missing when marking failure; skipping job summary update"
+                )
+            logger.error(f"Marked run {run_id} as failed (if record still present)")
         else:
-            run.status = status
-            run.message = message
-            scheduled_job.last_run_at = utcnow()
-            scheduled_job.last_run_status = status
-            scheduled_job.last_run_message = message
-            db.session.commit()
-            logger.info(f"Marked run {run_id} as success")
+            # Success path: update run and job summary but tolerate missing rows
+            try:
+                run.status = status
+                run.message = message
+                db.session.commit()
+            except (ObjectDeletedError, NoResultFound):
+                logger.warning(
+                    f"Run {run_id} row deleted while marking success; skipping run update"
+                )
+
+            try:
+                sj = db.session.get(ScheduledJob, scheduled_job_id)
+                if sj:
+                    sj.last_run_at = utcnow()
+                    sj.last_run_status = status
+                    sj.last_run_message = message
+                    db.session.commit()
+            except (ObjectDeletedError, NoResultFound):
+                logger.warning(
+                    f"Scheduled job {scheduled_job_id} row missing when marking success; skipping job summary update"
+                )
+            logger.info(f"Marked run {run_id} as success (if records still present)")
 
 
 def _run_scheduled_job_in_thread(scheduled_job_id: int, run_id: int, job_func):

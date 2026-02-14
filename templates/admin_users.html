@@ -44,6 +44,7 @@
               <option value="viewer" {% if user.role == "viewer" %}disabled{% endif %}>Viewer</option>
               <option value="user" {% if user.role == "user" %}disabled{% endif %}>User</option>
               <option value="contributor" {% if user.role == "contributor" %}disabled{% endif %}>Contributor</option>
+              <option value="moderator" {% if user.role == "moderator" %}disabled{% endif %}>Moderator</option>
               <option value="admin" {% if user.role == "admin" %}disabled{% endif %}>Admin</option>
             </select>
           </form>
@@ -76,6 +77,7 @@
     <li><strong>Viewer:</strong> Kann nur öffentliche Inhalte sehen</li>
     <li><strong>User:</strong> Kann Proposals erstellen</li>
     <li><strong>Contributor:</strong> Kann Proposals erstellen und über Proposals abstimmen</li>
+    <li><strong>Moderator:</strong> Kann Raten einsehen</li>
     <li><strong>Admin:</strong> Volle Rechte (User-Verwaltung, Scrapers, Proposals direkt genehmigen)</li>
   </ul>
 </div>

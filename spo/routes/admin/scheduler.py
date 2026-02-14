@@ -161,6 +161,19 @@ def register_admin_scheduler(app):
         job = ScheduledJob.query.get_or_404(job_id)
         job_name = job.job_name
 
+        # Prevent deleting a scheduled job that currently has active runs
+        active_runs = (
+            ScheduledJobRun.query.filter_by(scheduled_job_id=job.id)
+            .filter(ScheduledJobRun.status.in_(["running", "queued"]))
+            .count()
+        )
+        if active_runs:
+            msg = f"Job '{job_name}' has {active_runs} active run(s) and cannot be deleted while running."
+            if request.headers.get("Accept") == "application/json":
+                return jsonify({"success": False, "message": msg}), 400
+            flash(msg, "error")
+            return redirect(url_for("admin_scheduled_jobs"))
+
         # delete run logs first to satisfy FK constraint
         ScheduledJobRun.query.filter_by(scheduled_job_id=job.id).delete()
         db.session.delete(job)
@@ -170,6 +183,11 @@ def register_admin_scheduler(app):
         reload_scheduled_job(job_id, app)
 
         flash(f"Job '{job_name}' wurde gelöscht.", "success")
+
+        # If the client expects JSON (AJAX), return a JSON success response
+        if request.headers.get("Accept") == "application/json":
+            return jsonify({"success": True, "message": f"Job '{job_name}' wurde gelöscht."})
+
         return redirect(url_for("admin_scheduled_jobs"))
 
     @app.route("/admin/scheduled_jobs/<int:job_id>/run", methods=["POST"])
